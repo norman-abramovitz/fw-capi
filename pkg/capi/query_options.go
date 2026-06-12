@@ -242,6 +242,13 @@ const (
 	ServicePlanIncludeServiceOffering   servicePlanInclude = "service_offering"
 )
 
+// ServicePlanGetListOption is satisfied by options valid on both the
+// service plan Get and List endpoints (e.g. fields[] selectors).
+type ServicePlanGetListOption interface {
+	ServicePlanGetOption
+	ServicePlanListOption
+}
+
 // ServicePlanFieldsKey names a fields[...] selector for service plans.
 // VERIFY against 3.222.0 docs before release (model gap, see spec).
 type ServicePlanFieldsKey string
@@ -256,7 +263,7 @@ func (servicePlanFields) servicePlanGet()  {}
 func (servicePlanFields) servicePlanList() {}
 
 // WithServicePlanFields selects fields of a related resource.
-func WithServicePlanFields(key ServicePlanFieldsKey, fields ...string) ServicePlanGetOption {
+func WithServicePlanFields(key ServicePlanFieldsKey, fields ...string) ServicePlanGetListOption {
 	return servicePlanFields{fieldsOption{string(key), fields}}
 }
 
@@ -336,13 +343,20 @@ const (
 	ServiceInstanceFieldsServicePlanServiceOfferingBroker ServiceInstanceFieldsKey = "service_plan.service_offering.service_broker"
 )
 
+// ServiceInstanceGetListOption is satisfied by options valid on both the
+// service instance Get and List endpoints (e.g. fields[] selectors).
+type ServiceInstanceGetListOption interface {
+	ServiceInstanceGetOption
+	ServiceInstanceListOption
+}
+
 type serviceInstanceFields struct{ fieldsOption }
 
 func (serviceInstanceFields) serviceInstanceGet()  {}
 func (serviceInstanceFields) serviceInstanceList() {}
 
 // WithServiceInstanceFields selects fields of a related resource.
-func WithServiceInstanceFields(key ServiceInstanceFieldsKey, fields ...string) ServiceInstanceGetOption {
+func WithServiceInstanceFields(key ServiceInstanceFieldsKey, fields ...string) ServiceInstanceGetListOption {
 	return serviceInstanceFields{fieldsOption{string(key), fields}}
 }
 
@@ -374,13 +388,20 @@ type ServiceOfferingFieldsKey string
 // related resource.
 const ServiceOfferingFieldsServiceBroker ServiceOfferingFieldsKey = "service_broker"
 
+// ServiceOfferingGetListOption is satisfied by options valid on both the
+// service offering Get and List endpoints (e.g. fields[] selectors).
+type ServiceOfferingGetListOption interface {
+	ServiceOfferingGetOption
+	ServiceOfferingListOption
+}
+
 type serviceOfferingFields struct{ fieldsOption }
 
 func (serviceOfferingFields) serviceOfferingGet()  {}
 func (serviceOfferingFields) serviceOfferingList() {}
 
 // WithServiceOfferingFields selects fields of a related resource.
-func WithServiceOfferingFields(key ServiceOfferingFieldsKey, fields ...string) ServiceOfferingGetOption {
+func WithServiceOfferingFields(key ServiceOfferingFieldsKey, fields ...string) ServiceOfferingGetListOption {
 	return serviceOfferingFields{fieldsOption{string(key), fields}}
 }
 

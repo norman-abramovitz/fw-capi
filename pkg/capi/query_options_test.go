@@ -95,3 +95,22 @@ func TestServiceOfferingPurge_Encoding(t *testing.T) {
 	v := capi.ApplyQueryOptions(nil, []capi.ServiceOfferingDeleteOption{capi.PurgeServiceOffering})
 	assert.Equal(t, "true", v.Get("purge"))
 }
+
+func TestFieldsOptions_UsableInListCalls(t *testing.T) {
+	t.Parallel()
+
+	v := capi.ApplyQueryOptions(nil, []capi.ServicePlanListOption{
+		capi.WithServicePlanFields(capi.ServicePlanFieldsServiceOfferingServiceBroker, "name"),
+	})
+	assert.Equal(t, "name", v.Get("fields[service_offering.service_broker]"))
+
+	v = capi.ApplyQueryOptions(nil, []capi.ServiceInstanceListOption{
+		capi.WithServiceInstanceFields(capi.ServiceInstanceFieldsSpace, "guid"),
+	})
+	assert.Equal(t, "guid", v.Get("fields[space]"))
+
+	v = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingListOption{
+		capi.WithServiceOfferingFields(capi.ServiceOfferingFieldsServiceBroker, "name"),
+	})
+	assert.Equal(t, "name", v.Get("fields[service_broker]"))
+}
