@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
@@ -478,4 +479,21 @@ func TestServiceOfferingsClient_Delete(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServiceOfferingsClient_DeleteWithPurge(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "DELETE", request.Method)
+		assert.Equal(t, "true", request.URL.Query().Get("purge"))
+		writer.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	offerings := NewServiceOfferingsClient(httpClient)
+
+	err := offerings.Delete(context.Background(), "offering-guid", capi.PurgeServiceOffering)
+	require.NoError(t, err)
 }
