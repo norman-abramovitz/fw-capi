@@ -191,15 +191,15 @@ type DomainsClient interface {
 // RouteCRUDClient provides basic CRUD operations for routes.
 type RouteCRUDClient interface {
 	Create(ctx context.Context, request *RouteCreateRequest) (*Route, error)
-	Get(ctx context.Context, guid string) (*Route, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[Route], error)
+	Get(ctx context.Context, guid string, opts ...RouteGetOption) (*Route, error)
+	List(ctx context.Context, params *QueryParams, opts ...RouteListOption) (*ListResponse[Route], error)
 	Update(ctx context.Context, guid string, request *RouteUpdateRequest) (*Route, error)
 	Delete(ctx context.Context, guid string) (*Job, error)
 }
 
 // RouteDestinationClient provides route destination operations.
 type RouteDestinationClient interface {
-	ListDestinations(ctx context.Context, guid string) (*RouteDestinations, error)
+	ListDestinations(ctx context.Context, guid string, opts ...RouteDestinationsOption) (*RouteDestinations, error)
 	InsertDestinations(ctx context.Context, guid string, destinations []RouteDestination) (*RouteDestinations, error)
 	ReplaceDestinations(ctx context.Context, guid string, destinations []RouteDestination) (*RouteDestinations, error)
 	UpdateDestination(ctx context.Context, guid string, destGUID string, protocol string) (*RouteDestination, error)

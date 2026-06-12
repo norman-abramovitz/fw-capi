@@ -241,6 +241,9 @@ type Route struct {
 	Options       *RouteOptions      `json:"options,omitempty"  yaml:"options,omitempty"`
 	Metadata      *Metadata          `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	Relationships RouteRelationships `json:"relationships"      yaml:"relationships"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *RouteIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // RouteCreateRequest represents a request to create a route.

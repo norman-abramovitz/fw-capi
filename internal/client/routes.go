@@ -42,10 +42,10 @@ func (c *RoutesClient) Create(ctx context.Context, request *capi.RouteCreateRequ
 }
 
 // Get retrieves a specific route.
-func (c *RoutesClient) Get(ctx context.Context, guid string) (*capi.Route, error) {
+func (c *RoutesClient) Get(ctx context.Context, guid string, opts ...capi.RouteGetOption) (*capi.Route, error) {
 	path := "/v3/routes/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting route: %w", err)
 	}
@@ -61,13 +61,15 @@ func (c *RoutesClient) Get(ctx context.Context, guid string) (*capi.Route, error
 }
 
 // List lists all routes.
-func (c *RoutesClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.Route], error) {
+func (c *RoutesClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.RouteListOption) (*capi.ListResponse[capi.Route], error) {
 	path := "/v3/routes"
 
 	var queryParams url.Values
 	if params != nil {
 		queryParams = params.ToValues()
 	}
+
+	queryParams = capi.ApplyQueryOptions(queryParams, opts)
 
 	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {
@@ -123,10 +125,10 @@ func (c *RoutesClient) Delete(ctx context.Context, guid string) (*capi.Job, erro
 }
 
 // ListDestinations lists all destinations for a route.
-func (c *RoutesClient) ListDestinations(ctx context.Context, guid string) (*capi.RouteDestinations, error) {
+func (c *RoutesClient) ListDestinations(ctx context.Context, guid string, opts ...capi.RouteDestinationsOption) (*capi.RouteDestinations, error) {
 	path := fmt.Sprintf("/v3/routes/%s/destinations", guid)
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("listing route destinations: %w", err)
 	}
