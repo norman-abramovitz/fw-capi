@@ -801,27 +801,13 @@ func runIsolationSegmentsListSpacesCommand(cmd *cobra.Command, nameOrGUID string
 		return err
 	}
 
-	return outputIsolationSegmentSpaces(client, spaces, segmentName)
+	return outputIsolationSegmentSpaces(spaces, segmentName)
 }
 
-func listSpacesForSegment(client interface{}, segmentGUID string) (interface{}, error) {
+func listSpacesForSegment(client capi.Client, segmentGUID string) (*capi.ListResponse[capi.Space], error) {
 	ctx := context.Background()
 
-	clientWithSegments, segmentClientOk := client.(interface{ IsolationSegments() interface{} })
-	if !segmentClientOk {
-		return nil, constants.ErrClientNoIsolationSegmentsSupport
-	}
-
-	segmentsClient := clientWithSegments.IsolationSegments()
-
-	listClient, ok := segmentsClient.(interface {
-		ListSpaces(ctx context.Context, segmentID string) (interface{}, error)
-	})
-	if !ok {
-		return nil, constants.ErrIsolationSegmentsNoListSpacesSupport
-	}
-
-	spaces, err := listClient.ListSpaces(ctx, segmentGUID)
+	spaces, err := client.IsolationSegments().ListSpaces(ctx, segmentGUID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list spaces for isolation segment: %w", err)
 	}
@@ -829,22 +815,22 @@ func listSpacesForSegment(client interface{}, segmentGUID string) (interface{}, 
 	return spaces, nil
 }
 
-func outputIsolationSegmentSpaces(client interface{}, spaces interface{}, segmentName string) error {
+func outputIsolationSegmentSpaces(spaces *capi.ListResponse[capi.Space], segmentName string) error {
 	output := viper.GetString("output")
 	switch output {
 	case OutputFormatJSON:
-		return outputIsolationSegmentSpacesJSON(spaces)
+		return outputIsolationSegmentSpacesJSON(spaces.Resources)
 	case OutputFormatYAML:
-		return outputIsolationSegmentSpacesYAML(spaces)
+		return outputIsolationSegmentSpacesYAML(spaces.Resources)
 	default:
-		return outputIsolationSegmentSpacesTable(client, segmentName)
+		return outputIsolationSegmentSpacesTable(spaces.Resources, segmentName)
 	}
 }
 
-func outputIsolationSegmentSpacesJSON(spaces interface{}) error {
+func outputIsolationSegmentSpacesJSON(spaces []capi.Space) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	// Note: Type assertion needed for spaces.Resources
+
 	err := encoder.Encode(spaces)
 	if err != nil {
 		return fmt.Errorf("failed to encode spaces as JSON: %w", err)
@@ -853,10 +839,10 @@ func outputIsolationSegmentSpacesJSON(spaces interface{}) error {
 	return nil
 }
 
-func outputIsolationSegmentSpacesYAML(spaces interface{}) error {
+func outputIsolationSegmentSpacesYAML(spaces []capi.Space) error {
 	encoder := yaml.NewEncoder(os.Stdout)
 	encoder.SetIndent(constants.JSONIndentSize)
-	// Note: Type assertion needed for spaces.Resources
+
 	err := encoder.Encode(spaces)
 	if err != nil {
 		return fmt.Errorf("failed to encode spaces as YAML: %w", err)
@@ -865,11 +851,8 @@ func outputIsolationSegmentSpacesYAML(spaces interface{}) error {
 	return nil
 }
 
-func outputIsolationSegmentSpacesTable(client interface{}, segmentName string) error {
-	// Note: Type assertion needed for spaces.Resources
-	spacesList := []interface{}{} // spaces.Resources
-
-	if len(spacesList) == 0 {
+func outputIsolationSegmentSpacesTable(spaces []capi.Space, segmentName string) error {
+	if len(spaces) == 0 {
 		_, _ = fmt.Fprintf(os.Stdout, "No spaces found for isolation segment '%s'\n", segmentName)
 
 		return nil
@@ -878,28 +861,26 @@ func outputIsolationSegmentSpacesTable(client interface{}, segmentName string) e
 	_, _ = fmt.Fprintf(os.Stdout, "Spaces using isolation segment '%s':\n\n", segmentName)
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.Header("Name", "GUID", "Organization", "Created")
+	table.Header("Name", "GUID", "Created", "Updated")
 
-	for range spacesList {
-		appendSpaceToTable(client, table)
+	for _, space := range spaces {
+		createdAt := ""
+		if !space.CreatedAt.IsZero() {
+			createdAt = space.CreatedAt.Format("2006-01-02 15:04:05")
+		}
+
+		updatedAt := ""
+		if !space.UpdatedAt.IsZero() {
+			updatedAt = space.UpdatedAt.Format("2006-01-02 15:04:05")
+		}
+
+		_ = table.Append(space.Name, space.GUID, createdAt, updatedAt)
 	}
 
-	_ = table.Render()
+	err := table.Render()
+	if err != nil {
+		return fmt.Errorf("failed to render table: %w", err)
+	}
 
 	return nil
-}
-
-func appendSpaceToTable(client interface{}, table *tablewriter.Table) {
-	ctx := context.Background()
-
-	// Note: Type assertions would be needed for proper implementation
-	createdAt := ""
-	orgName := ""
-
-	// Get org name if available
-	// Note: This would require proper type assertions
-	_ = ctx
-	_ = client
-
-	_ = table.Append("space_name", "space_guid", orgName, createdAt)
 }
