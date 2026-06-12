@@ -232,10 +232,10 @@ type ServiceBrokersClient interface {
 
 // ServiceOfferingsClient defines operations for service offerings.
 type ServiceOfferingsClient interface {
-	Get(ctx context.Context, guid string) (*ServiceOffering, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[ServiceOffering], error)
+	Get(ctx context.Context, guid string, opts ...ServiceOfferingGetOption) (*ServiceOffering, error)
+	List(ctx context.Context, params *QueryParams, opts ...ServiceOfferingListOption) (*ListResponse[ServiceOffering], error)
 	Update(ctx context.Context, guid string, request *ServiceOfferingUpdateRequest) (*ServiceOffering, error)
-	Delete(ctx context.Context, guid string) error
+	Delete(ctx context.Context, guid string, opts ...ServiceOfferingDeleteOption) error
 }
 
 // ServicePlansClient defines operations for service plans.
@@ -255,8 +255,8 @@ type ServicePlansClient interface {
 // ServiceInstancesClient defines operations for service instances.
 type ServiceInstancesClient interface {
 	Create(ctx context.Context, request *ServiceInstanceCreateRequest) (interface{}, error) // Returns *ServiceInstance for user-provided, *Job for managed
-	Get(ctx context.Context, guid string) (*ServiceInstance, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[ServiceInstance], error)
+	Get(ctx context.Context, guid string, opts ...ServiceInstanceGetOption) (*ServiceInstance, error)
+	List(ctx context.Context, params *QueryParams, opts ...ServiceInstanceListOption) (*ListResponse[ServiceInstance], error)
 	Update(ctx context.Context, guid string, request *ServiceInstanceUpdateRequest) (interface{}, error) // Returns *ServiceInstance for user-provided, *Job for managed
 	Delete(ctx context.Context, guid string, opts ...DeleteOption) (*Job, error)
 

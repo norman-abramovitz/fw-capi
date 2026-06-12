@@ -51,10 +51,12 @@ func (c *ServiceInstancesClient) Create(ctx context.Context, request *capi.Servi
 }
 
 // Get retrieves a specific service instance.
-func (c *ServiceInstancesClient) Get(ctx context.Context, guid string) (*capi.ServiceInstance, error) {
+func (c *ServiceInstancesClient) Get(ctx context.Context, guid string, opts ...capi.ServiceInstanceGetOption) (*capi.ServiceInstance, error) {
 	path := "/v3/service_instances/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	query := capi.ApplyQueryOptions(nil, opts)
+
+	resp, err := c.httpClient.Get(ctx, path, query)
 	if err != nil {
 		return nil, fmt.Errorf("getting service instance: %w", err)
 	}
@@ -70,13 +72,15 @@ func (c *ServiceInstancesClient) Get(ctx context.Context, guid string) (*capi.Se
 }
 
 // List lists all service instances.
-func (c *ServiceInstancesClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.ServiceInstance], error) {
+func (c *ServiceInstancesClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ServiceInstanceListOption) (*capi.ListResponse[capi.ServiceInstance], error) {
 	path := "/v3/service_instances"
 
 	var queryParams url.Values
 	if params != nil {
 		queryParams = params.ToValues()
 	}
+
+	queryParams = capi.ApplyQueryOptions(queryParams, opts)
 
 	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {

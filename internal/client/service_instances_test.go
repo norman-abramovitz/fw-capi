@@ -626,3 +626,26 @@ func TestServiceInstancesClient_DeleteWithBindings(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
+
+func TestServiceInstancesClient_GetWithFields(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "name,guid", request.URL.Query().Get("fields[space.organization]"))
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "si-guid",
+		  "included": {"organizations": [{"guid": "org-1", "name": "acme"}]}
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	instances := NewServiceInstancesClient(httpClient)
+
+	instance, err := instances.Get(context.Background(), "si-guid",
+		capi.WithServiceInstanceFields(capi.ServiceInstanceFieldsSpaceOrganization, "name", "guid"))
+	require.NoError(t, err)
+	require.NotNil(t, instance.Included)
+	assert.Equal(t, "org-1", instance.Included.Organizations[0].GUID)
+}

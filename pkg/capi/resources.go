@@ -1150,6 +1150,9 @@ type ServiceOffering struct {
 	BrokerCatalog    ServiceOfferingCatalog       `json:"broker_catalog"              yaml:"broker_catalog"`
 	Relationships    ServiceOfferingRelationships `json:"relationships"               yaml:"relationships"`
 	Metadata         *Metadata                    `json:"metadata,omitempty"          yaml:"metadata,omitempty"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *ServiceOfferingIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // ServiceOfferingCatalog represents catalog information for a service offering.
@@ -1309,6 +1312,9 @@ type ServiceInstance struct {
 	RouteServiceURL        *string                                `json:"route_service_url,omitempty"        yaml:"route_service_url,omitempty"` // For user-provided
 	Relationships          ServiceInstanceRelationships           `json:"relationships"                      yaml:"relationships"`
 	Metadata               *Metadata                              `json:"metadata,omitempty"                 yaml:"metadata,omitempty"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *ServiceInstanceIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // ServiceInstanceMaintenance represents maintenance information for a service instance.
