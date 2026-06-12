@@ -9,6 +9,7 @@ import (
 	"time"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -409,4 +410,28 @@ func TestSpacesClient_RemoveQuota(t *testing.T) {
 
 	err = c.Spaces().RemoveQuota(context.Background(), "space-guid")
 	require.NoError(t, err)
+}
+
+func TestSpacesClient_GetWithInclude(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/spaces/space-guid", request.URL.Path)
+		assert.Equal(t, "organization", request.URL.Query().Get("include"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "space-guid", "name": "dev",
+		  "included": {"organizations": [{"guid": "org-1", "name": "acme"}]}
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	spaces := NewSpacesClient(httpClient)
+
+	space, err := spaces.Get(context.Background(), "space-guid", capi.SpaceIncludeOrganization)
+	require.NoError(t, err)
+	require.NotNil(t, space.Included)
+	assert.Equal(t, "org-1", space.Included.Organizations[0].GUID)
 }
