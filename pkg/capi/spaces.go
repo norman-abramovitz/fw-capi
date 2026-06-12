@@ -13,8 +13,8 @@ type SpaceWithIncludes struct {
 
 // SpaceIncludedResources represents included resources in a space response.
 type SpaceIncludedResources struct {
-	Organizations []Organization `json:"organizations,omitempty"`
-	Spaces        []Space        `json:"spaces,omitempty"`
+	Organizations []Organization `json:"organizations,omitempty" yaml:"organizations,omitempty"`
+	Spaces        []Space        `json:"spaces,omitempty" yaml:"spaces,omitempty"`
 }
 
 // SpaceQuota represents a space quota.
