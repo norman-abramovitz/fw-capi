@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
@@ -737,4 +738,54 @@ func TestRoutesClient_TransferOwnership(t *testing.T) {
 	require.NotNil(t, route)
 	assert.Equal(t, "test-route-guid", route.GUID)
 	assert.Equal(t, "new-space-guid", route.Relationships.Space.Data.GUID)
+}
+
+func TestRoutesClient_GetWithIncludes(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/routes/route-guid", request.URL.Path)
+		assert.Equal(t, "domain,space.organization", request.URL.Query().Get("include"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "route-guid",
+		  "included": {
+		    "domains": [{"guid": "domain-1", "name": "apps.example.com"}],
+		    "spaces": [{"guid": "space-1"}],
+		    "organizations": [{"guid": "org-1"}]
+		  }
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	routes := NewRoutesClient(httpClient)
+
+	route, err := routes.Get(context.Background(), "route-guid",
+		capi.RouteIncludeDomain, capi.RouteIncludeSpaceOrganization)
+	require.NoError(t, err)
+	require.NotNil(t, route.Included)
+	assert.Equal(t, "domain-1", route.Included.Domains[0].GUID)
+}
+
+func TestRoutesClient_ListDestinationsWithFilters(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/routes/route-guid/destinations", request.URL.Path)
+		assert.Equal(t, "d1,d2", request.URL.Query().Get("guids"))
+		assert.Equal(t, "a1", request.URL.Query().Get("app_guids"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"destinations": []}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	routes := NewRoutesClient(httpClient)
+
+	_, err := routes.ListDestinations(context.Background(), "route-guid",
+		capi.WithDestinationGUIDs("d1", "d2"), capi.WithDestinationAppGUIDs("a1"))
+	require.NoError(t, err)
 }
