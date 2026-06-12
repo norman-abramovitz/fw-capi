@@ -1191,8 +1191,8 @@ type ServicePlan struct {
 	MaintenanceInfo *ServicePlanMaintenance  `json:"maintenance_info,omitempty" yaml:"maintenance_info,omitempty"`
 	BrokerCatalog   ServicePlanCatalog       `json:"broker_catalog"             yaml:"broker_catalog"`
 	Schemas         ServicePlanSchemas       `json:"schemas"                    yaml:"schemas"`
-	Relationships ServicePlanRelationships `json:"relationships"              yaml:"relationships"`
-	Metadata      *Metadata                `json:"metadata,omitempty"         yaml:"metadata,omitempty"`
+	Relationships   ServicePlanRelationships `json:"relationships"              yaml:"relationships"`
+	Metadata        *Metadata                `json:"metadata,omitempty"         yaml:"metadata,omitempty"`
 	// Included carries related resources when the request used typed
 	// include options. Nil when no includes were requested.
 	Included *ServicePlanIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
