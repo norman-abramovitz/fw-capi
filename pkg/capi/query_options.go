@@ -74,3 +74,320 @@ const (
 	RoleIncludeSpace        roleInclude = "space"
 	RoleIncludeOrganization roleInclude = "organization"
 )
+
+// ---- shared option value kinds ----
+
+// scalarOption sets a single query key, overwriting any prior value.
+type scalarOption struct {
+	key, value string
+}
+
+func (s scalarOption) applyQuery(v url.Values) { v.Set(s.key, s.value) }
+
+// fieldsOption encodes fields[<key>]=f1,f2.
+type fieldsOption struct {
+	key    string
+	fields []string
+}
+
+func (f fieldsOption) applyQuery(v url.Values) {
+	v.Set("fields["+f.key+"]", strings.Join(f.fields, ","))
+}
+
+// ---- apps ----
+
+// AppGetOption configures GET /v3/apps/{guid}.
+type AppGetOption interface {
+	QueryOption
+	appGet()
+}
+
+// AppListOption configures GET /v3/apps.
+type AppListOption interface {
+	QueryOption
+	appList()
+}
+
+type appInclude string
+
+func (appInclude) appGet()  {}
+func (appInclude) appList() {}
+func (a appInclude) applyQuery(v url.Values) { appendInclude(v, string(a)) }
+
+// Valid include values for apps (CF v3 3.222.0).
+const (
+	AppIncludeSpace             appInclude = "space"
+	AppIncludeSpaceOrganization appInclude = "space.organization"
+)
+
+// ---- routes ----
+
+// RouteGetOption configures GET /v3/routes/{guid}.
+type RouteGetOption interface {
+	QueryOption
+	routeGet()
+}
+
+// RouteListOption configures GET /v3/routes.
+type RouteListOption interface {
+	QueryOption
+	routeList()
+}
+
+type routeInclude string
+
+func (routeInclude) routeGet()  {}
+func (routeInclude) routeList() {}
+func (r routeInclude) applyQuery(v url.Values) { appendInclude(v, string(r)) }
+
+// Valid include values for routes (CF v3 3.222.0).
+const (
+	RouteIncludeDomain            routeInclude = "domain"
+	RouteIncludeSpace             routeInclude = "space"
+	RouteIncludeSpaceOrganization routeInclude = "space.organization"
+)
+
+// RouteDestinationsOption configures GET /v3/routes/{guid}/destinations.
+type RouteDestinationsOption interface {
+	QueryOption
+	routeDestinations()
+}
+
+type routeDestinationsScalar struct{ scalarOption }
+
+func (routeDestinationsScalar) routeDestinations() {}
+
+// WithDestinationGUIDs filters destinations by destination GUIDs.
+func WithDestinationGUIDs(guids ...string) RouteDestinationsOption {
+	return routeDestinationsScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+}
+
+// WithDestinationAppGUIDs filters destinations by app GUIDs.
+func WithDestinationAppGUIDs(guids ...string) RouteDestinationsOption {
+	return routeDestinationsScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+}
+
+// ---- spaces ----
+
+// SpaceGetOption configures GET /v3/spaces/{guid}.
+type SpaceGetOption interface {
+	QueryOption
+	spaceGet()
+}
+
+// SpaceListOption configures GET /v3/spaces.
+type SpaceListOption interface {
+	QueryOption
+	spaceList()
+}
+
+type spaceInclude string
+
+func (spaceInclude) spaceGet()  {}
+func (spaceInclude) spaceList() {}
+func (s spaceInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
+
+// Valid include value for spaces (CF v3 3.222.0): organization only.
+const SpaceIncludeOrganization spaceInclude = "organization"
+
+// ---- service credential bindings ----
+
+// ServiceCredentialBindingGetOption configures GET /v3/service_credential_bindings/{guid}.
+type ServiceCredentialBindingGetOption interface {
+	QueryOption
+	scbGet()
+}
+
+// ServiceCredentialBindingListOption configures GET /v3/service_credential_bindings.
+type ServiceCredentialBindingListOption interface {
+	QueryOption
+	scbList()
+}
+
+type scbInclude string
+
+func (scbInclude) scbGet()  {}
+func (scbInclude) scbList() {}
+func (s scbInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
+
+// Valid include values for service credential bindings (CF v3 3.222.0).
+const (
+	ServiceCredentialBindingIncludeApp             scbInclude = "app"
+	ServiceCredentialBindingIncludeServiceInstance scbInclude = "service_instance"
+)
+
+// ---- service plans ----
+
+// ServicePlanGetOption configures GET /v3/service_plans/{guid}.
+type ServicePlanGetOption interface {
+	QueryOption
+	servicePlanGet()
+}
+
+// ServicePlanListOption configures GET /v3/service_plans.
+type ServicePlanListOption interface {
+	QueryOption
+	servicePlanList()
+}
+
+type servicePlanInclude string
+
+func (servicePlanInclude) servicePlanGet()  {}
+func (servicePlanInclude) servicePlanList() {}
+func (s servicePlanInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
+
+// Valid include values for service plans (CF v3 3.222.0).
+const (
+	ServicePlanIncludeSpaceOrganization servicePlanInclude = "space.organization"
+	ServicePlanIncludeServiceOffering   servicePlanInclude = "service_offering"
+)
+
+// ServicePlanFieldsKey names a fields[...] selector for service plans.
+// VERIFY against 3.222.0 docs before release (model gap, see spec).
+type ServicePlanFieldsKey string
+
+// ServicePlanFieldsServiceOfferingServiceBroker selects fields of the
+// service offering's service broker related resource.
+const ServicePlanFieldsServiceOfferingServiceBroker ServicePlanFieldsKey = "service_offering.service_broker"
+
+type servicePlanFields struct{ fieldsOption }
+
+func (servicePlanFields) servicePlanGet()  {}
+func (servicePlanFields) servicePlanList() {}
+
+// WithServicePlanFields selects fields of a related resource.
+func WithServicePlanFields(key ServicePlanFieldsKey, fields ...string) ServicePlanGetOption {
+	return servicePlanFields{fieldsOption{string(key), fields}}
+}
+
+// ---- service route bindings ----
+
+// ServiceRouteBindingGetOption configures GET /v3/service_route_bindings/{guid}.
+type ServiceRouteBindingGetOption interface {
+	QueryOption
+	srbGet()
+}
+
+// ServiceRouteBindingListOption configures GET /v3/service_route_bindings.
+type ServiceRouteBindingListOption interface {
+	QueryOption
+	srbList()
+}
+
+type srbInclude string
+
+func (srbInclude) srbGet()  {}
+func (srbInclude) srbList() {}
+func (s srbInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
+
+// Valid include values for service route bindings (CF v3 3.222.0).
+const (
+	ServiceRouteBindingIncludeRoute           srbInclude = "route"
+	ServiceRouteBindingIncludeServiceInstance srbInclude = "service_instance"
+)
+
+// ---- processes ----
+
+// ProcessGetOption configures GET /v3/processes/{guid}.
+type ProcessGetOption interface {
+	QueryOption
+	processGet()
+}
+
+// ProcessListOption configures GET /v3/processes.
+type ProcessListOption interface {
+	QueryOption
+	processList()
+}
+
+type processEmbed string
+
+func (processEmbed) processGet()  {}
+func (processEmbed) processList() {}
+func (p processEmbed) applyQuery(v url.Values) { v.Set("embed", string(p)) }
+
+// ProcessEmbedInstances embeds process instance details (embed=process_instances).
+const ProcessEmbedInstances processEmbed = "process_instances"
+
+// ---- service instances ----
+
+// ServiceInstanceGetOption configures GET /v3/service_instances/{guid}.
+type ServiceInstanceGetOption interface {
+	QueryOption
+	serviceInstanceGet()
+}
+
+// ServiceInstanceListOption configures GET /v3/service_instances.
+type ServiceInstanceListOption interface {
+	QueryOption
+	serviceInstanceList()
+}
+
+// ServiceInstanceFieldsKey names a fields[...] selector for service instances.
+// VERIFY against 3.222.0 docs before release (model gap, see spec).
+type ServiceInstanceFieldsKey string
+
+// Valid fields[] keys for service instances (CF v3 3.222.0).
+const (
+	ServiceInstanceFieldsSpace                            ServiceInstanceFieldsKey = "space"
+	ServiceInstanceFieldsSpaceOrganization                ServiceInstanceFieldsKey = "space.organization"
+	ServiceInstanceFieldsServicePlan                      ServiceInstanceFieldsKey = "service_plan"
+	ServiceInstanceFieldsServicePlanServiceOffering       ServiceInstanceFieldsKey = "service_plan.service_offering"
+	ServiceInstanceFieldsServicePlanServiceOfferingBroker ServiceInstanceFieldsKey = "service_plan.service_offering.service_broker"
+)
+
+type serviceInstanceFields struct{ fieldsOption }
+
+func (serviceInstanceFields) serviceInstanceGet()  {}
+func (serviceInstanceFields) serviceInstanceList() {}
+
+// WithServiceInstanceFields selects fields of a related resource.
+func WithServiceInstanceFields(key ServiceInstanceFieldsKey, fields ...string) ServiceInstanceGetOption {
+	return serviceInstanceFields{fieldsOption{string(key), fields}}
+}
+
+// ---- service offerings ----
+
+// ServiceOfferingGetOption configures GET /v3/service_offerings/{guid}.
+type ServiceOfferingGetOption interface {
+	QueryOption
+	serviceOfferingGet()
+}
+
+// ServiceOfferingListOption configures GET /v3/service_offerings.
+type ServiceOfferingListOption interface {
+	QueryOption
+	serviceOfferingList()
+}
+
+// ServiceOfferingDeleteOption configures DELETE /v3/service_offerings/{guid}.
+type ServiceOfferingDeleteOption interface {
+	QueryOption
+	serviceOfferingDelete()
+}
+
+// ServiceOfferingFieldsKey names a fields[...] selector for service offerings.
+// VERIFY against 3.222.0 docs before release (model gap, see spec).
+type ServiceOfferingFieldsKey string
+
+// ServiceOfferingFieldsServiceBroker selects fields of the service broker
+// related resource.
+const ServiceOfferingFieldsServiceBroker ServiceOfferingFieldsKey = "service_broker"
+
+type serviceOfferingFields struct{ fieldsOption }
+
+func (serviceOfferingFields) serviceOfferingGet()  {}
+func (serviceOfferingFields) serviceOfferingList() {}
+
+// WithServiceOfferingFields selects fields of a related resource.
+func WithServiceOfferingFields(key ServiceOfferingFieldsKey, fields ...string) ServiceOfferingGetOption {
+	return serviceOfferingFields{fieldsOption{string(key), fields}}
+}
+
+type serviceOfferingPurge struct{ scalarOption }
+
+func (serviceOfferingPurge) serviceOfferingDelete() {}
+
+// PurgeServiceOffering deletes the offering and all associated records
+// from the database without broker interaction (?purge=true).
+var PurgeServiceOffering ServiceOfferingDeleteOption = serviceOfferingPurge{scalarOption{"purge", "true"}}
