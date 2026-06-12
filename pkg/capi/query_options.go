@@ -12,10 +12,12 @@ type QueryOption interface {
 	applyQuery(v url.Values)
 }
 
-// ApplyQueryOptions merges typed options into v, allocating v when nil and
-// options are present. Include-style options append (comma-joined, deduped);
-// scalar options overwrite, so a typed option wins over the same key from
-// QueryParams.
+// ApplyQueryOptions merges typed options into v and returns it. v is
+// mutated in place; when v is nil and options are present a new map is
+// allocated and returned (append-style semantics — use the return value).
+// Include options append to the comma-joined include parameter, skipping
+// duplicates; scalar options overwrite, so a typed option wins over the
+// same key set via QueryParams.
 func ApplyQueryOptions[O QueryOption](v url.Values, opts []O) url.Values {
 	if len(opts) == 0 {
 		return v
@@ -249,8 +251,8 @@ type ServicePlanGetListOption interface {
 	ServicePlanListOption
 }
 
-// ServicePlanFieldsKey names a fields[...] selector for service plans.
-// VERIFY against 3.222.0 docs before release (model gap, see spec).
+// ServicePlanFieldsKey names a fields[...] selector for service plans
+// (CF v3 fields parameter).
 type ServicePlanFieldsKey string
 
 // ServicePlanFieldsServiceOfferingServiceBroker selects fields of the
@@ -330,8 +332,8 @@ type ServiceInstanceListOption interface {
 	serviceInstanceList()
 }
 
-// ServiceInstanceFieldsKey names a fields[...] selector for service instances.
-// VERIFY against 3.222.0 docs before release (model gap, see spec).
+// ServiceInstanceFieldsKey names a fields[...] selector for service instances
+// (CF v3 fields parameter).
 type ServiceInstanceFieldsKey string
 
 // Valid fields[] keys for service instances (CF v3 3.222.0).
@@ -380,8 +382,8 @@ type ServiceOfferingDeleteOption interface {
 	serviceOfferingDelete()
 }
 
-// ServiceOfferingFieldsKey names a fields[...] selector for service offerings.
-// VERIFY against 3.222.0 docs before release (model gap, see spec).
+// ServiceOfferingFieldsKey names a fields[...] selector for service offerings
+// (CF v3 fields parameter).
 type ServiceOfferingFieldsKey string
 
 // ServiceOfferingFieldsServiceBroker selects fields of the service broker
