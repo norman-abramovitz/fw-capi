@@ -1425,6 +1425,9 @@ type ServiceCredentialBinding struct {
 	Metadata      *Metadata                              `json:"metadata,omitempty"       yaml:"metadata,omitempty"`
 	Relationships ServiceCredentialBindingRelationships  `json:"relationships"            yaml:"relationships"`
 	Links         Links                                  `json:"links,omitempty"          yaml:"links,omitempty"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *ServiceCredentialBindingIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // ServiceCredentialBindingLastOperation represents the last operation for a service credential binding.
@@ -1489,6 +1492,9 @@ type ServiceRouteBinding struct {
 	Metadata        *Metadata                         `json:"metadata,omitempty"          yaml:"metadata,omitempty"`
 	Relationships   ServiceRouteBindingRelationships  `json:"relationships"               yaml:"relationships"`
 	Links           Links                             `json:"links,omitempty"             yaml:"links,omitempty"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *ServiceRouteBindingIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // ServiceRouteBindingLastOperation represents the last operation for a service route binding.

@@ -561,3 +561,30 @@ func TestServiceCredentialBindingsClient_CreateForbidden(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, result)
 }
+
+func TestServiceCredentialBindingsClient_GetWithIncludes(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "app,service_instance", request.URL.Query().Get("include"))
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "binding-guid",
+		  "included": {
+		    "apps": [{"guid": "app-1"}],
+		    "service_instances": [{"guid": "si-1"}]
+		  }
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	bindings := NewServiceCredentialBindingsClient(httpClient)
+
+	binding, err := bindings.Get(context.Background(), "binding-guid",
+		capi.ServiceCredentialBindingIncludeApp, capi.ServiceCredentialBindingIncludeServiceInstance)
+	require.NoError(t, err)
+	require.NotNil(t, binding.Included)
+	assert.Equal(t, "app-1", binding.Included.Apps[0].GUID)
+	assert.Equal(t, "si-1", binding.Included.ServiceInstances[0].GUID)
+}

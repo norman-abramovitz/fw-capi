@@ -51,10 +51,10 @@ func (c *ServiceCredentialBindingsClient) Create(ctx context.Context, request *c
 }
 
 // Get retrieves a specific service credential binding.
-func (c *ServiceCredentialBindingsClient) Get(ctx context.Context, guid string) (*capi.ServiceCredentialBinding, error) {
+func (c *ServiceCredentialBindingsClient) Get(ctx context.Context, guid string, opts ...capi.ServiceCredentialBindingGetOption) (*capi.ServiceCredentialBinding, error) {
 	path := "/v3/service_credential_bindings/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting service credential binding: %w", err)
 	}
@@ -70,13 +70,15 @@ func (c *ServiceCredentialBindingsClient) Get(ctx context.Context, guid string) 
 }
 
 // List lists all service credential bindings.
-func (c *ServiceCredentialBindingsClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.ServiceCredentialBinding], error) {
+func (c *ServiceCredentialBindingsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ServiceCredentialBindingListOption) (*capi.ListResponse[capi.ServiceCredentialBinding], error) {
 	path := "/v3/service_credential_bindings"
 
 	var queryParams url.Values
 	if params != nil {
 		queryParams = params.ToValues()
 	}
+
+	queryParams = capi.ApplyQueryOptions(queryParams, opts)
 
 	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {
