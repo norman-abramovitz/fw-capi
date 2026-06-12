@@ -7,7 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Typed query options across resource clients, making every documented CF v3
+  query parameter on these endpoints expressible:
+  - Include constants for apps (`space`, `space.organization`), roles
+    (`user`, `space`, `organization`), routes (`domain`, `space`,
+    `space.organization`), spaces (`organization`), service plans
+    (`space.organization`, `service_offering`), service credential bindings
+    (`app`, `service_instance`), and service route bindings (`route`,
+    `service_instance`). `Get` accepts them directly
+    (`Roles().Get(ctx, guid, capi.RoleIncludeSpace)`); `List` accepts them
+    after `QueryParams`. Cross-resource misuse is a compile error.
+  - `fields[...]` selectors for service instances, service offerings, and
+    service plans (`capi.WithServiceInstanceFields(...)` etc.), usable on
+    both Get and List.
+  - `embed=process_instances` for processes (`capi.ProcessEmbedInstances`).
+  - Destination filters for `Routes().ListDestinations`
+    (`capi.WithDestinationGUIDs`, `capi.WithDestinationAppGUIDs`).
+  - `?purge=true` for `ServiceOfferings().Delete`
+    (`capi.PurgeServiceOffering`).
+- Typed access to `included` blocks: per-resource `XIncludedResources`
+  structs on single-resource responses (`role.Included.Spaces`) and
+  `capi.XIncludedFrom(list)` helpers decoding `ListResponse.Included` for
+  list responses. The raw `Included` map remains available as an escape
+  hatch for unmapped include types.
+- `IsolationSegmentsClient.ListOrganizations`/`ListSpaces` accept
+  `*QueryParams` (names/guids/paging filters per CF v3 docs).
+
+### Changed
+
+- **Breaking (interface implementers only)**: `Get`/`List` on the clients
+  listed above gained variadic option parameters, and
+  `ServiceOfferings().Delete` / isolation segment list methods changed
+  signature. Existing call sites compile unchanged for the variadic cases;
+  external mocks implementing these interfaces must be updated, and
+  isolation-segment list callers must pass params (or `nil`).
+
+### Known follow-ups
+
+- `fields[...]` valid keys were taken from the CF v3 3.222.0 docs and
+  verified at implementation time; live-CF verification is pending.
+- Process `embed` response typing and `service_instances` shared-spaces
+  `fields` support are deferred pending live wire capture.
+
 ### Fixed
+
+- `capi isolation-segments list-spaces` worked for the first time: the
+  command's internal type assertion never matched the concrete client
+  (dead code since the initial commit), so it always reported
+  "not supported". It now calls the typed client directly.
 
 - **Breaking/corrective**: `OrganizationQuotaApps` and `SpaceQuotaApps` had two fields
   with wrong names that were never valid against a real CF v3 API. A live CF rejects
