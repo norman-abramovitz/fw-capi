@@ -98,7 +98,6 @@ var (
 	ErrUnexpectedMockReturnType             = errors.New("unexpected return type from mock")
 	ErrClientNoIsolationSegmentsSupport     = errors.New("client does not support IsolationSegments")
 	ErrIsolationSegmentsNoRevokeSupport     = errors.New("IsolationSegments client does not support RevokeOrganization")
-	ErrIsolationSegmentsNoListSpacesSupport = errors.New("IsolationSegments client does not support ListSpaces")
 )
 
 // Service credential binding errors.
