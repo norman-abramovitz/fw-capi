@@ -133,6 +133,9 @@ type Space struct {
 	Name          string             `json:"name"               yaml:"name"`
 	Metadata      *Metadata          `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	Relationships SpaceRelationships `json:"relationships"      yaml:"relationships"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *SpaceIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // SpaceCreateRequest represents a request to create a space.

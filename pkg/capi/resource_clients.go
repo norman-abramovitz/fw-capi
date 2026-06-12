@@ -113,8 +113,8 @@ type OrganizationsClient interface {
 // SpaceCRUDClient provides basic CRUD operations for spaces.
 type SpaceCRUDClient interface {
 	Create(ctx context.Context, request *SpaceCreateRequest) (*Space, error)
-	Get(ctx context.Context, guid string) (*Space, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[Space], error)
+	Get(ctx context.Context, guid string, opts ...SpaceGetOption) (*Space, error)
+	List(ctx context.Context, params *QueryParams, opts ...SpaceListOption) (*ListResponse[Space], error)
 	Update(ctx context.Context, guid string, request *SpaceUpdateRequest) (*Space, error)
 	Delete(ctx context.Context, guid string) (*Job, error)
 }

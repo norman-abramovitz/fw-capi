@@ -40,10 +40,10 @@ func (c *SpacesClient) Create(ctx context.Context, request *capi.SpaceCreateRequ
 }
 
 // Get implements capi.SpacesClient.Get.
-func (c *SpacesClient) Get(ctx context.Context, guid string) (*capi.Space, error) {
+func (c *SpacesClient) Get(ctx context.Context, guid string, opts ...capi.SpaceGetOption) (*capi.Space, error) {
 	path := "/v3/spaces/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting space: %w", err)
 	}
@@ -59,11 +59,13 @@ func (c *SpacesClient) Get(ctx context.Context, guid string) (*capi.Space, error
 }
 
 // List implements capi.SpacesClient.List.
-func (c *SpacesClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.Space], error) {
+func (c *SpacesClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.SpaceListOption) (*capi.ListResponse[capi.Space], error) {
 	var query url.Values
 	if params != nil {
 		query = params.ToValues()
 	}
+
+	query = capi.ApplyQueryOptions(query, opts)
 
 	resp, err := c.httpClient.Get(ctx, "/v3/spaces", query)
 	if err != nil {
