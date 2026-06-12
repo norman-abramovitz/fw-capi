@@ -354,8 +354,8 @@ type PackagesClient interface {
 }
 
 type ProcessesClient interface {
-	Get(ctx context.Context, guid string) (*Process, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[Process], error)
+	Get(ctx context.Context, guid string, opts ...ProcessGetOption) (*Process, error)
+	List(ctx context.Context, params *QueryParams, opts ...ProcessListOption) (*ListResponse[Process], error)
 	Update(ctx context.Context, guid string, request *ProcessUpdateRequest) (*Process, error)
 	// Scale adjusts instances/memory/disk/log rate for a process. CF v3
 	// responds 202 + Location → /v3/jobs/{jobGuid}; the returned Job has
@@ -422,8 +422,8 @@ type IsolationSegmentsClient interface {
 	// Organization entitlements
 	EntitleOrganizations(ctx context.Context, guid string, orgGUIDs []string) (*ToManyRelationship, error)
 	RevokeOrganization(ctx context.Context, guid string, orgGUID string) error
-	ListOrganizations(ctx context.Context, guid string) (*ListResponse[Organization], error)
-	ListSpaces(ctx context.Context, guid string) (*ListResponse[Space], error)
+	ListOrganizations(ctx context.Context, guid string, params *QueryParams) (*ListResponse[Organization], error)
+	ListSpaces(ctx context.Context, guid string, params *QueryParams) (*ListResponse[Space], error)
 }
 
 // FeatureFlagsClient provides access to Feature Flags resources.

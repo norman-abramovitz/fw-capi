@@ -23,10 +23,12 @@ func NewProcessesClient(httpClient *http.Client) *ProcessesClient {
 }
 
 // Get retrieves a specific process by GUID.
-func (c *ProcessesClient) Get(ctx context.Context, guid string) (*capi.Process, error) {
+func (c *ProcessesClient) Get(ctx context.Context, guid string, opts ...capi.ProcessGetOption) (*capi.Process, error) {
 	path := "/v3/processes/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	query := capi.ApplyQueryOptions(nil, opts)
+
+	resp, err := c.httpClient.Get(ctx, path, query)
 	if err != nil {
 		return nil, fmt.Errorf("getting process: %w", err)
 	}
@@ -42,11 +44,13 @@ func (c *ProcessesClient) Get(ctx context.Context, guid string) (*capi.Process, 
 }
 
 // List retrieves all processes with optional filtering.
-func (c *ProcessesClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.Process], error) {
+func (c *ProcessesClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ProcessListOption) (*capi.ListResponse[capi.Process], error) {
 	var query url.Values
 	if params != nil {
 		query = params.ToValues()
 	}
+
+	query = capi.ApplyQueryOptions(query, opts)
 
 	resp, err := c.httpClient.Get(ctx, "/v3/processes", query)
 	if err != nil {
