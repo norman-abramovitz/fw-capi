@@ -87,17 +87,17 @@ var (
 
 // Client support errors.
 var (
-	ErrClientNoFeatureFlagsSupport          = errors.New("client does not support FeatureFlags")
-	ErrFeatureFlagsNoListSupport            = errors.New("FeatureFlags client does not support List")
-	ErrFeatureFlagsNoGetSupport             = errors.New("FeatureFlags client does not support Get")
-	ErrFeatureFlagsNoUpdateSupport          = errors.New("FeatureFlags client does not support Update")
-	ErrClientNotCAPIClient                  = errors.New("client is not a capi.Client")
-	ErrClientNoOrganizationsSupport         = errors.New("client does not support Organizations")
-	ErrOrganizationsNoListSupport           = errors.New("organizations client does not support List")
-	ErrOrganizationsNoGetSupport            = errors.New("organizations client does not support Get")
-	ErrUnexpectedMockReturnType             = errors.New("unexpected return type from mock")
-	ErrClientNoIsolationSegmentsSupport     = errors.New("client does not support IsolationSegments")
-	ErrIsolationSegmentsNoRevokeSupport     = errors.New("IsolationSegments client does not support RevokeOrganization")
+	ErrClientNoFeatureFlagsSupport      = errors.New("client does not support FeatureFlags")
+	ErrFeatureFlagsNoListSupport        = errors.New("FeatureFlags client does not support List")
+	ErrFeatureFlagsNoGetSupport         = errors.New("FeatureFlags client does not support Get")
+	ErrFeatureFlagsNoUpdateSupport      = errors.New("FeatureFlags client does not support Update")
+	ErrClientNotCAPIClient              = errors.New("client is not a capi.Client")
+	ErrClientNoOrganizationsSupport     = errors.New("client does not support Organizations")
+	ErrOrganizationsNoListSupport       = errors.New("organizations client does not support List")
+	ErrOrganizationsNoGetSupport        = errors.New("organizations client does not support Get")
+	ErrUnexpectedMockReturnType         = errors.New("unexpected return type from mock")
+	ErrClientNoIsolationSegmentsSupport = errors.New("client does not support IsolationSegments")
+	ErrIsolationSegmentsNoRevokeSupport = errors.New("IsolationSegments client does not support RevokeOrganization")
 )
 
 // Service credential binding errors.
