@@ -670,7 +670,7 @@ func runIsolationSegmentsListOrgs(cmd *cobra.Command, args []string) error {
 	}
 
 	// List organizations for isolation segment
-	orgs, err := client.IsolationSegments().ListOrganizations(ctx, segment.GUID)
+	orgs, err := client.IsolationSegments().ListOrganizations(ctx, segment.GUID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to list organizations for isolation segment: %w", err)
 	}

@@ -154,10 +154,15 @@ func (c *IsolationSegmentsClient) RevokeOrganization(ctx context.Context, guid s
 }
 
 // ListOrganizations implements capi.IsolationSegmentsClient.ListOrganizations.
-func (c *IsolationSegmentsClient) ListOrganizations(ctx context.Context, guid string) (*capi.ListResponse[capi.Organization], error) {
+func (c *IsolationSegmentsClient) ListOrganizations(ctx context.Context, guid string, params *capi.QueryParams) (*capi.ListResponse[capi.Organization], error) {
 	path := fmt.Sprintf("/v3/isolation_segments/%s/organizations", guid)
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	var queryParams url.Values
+	if params != nil {
+		queryParams = params.ToValues()
+	}
+
+	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("listing organizations for isolation segment: %w", err)
 	}
@@ -173,10 +178,15 @@ func (c *IsolationSegmentsClient) ListOrganizations(ctx context.Context, guid st
 }
 
 // ListSpaces implements capi.IsolationSegmentsClient.ListSpaces.
-func (c *IsolationSegmentsClient) ListSpaces(ctx context.Context, guid string) (*capi.ListResponse[capi.Space], error) {
+func (c *IsolationSegmentsClient) ListSpaces(ctx context.Context, guid string, params *capi.QueryParams) (*capi.ListResponse[capi.Space], error) {
 	path := fmt.Sprintf("/v3/isolation_segments/%s/relationships/spaces", guid)
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	var queryParams url.Values
+	if params != nil {
+		queryParams = params.ToValues()
+	}
+
+	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("listing spaces for isolation segment: %w", err)
 	}

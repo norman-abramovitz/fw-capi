@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
@@ -516,6 +517,24 @@ func TestProcessesClient_TerminateInstance(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessesClient_GetWithEmbed(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "process_instances", request.URL.Query().Get("embed"))
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"guid": "process-guid", "type": "web"}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	processes := NewProcessesClient(httpClient)
+
+	process, err := processes.Get(context.Background(), "process-guid", capi.ProcessEmbedInstances)
+	require.NoError(t, err)
+	assert.Equal(t, "process-guid", process.GUID)
 }
 
 // Helper functions.

@@ -351,7 +351,7 @@ func TestIsolationSegmentsClient_ListOrganizations(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	list, err := isolationSegments.ListOrganizations(context.Background(), "segment-guid")
+	list, err := isolationSegments.ListOrganizations(context.Background(), "segment-guid", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.Equal(t, 2, list.Pagination.TotalResults)
@@ -403,11 +403,32 @@ func TestIsolationSegmentsClient_ListSpaces(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	list, err := isolationSegments.ListSpaces(context.Background(), "segment-guid")
+	list, err := isolationSegments.ListSpaces(context.Background(), "segment-guid", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.Equal(t, 2, list.Pagination.TotalResults)
 	assert.Len(t, list.Resources, 2)
 	assert.Equal(t, "space1", list.Resources[0].Name)
 	assert.Equal(t, "space2", list.Resources[1].Name)
+}
+
+func TestIsolationSegmentsClient_ListOrganizationsWithParams(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/isolation_segments/iso-guid/organizations", request.URL.Path)
+		assert.Equal(t, "org-1,org-2", request.URL.Query().Get("guids"))
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"pagination": {"total_results": 0}, "resources": []}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	segments := NewIsolationSegmentsClient(httpClient)
+
+	params := capi.NewQueryParams()
+	params.Filters["guids"] = []string{"org-1", "org-2"}
+
+	_, err := segments.ListOrganizations(context.Background(), "iso-guid", params)
+	require.NoError(t, err)
 }
