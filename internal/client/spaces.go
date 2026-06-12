@@ -144,7 +144,12 @@ func (c *SpacesClient) SetIsolationSegment(ctx context.Context, guid string, iso
 		data = &capi.RelationshipData{GUID: isolationSegmentGUID}
 	}
 
-	body := capi.Relationship{Data: data}
+	// Explicit data key (no omitempty): unassigning requires the wire
+	// body {"data":null} — capi.Relationship would marshal nil data to
+	// {} and CF ignores it.
+	body := struct {
+		Data *capi.RelationshipData `json:"data"`
+	}{Data: data}
 
 	resp, err := c.httpClient.Patch(ctx, path, body)
 	if err != nil {
