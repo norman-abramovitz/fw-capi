@@ -23,10 +23,10 @@ func NewServicePlansClient(httpClient *http.Client) *ServicePlansClient {
 }
 
 // Get retrieves a specific service plan.
-func (c *ServicePlansClient) Get(ctx context.Context, guid string) (*capi.ServicePlan, error) {
+func (c *ServicePlansClient) Get(ctx context.Context, guid string, opts ...capi.ServicePlanGetOption) (*capi.ServicePlan, error) {
 	path := "/v3/service_plans/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting service plan: %w", err)
 	}
@@ -42,13 +42,15 @@ func (c *ServicePlansClient) Get(ctx context.Context, guid string) (*capi.Servic
 }
 
 // List lists all service plans.
-func (c *ServicePlansClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.ServicePlan], error) {
+func (c *ServicePlansClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ServicePlanListOption) (*capi.ListResponse[capi.ServicePlan], error) {
 	path := "/v3/service_plans"
 
 	var queryParams url.Values
 	if params != nil {
 		queryParams = params.ToValues()
 	}
+
+	queryParams = capi.ApplyQueryOptions(queryParams, opts)
 
 	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {
