@@ -12,6 +12,9 @@ type App struct {
 	Metadata             *Metadata              `json:"metadata,omitempty"              yaml:"metadata,omitempty"`
 	Relationships        AppRelationships       `json:"relationships"                   yaml:"relationships"`
 	EnvironmentVariables map[string]interface{} `json:"environment_variables,omitempty" yaml:"environment_variables,omitempty"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *AppIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // AppCreateRequest represents a request to create an app.

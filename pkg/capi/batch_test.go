@@ -596,7 +596,7 @@ func (m *MockAppsClient) Create(ctx context.Context, request *capi.AppCreateRequ
 	return result, nil
 }
 
-func (m *MockAppsClient) Get(ctx context.Context, guid string) (*capi.App, error) {
+func (m *MockAppsClient) Get(ctx context.Context, guid string, opts ...capi.AppGetOption) (*capi.App, error) {
 	args := m.Called(ctx, guid)
 	if args.Get(0) == nil {
 		err := args.Error(1)
@@ -619,7 +619,7 @@ func (m *MockAppsClient) Get(ctx context.Context, guid string) (*capi.App, error
 	return result, nil
 }
 
-func (m *MockAppsClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.App], error) {
+func (m *MockAppsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.AppListOption) (*capi.ListResponse[capi.App], error) {
 	args := m.Called(ctx, params)
 	if args.Get(0) == nil {
 		return nil, fmt.Errorf("list apps failed: %w", args.Error(1))

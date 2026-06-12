@@ -65,10 +65,10 @@ func (c *AppsClient) Create(ctx context.Context, request *capi.AppCreateRequest)
 }
 
 // Get implements capi.AppsClient.Get.
-func (c *AppsClient) Get(ctx context.Context, guid string) (*capi.App, error) {
+func (c *AppsClient) Get(ctx context.Context, guid string, opts ...capi.AppGetOption) (*capi.App, error) {
 	path := "/v3/apps/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting app: %w", err)
 	}
@@ -84,11 +84,13 @@ func (c *AppsClient) Get(ctx context.Context, guid string) (*capi.App, error) {
 }
 
 // List implements capi.AppsClient.List.
-func (c *AppsClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.App], error) {
+func (c *AppsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.AppListOption) (*capi.ListResponse[capi.App], error) {
 	var query url.Values
 	if params != nil {
 		query = params.ToValues()
 	}
+
+	query = capi.ApplyQueryOptions(query, opts)
 
 	resp, err := c.httpClient.Get(ctx, "/v3/apps", query)
 	if err != nil {

@@ -9,8 +9,8 @@ import (
 // AppCRUDClient provides basic CRUD operations for apps.
 type AppCRUDClient interface {
 	Create(ctx context.Context, request *AppCreateRequest) (*App, error)
-	Get(ctx context.Context, guid string) (*App, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[App], error)
+	Get(ctx context.Context, guid string, opts ...AppGetOption) (*App, error)
+	List(ctx context.Context, params *QueryParams, opts ...AppListOption) (*ListResponse[App], error)
 	Update(ctx context.Context, guid string, request *AppUpdateRequest) (*App, error)
 	// Delete issues DELETE /v3/apps/{guid}. CF v3 returns 202 Accepted with a
 	// Job resource describing the async deletion; callers poll Jobs().Get
