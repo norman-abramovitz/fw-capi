@@ -240,8 +240,8 @@ type ServiceOfferingsClient interface {
 
 // ServicePlansClient defines operations for service plans.
 type ServicePlansClient interface {
-	Get(ctx context.Context, guid string) (*ServicePlan, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[ServicePlan], error)
+	Get(ctx context.Context, guid string, opts ...ServicePlanGetOption) (*ServicePlan, error)
+	List(ctx context.Context, params *QueryParams, opts ...ServicePlanListOption) (*ListResponse[ServicePlan], error)
 	Update(ctx context.Context, guid string, request *ServicePlanUpdateRequest) (*ServicePlan, error)
 	Delete(ctx context.Context, guid string) error
 

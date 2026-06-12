@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
@@ -654,4 +655,33 @@ func TestServicePlansClient_RemoveOrgFromVisibility(t *testing.T) {
 
 	err = client.ServicePlans().RemoveOrgFromVisibility(context.Background(), "test-plan-guid", "org-guid")
 	require.NoError(t, err)
+}
+
+func TestServicePlansClient_GetWithIncludeAndFields(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "service_offering", request.URL.Query().Get("include"))
+		assert.Equal(t, "name", request.URL.Query().Get("fields[service_offering.service_broker]"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "plan-guid",
+		  "included": {
+		    "service_offerings": [{"guid": "offering-1"}],
+		    "service_brokers": [{"name": "broker-1"}]
+		  }
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	plans := NewServicePlansClient(httpClient)
+
+	plan, err := plans.Get(context.Background(), "plan-guid",
+		capi.ServicePlanIncludeServiceOffering,
+		capi.WithServicePlanFields(capi.ServicePlanFieldsServiceOfferingServiceBroker, "name"))
+	require.NoError(t, err)
+	require.NotNil(t, plan.Included)
+	assert.Equal(t, "offering-1", plan.Included.ServiceOfferings[0].GUID)
 }
