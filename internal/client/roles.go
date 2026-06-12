@@ -42,10 +42,10 @@ func (c *RolesClient) Create(ctx context.Context, request *capi.RoleCreateReques
 }
 
 // Get implements capi.RolesClient.Get.
-func (c *RolesClient) Get(ctx context.Context, guid string) (*capi.Role, error) {
+func (c *RolesClient) Get(ctx context.Context, guid string, opts ...capi.RoleGetOption) (*capi.Role, error) {
 	path := "/v3/roles/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting role: %w", err)
 	}
@@ -61,13 +61,15 @@ func (c *RolesClient) Get(ctx context.Context, guid string) (*capi.Role, error) 
 }
 
 // List implements capi.RolesClient.List.
-func (c *RolesClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.Role], error) {
+func (c *RolesClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.RoleListOption) (*capi.ListResponse[capi.Role], error) {
 	path := "/v3/roles"
 
 	var queryParams url.Values
 	if params != nil {
 		queryParams = params.ToValues()
 	}
+
+	queryParams = capi.ApplyQueryOptions(queryParams, opts)
 
 	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {

@@ -358,6 +358,9 @@ type Role struct {
 
 	Type          string            `json:"type"          yaml:"type"`
 	Relationships RoleRelationships `json:"relationships" yaml:"relationships"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *RoleIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
 }
 
 // RoleCreateRequest represents a request to create a role.

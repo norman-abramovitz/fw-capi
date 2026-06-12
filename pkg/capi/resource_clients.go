@@ -393,8 +393,8 @@ type UsersClient interface {
 
 type RolesClient interface {
 	Create(ctx context.Context, request *RoleCreateRequest) (*Role, error)
-	Get(ctx context.Context, guid string) (*Role, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[Role], error)
+	Get(ctx context.Context, guid string, opts ...RoleGetOption) (*Role, error)
+	List(ctx context.Context, params *QueryParams, opts ...RoleListOption) (*ListResponse[Role], error)
 	Delete(ctx context.Context, guid string) (*Job, error)
 }
 
