@@ -35,7 +35,7 @@ type RoleIncludedResources struct {
 	Organizations []Organization `json:"organizations,omitempty" yaml:"organizations,omitempty"`
 }
 
-// RoleIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// RoleIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func RoleIncludedFrom(list *ListResponse[Role]) (*RoleIncludedResources, error) {
 	out := &RoleIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -65,7 +65,7 @@ type AppIncludedResources struct {
 	Organizations []Organization `json:"organizations,omitempty" yaml:"organizations,omitempty"`
 }
 
-// AppIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// AppIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func AppIncludedFrom(list *ListResponse[App]) (*AppIncludedResources, error) {
 	out := &AppIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -92,7 +92,7 @@ type RouteIncludedResources struct {
 	Organizations []Organization `json:"organizations,omitempty" yaml:"organizations,omitempty"`
 }
 
-// RouteIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// RouteIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func RouteIncludedFrom(list *ListResponse[Route]) (*RouteIncludedResources, error) {
 	out := &RouteIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -116,7 +116,7 @@ func RouteIncludedFrom(list *ListResponse[Route]) (*RouteIncludedResources, erro
 	return out, nil
 }
 
-// SpaceIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// SpaceIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 // Populates the existing SpaceIncludedResources struct (defined in spaces.go).
 func SpaceIncludedFrom(list *ListResponse[Space]) (*SpaceIncludedResources, error) {
 	out := &SpaceIncludedResources{}
@@ -144,7 +144,7 @@ type ServiceCredentialBindingIncludedResources struct {
 	ServiceInstances []ServiceInstance `json:"service_instances,omitempty" yaml:"service_instances,omitempty"`
 }
 
-// ServiceCredentialBindingIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// ServiceCredentialBindingIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func ServiceCredentialBindingIncludedFrom(list *ListResponse[ServiceCredentialBinding]) (*ServiceCredentialBindingIncludedResources, error) {
 	out := &ServiceCredentialBindingIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -172,7 +172,7 @@ type ServicePlanIncludedResources struct {
 	ServiceBrokers   []ServiceBroker   `json:"service_brokers,omitempty"   yaml:"service_brokers,omitempty"`
 }
 
-// ServicePlanIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// ServicePlanIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func ServicePlanIncludedFrom(list *ListResponse[ServicePlan]) (*ServicePlanIncludedResources, error) {
 	out := &ServicePlanIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -207,7 +207,7 @@ type ServiceRouteBindingIncludedResources struct {
 	ServiceInstances []ServiceInstance `json:"service_instances,omitempty" yaml:"service_instances,omitempty"`
 }
 
-// ServiceRouteBindingIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// ServiceRouteBindingIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func ServiceRouteBindingIncludedFrom(list *ListResponse[ServiceRouteBinding]) (*ServiceRouteBindingIncludedResources, error) {
 	out := &ServiceRouteBindingIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -237,7 +237,7 @@ type ServiceInstanceIncludedResources struct {
 	ServiceBrokers   []ServiceBroker   `json:"service_brokers,omitempty"   yaml:"service_brokers,omitempty"`
 }
 
-// ServiceInstanceIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// ServiceInstanceIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func ServiceInstanceIncludedFrom(list *ListResponse[ServiceInstance]) (*ServiceInstanceIncludedResources, error) {
 	out := &ServiceInstanceIncludedResources{}
 	if list == nil || list.Included == nil {
@@ -275,7 +275,7 @@ type ServiceOfferingIncludedResources struct {
 	ServiceBrokers []ServiceBroker `json:"service_brokers,omitempty" yaml:"service_brokers,omitempty"`
 }
 
-// ServiceOfferingIncludedFrom decodes list.Included into typed slices. Nil-safe.
+// ServiceOfferingIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
 func ServiceOfferingIncludedFrom(list *ListResponse[ServiceOffering]) (*ServiceOfferingIncludedResources, error) {
 	out := &ServiceOfferingIncludedResources{}
 	if list == nil || list.Included == nil {
