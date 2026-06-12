@@ -237,3 +237,70 @@ func TestRolesClient_GetNotFound(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, role)
 }
+
+func TestRolesClient_GetWithIncludes(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/roles/role-guid", request.URL.Path)
+		assert.Equal(t, "space,organization", request.URL.Query().Get("include"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "role-guid",
+		  "type": "space_developer",
+		  "included": {
+		    "spaces": [{"guid": "space-1", "name": "dev"}],
+		    "organizations": [{"guid": "org-1", "name": "acme"}]
+		  }
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	roles := NewRolesClient(httpClient)
+
+	role, err := roles.Get(context.Background(), "role-guid",
+		capi.RoleIncludeSpace, capi.RoleIncludeOrganization)
+	require.NoError(t, err)
+	require.NotNil(t, role.Included)
+	assert.Equal(t, "space-1", role.Included.Spaces[0].GUID)
+	assert.Equal(t, "org-1", role.Included.Organizations[0].GUID)
+}
+
+func TestRolesClient_ListWithIncludes(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/roles", request.URL.Path)
+		assert.Equal(t, "space,organization", request.URL.Query().Get("include"))
+		assert.Equal(t, "user-1", request.URL.Query().Get("user_guids"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "pagination": {"total_results": 1, "total_pages": 1},
+		  "resources": [{"guid": "role-1", "type": "space_developer"}],
+		  "included": {
+		    "spaces": [{"guid": "space-1",
+		      "relationships": {"organization": {"data": {"guid": "org-1"}}}}],
+		    "organizations": [{"guid": "org-1", "name": "acme"}]
+		  }
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	roles := NewRolesClient(httpClient)
+
+	params := capi.NewQueryParams()
+	params.Filters["user_guids"] = []string{"user-1"}
+
+	list, err := roles.List(context.Background(), params,
+		capi.RoleIncludeSpace, capi.RoleIncludeOrganization)
+	require.NoError(t, err)
+
+	incl, err := capi.RoleIncludedFrom(list)
+	require.NoError(t, err)
+	require.NotNil(t, incl.Spaces[0].Relationships.Organization.Data)
+	assert.Equal(t, "org-1", incl.Spaces[0].Relationships.Organization.Data.GUID)
+}
