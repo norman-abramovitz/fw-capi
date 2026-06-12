@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -218,6 +219,37 @@ func TestSpacesClient_SetIsolationSegment(t *testing.T) {
 	}
 
 	RunRelationshipTests(t, tests)
+}
+
+// TestSpacesClient_SetIsolationSegment_Unassign asserts the raw wire
+// body for the unassign case: CF only reverts a space to its org's
+// default segment on an explicit {"data":null}; an empty object {} is
+// ignored. Decoding into capi.Relationship can't distinguish the two,
+// so this test reads the body verbatim.
+func TestSpacesClient_SetIsolationSegment_Unassign(t *testing.T) {
+	t.Parallel()
+
+	var rawBody string
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/spaces/space-guid/relationships/isolation_segment", request.URL.Path)
+		assert.Equal(t, "PATCH", request.Method)
+
+		body, _ := io.ReadAll(request.Body)
+		rawBody = string(body)
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"data":null}`))
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	rel, err := client.Spaces().SetIsolationSegment(context.Background(), "space-guid", "")
+	require.NoError(t, err)
+	assert.Nil(t, rel.Data)
+	assert.JSONEq(t, `{"data":null}`, rawBody)
 }
 
 func TestSpacesClient_ListUsers(t *testing.T) {

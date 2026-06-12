@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -236,4 +237,35 @@ func TestOrganizationsClient_ListUsers(t *testing.T) {
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "user1", result.Resources[0].Username)
 	assert.Equal(t, "user2", result.Resources[1].Username)
+}
+
+// TestOrganizationsClient_SetDefaultIsolationSegment_Unassign asserts
+// the raw wire body for the unassign case: CF only clears an org's
+// default segment on an explicit {"data":null}; an empty object {} is
+// ignored. Decoding into capi.Relationship can't distinguish the two,
+// so this test reads the body verbatim.
+func TestOrganizationsClient_SetDefaultIsolationSegment_Unassign(t *testing.T) {
+	t.Parallel()
+
+	var rawBody string
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/organizations/org-guid/relationships/default_isolation_segment", request.URL.Path)
+		assert.Equal(t, "PATCH", request.Method)
+
+		body, _ := io.ReadAll(request.Body)
+		rawBody = string(body)
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"data":null}`))
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	rel, err := client.Organizations().SetDefaultIsolationSegment(context.Background(), "org-guid", "")
+	require.NoError(t, err)
+	assert.Nil(t, rel.Data)
+	assert.JSONEq(t, `{"data":null}`, rawBody)
 }
