@@ -66,8 +66,8 @@ type RoleListOption interface {
 
 type roleInclude string
 
-func (roleInclude) roleGet()  {}
-func (roleInclude) roleList() {}
+func (roleInclude) roleGet()                  {}
+func (roleInclude) roleList()                 {}
 func (r roleInclude) applyQuery(v url.Values) { appendInclude(v, string(r)) }
 
 // Valid include values for roles (CF v3 3.222.0).
@@ -112,8 +112,8 @@ type AppListOption interface {
 
 type appInclude string
 
-func (appInclude) appGet()  {}
-func (appInclude) appList() {}
+func (appInclude) appGet()                   {}
+func (appInclude) appList()                  {}
 func (a appInclude) applyQuery(v url.Values) { appendInclude(v, string(a)) }
 
 // Valid include values for apps (CF v3 3.222.0).
@@ -138,8 +138,8 @@ type RouteListOption interface {
 
 type routeInclude string
 
-func (routeInclude) routeGet()  {}
-func (routeInclude) routeList() {}
+func (routeInclude) routeGet()                 {}
+func (routeInclude) routeList()                {}
 func (r routeInclude) applyQuery(v url.Values) { appendInclude(v, string(r)) }
 
 // Valid include values for routes (CF v3 3.222.0).
@@ -185,8 +185,8 @@ type SpaceListOption interface {
 
 type spaceInclude string
 
-func (spaceInclude) spaceGet()  {}
-func (spaceInclude) spaceList() {}
+func (spaceInclude) spaceGet()                 {}
+func (spaceInclude) spaceList()                {}
 func (s spaceInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
 
 // Valid include value for spaces (CF v3 3.222.0): organization only.
@@ -208,8 +208,8 @@ type ServiceCredentialBindingListOption interface {
 
 type scbInclude string
 
-func (scbInclude) scbGet()  {}
-func (scbInclude) scbList() {}
+func (scbInclude) scbGet()                   {}
+func (scbInclude) scbList()                  {}
 func (s scbInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
 
 // Valid include values for service credential bindings (CF v3 3.222.0).
@@ -234,8 +234,8 @@ type ServicePlanListOption interface {
 
 type servicePlanInclude string
 
-func (servicePlanInclude) servicePlanGet()  {}
-func (servicePlanInclude) servicePlanList() {}
+func (servicePlanInclude) servicePlanGet()           {}
+func (servicePlanInclude) servicePlanList()          {}
 func (s servicePlanInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
 
 // Valid include values for service plans (CF v3 3.222.0).
@@ -285,8 +285,8 @@ type ServiceRouteBindingListOption interface {
 
 type srbInclude string
 
-func (srbInclude) srbGet()  {}
-func (srbInclude) srbList() {}
+func (srbInclude) srbGet()                   {}
+func (srbInclude) srbList()                  {}
 func (s srbInclude) applyQuery(v url.Values) { appendInclude(v, string(s)) }
 
 // Valid include values for service route bindings (CF v3 3.222.0).
@@ -311,8 +311,8 @@ type ProcessListOption interface {
 
 type processEmbed string
 
-func (processEmbed) processGet()  {}
-func (processEmbed) processList() {}
+func (processEmbed) processGet()               {}
+func (processEmbed) processList()              {}
 func (p processEmbed) applyQuery(v url.Values) { v.Set("embed", string(p)) }
 
 // ProcessEmbedInstances embeds process instance details (embed=process_instances).
