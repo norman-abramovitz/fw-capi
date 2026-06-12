@@ -50,10 +50,10 @@ func (c *ServiceRouteBindingsClient) Create(ctx context.Context, request *capi.S
 }
 
 // Get implements capi.ServiceRouteBindingsClient.Get.
-func (c *ServiceRouteBindingsClient) Get(ctx context.Context, guid string) (*capi.ServiceRouteBinding, error) {
+func (c *ServiceRouteBindingsClient) Get(ctx context.Context, guid string, opts ...capi.ServiceRouteBindingGetOption) (*capi.ServiceRouteBinding, error) {
 	path := "/v3/service_route_bindings/" + guid
 
-	resp, err := c.httpClient.Get(ctx, path, nil)
+	resp, err := c.httpClient.Get(ctx, path, capi.ApplyQueryOptions(nil, opts))
 	if err != nil {
 		return nil, fmt.Errorf("getting service route binding: %w", err)
 	}
@@ -69,13 +69,15 @@ func (c *ServiceRouteBindingsClient) Get(ctx context.Context, guid string) (*cap
 }
 
 // List implements capi.ServiceRouteBindingsClient.List.
-func (c *ServiceRouteBindingsClient) List(ctx context.Context, params *capi.QueryParams) (*capi.ListResponse[capi.ServiceRouteBinding], error) {
+func (c *ServiceRouteBindingsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ServiceRouteBindingListOption) (*capi.ListResponse[capi.ServiceRouteBinding], error) {
 	path := "/v3/service_route_bindings"
 
 	var queryParams url.Values
 	if params != nil {
 		queryParams = params.ToValues()
 	}
+
+	queryParams = capi.ApplyQueryOptions(queryParams, opts)
 
 	resp, err := c.httpClient.Get(ctx, path, queryParams)
 	if err != nil {

@@ -272,8 +272,8 @@ type ServiceInstancesClient interface {
 // ServiceCredentialBindingsClient provides operations for Service Credential Bindings (v3 name for service bindings).
 type ServiceCredentialBindingsClient interface {
 	Create(ctx context.Context, request *ServiceCredentialBindingCreateRequest) (interface{}, error) // Returns *ServiceCredentialBinding or *Job
-	Get(ctx context.Context, guid string) (*ServiceCredentialBinding, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[ServiceCredentialBinding], error)
+	Get(ctx context.Context, guid string, opts ...ServiceCredentialBindingGetOption) (*ServiceCredentialBinding, error)
+	List(ctx context.Context, params *QueryParams, opts ...ServiceCredentialBindingListOption) (*ListResponse[ServiceCredentialBinding], error)
 	Update(ctx context.Context, guid string, request *ServiceCredentialBindingUpdateRequest) (*ServiceCredentialBinding, error)
 	Delete(ctx context.Context, guid string) (*Job, error)
 	GetDetails(ctx context.Context, guid string) (*ServiceCredentialBindingDetails, error)
@@ -286,8 +286,8 @@ type ServiceBindingsClient = ServiceCredentialBindingsClient
 // ServiceRouteBindingsClient defines operations for service route bindings.
 type ServiceRouteBindingsClient interface {
 	Create(ctx context.Context, request *ServiceRouteBindingCreateRequest) (interface{}, error) // Returns *ServiceRouteBinding or *Job
-	Get(ctx context.Context, guid string) (*ServiceRouteBinding, error)
-	List(ctx context.Context, params *QueryParams) (*ListResponse[ServiceRouteBinding], error)
+	Get(ctx context.Context, guid string, opts ...ServiceRouteBindingGetOption) (*ServiceRouteBinding, error)
+	List(ctx context.Context, params *QueryParams, opts ...ServiceRouteBindingListOption) (*ListResponse[ServiceRouteBinding], error)
 	Update(ctx context.Context, guid string, request *ServiceRouteBindingUpdateRequest) (*ServiceRouteBinding, error)
 	Delete(ctx context.Context, guid string) (*Job, error)
 	GetParameters(ctx context.Context, guid string) (*ServiceRouteBindingParameters, error)
