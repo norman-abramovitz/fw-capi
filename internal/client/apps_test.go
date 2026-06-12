@@ -9,6 +9,7 @@ import (
 	"time"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -491,4 +492,33 @@ func TestAppsClient_GetManifest(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, manifest, "name: test-app")
 	assert.Contains(t, manifest, "memory: 512M")
+}
+
+func TestAppsClient_GetWithIncludes(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/apps/app-guid", request.URL.Path)
+		assert.Equal(t, "space,space.organization", request.URL.Query().Get("include"))
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "app-guid", "name": "web",
+		  "included": {
+		    "spaces": [{"guid": "space-1", "name": "dev"}],
+		    "organizations": [{"guid": "org-1", "name": "acme"}]
+		  }
+		}`))
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	apps := NewAppsClient(httpClient)
+
+	app, err := apps.Get(context.Background(), "app-guid",
+		capi.AppIncludeSpace, capi.AppIncludeSpaceOrganization)
+	require.NoError(t, err)
+	require.NotNil(t, app.Included)
+	assert.Equal(t, "space-1", app.Included.Spaces[0].GUID)
+	assert.Equal(t, "org-1", app.Included.Organizations[0].GUID)
 }
