@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -55,6 +56,104 @@ func TestSpaceQuotasClient_Create(t *testing.T) {
 			assert.Equal(t, 512, *quota.Apps.TotalMemoryInMB)
 		},
 	)
+}
+
+// TestSpaceQuotaRelationships_SpacesOmittedWhenEmpty asserts that when no
+// Spaces are provided in SpaceQuotaRelationships the "spaces" key is absent
+// from the serialized JSON (CF v3 treats spaces as optional on create and
+// rejects a null data payload with 422).
+func TestSpaceQuotaRelationships_SpacesOmittedWhenEmpty(t *testing.T) {
+	t.Parallel()
+
+	var capturedBody []byte
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/space_quotas", request.URL.Path)
+		assert.Equal(t, "POST", request.Method)
+
+		var err error
+		capturedBody, err = io.ReadAll(request.Body)
+		require.NoError(t, err)
+
+		quota := capi.SpaceQuotaV3{
+			Resource: capi.Resource{GUID: "quota-guid"},
+			Name:     "no-spaces-quota",
+		}
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(writer).Encode(quota)
+	}))
+	defer server.Close()
+
+	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	_, err = c.SpaceQuotas().Create(context.Background(), &capi.SpaceQuotaV3CreateRequest{
+		Name: "no-spaces-quota",
+		Relationships: capi.SpaceQuotaRelationships{
+			Organization: capi.Relationship{
+				Data: &capi.RelationshipData{GUID: "org-guid"},
+			},
+			// Spaces intentionally omitted
+		},
+	})
+	require.NoError(t, err)
+
+	var body map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(capturedBody, &body))
+
+	var rels map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(body["relationships"], &rels))
+
+	assert.Contains(t, rels, "organization", "organization must be present in relationships")
+	assert.NotContains(t, rels, "spaces", "spaces must be absent from relationships when not provided")
+}
+
+// TestSpaceQuotaRelationships_SpacesPresentWhenProvided asserts that when
+// Spaces are explicitly provided they are serialized into the request body.
+func TestSpaceQuotaRelationships_SpacesPresentWhenProvided(t *testing.T) {
+	t.Parallel()
+
+	var capturedBody []byte
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var err error
+		capturedBody, err = io.ReadAll(request.Body)
+		require.NoError(t, err)
+
+		quota := capi.SpaceQuotaV3{
+			Resource: capi.Resource{GUID: "quota-guid"},
+			Name:     "with-spaces-quota",
+		}
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(writer).Encode(quota)
+	}))
+	defer server.Close()
+
+	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	_, err = c.SpaceQuotas().Create(context.Background(), &capi.SpaceQuotaV3CreateRequest{
+		Name: "with-spaces-quota",
+		Relationships: capi.SpaceQuotaRelationships{
+			Organization: capi.Relationship{
+				Data: &capi.RelationshipData{GUID: "org-guid"},
+			},
+			Spaces: &capi.ToManyRelationship{
+				Data: []capi.RelationshipData{{GUID: "space-1"}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	var body map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(capturedBody, &body))
+
+	var rels map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(body["relationships"], &rels))
+
+	assert.Contains(t, rels, "spaces", "spaces must be present in relationships when provided")
 }
 
 func TestSpaceQuotasClient_Get(t *testing.T) {

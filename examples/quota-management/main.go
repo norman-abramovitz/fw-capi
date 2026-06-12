@@ -265,9 +265,6 @@ func createDemoSpaceQuota(ctx context.Context, client capi.Client, orgGUID strin
 			Organization: capi.Relationship{
 				Data: &capi.RelationshipData{GUID: orgGUID},
 			},
-			Spaces: capi.ToManyRelationship{
-				Data: []capi.RelationshipData{},
-			},
 		},
 		Apps: &capi.SpaceQuotaApps{
 			TotalMemoryInMB:              &totalMemory,

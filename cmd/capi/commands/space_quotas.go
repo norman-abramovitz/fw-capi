@@ -428,9 +428,6 @@ func buildSpaceQuotaCreateRequest(cmd *cobra.Command, config *spaceQuotaCreateCo
 			Organization: capi.Relationship{
 				Data: &capi.RelationshipData{GUID: orgGUID},
 			},
-			Spaces: capi.ToManyRelationship{
-				Data: []capi.RelationshipData{},
-			},
 		},
 	}
 

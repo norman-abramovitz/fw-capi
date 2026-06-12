@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   implementations discarded the header, leaving callers unable to poll for completion.
   Interfaces, impls, tests, CLI call sites, and examples updated in lockstep.
 
+- `SpaceQuotaRelationships.Spaces` is now `*ToManyRelationship` with
+  `omitempty` so that creating a space quota without pre-assigned spaces no
+  longer serializes `"spaces":{"data":null}`, which caused CF to reject the
+  request with a 422 "Relationships Spaces must be structured like this" error.
+  `relationships.spaces` is optional per CF v3 API docs.
+
 ## [3.216.4] - 2026-04-24
 
 ### Removed

@@ -1662,8 +1662,8 @@ type SpaceQuotaRoutes struct {
 
 // SpaceQuotaRelationships represents space quota relationships.
 type SpaceQuotaRelationships struct {
-	Organization Relationship       `json:"organization" yaml:"organization"`
-	Spaces       ToManyRelationship `json:"spaces"       yaml:"spaces"`
+	Organization Relationship        `json:"organization"       yaml:"organization"`
+	Spaces       *ToManyRelationship `json:"spaces,omitempty"   yaml:"spaces,omitempty"`
 }
 
 // SpaceQuotaV3CreateRequest represents a request to create a space quota.
