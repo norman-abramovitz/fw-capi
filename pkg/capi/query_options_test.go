@@ -114,3 +114,20 @@ func TestFieldsOptions_UsableInListCalls(t *testing.T) {
 	})
 	assert.Equal(t, "name", v.Get("fields[service_broker]"))
 }
+
+func TestApplyQueryOptions_ScalarOverwritesExistingKey(t *testing.T) {
+	t.Parallel()
+	v := url.Values{"purge": {"false"}}
+	v = capi.ApplyQueryOptions(v, []capi.ServiceOfferingDeleteOption{capi.PurgeServiceOffering})
+	assert.Equal(t, "true", v.Get("purge"))
+	assert.Len(t, v["purge"], 1)
+}
+
+func TestApplyQueryOptions_MutatesInPlace(t *testing.T) {
+	t.Parallel()
+	base := url.Values{"page": {"2"}}
+	returned := capi.ApplyQueryOptions(base, []capi.RoleListOption{capi.RoleIncludeSpace})
+	// append-style: non-nil input is mutated and aliased by the return
+	assert.Equal(t, "space", base.Get("include"))
+	assert.Equal(t, "space", returned.Get("include"))
+}
