@@ -755,12 +755,12 @@ func newSpaceQuotasDeleteCommand() *cobra.Command {
 				return nil, constants.ErrInvalidClientType
 			}
 
-			err := capiClient.SpaceQuotas().Delete(ctx, guid)
+			job, err := capiClient.SpaceQuotas().Delete(ctx, guid)
 			if err != nil {
 				return nil, fmt.Errorf("failed to delete space quota: %w", err)
 			}
 
-			return nil, nil
+			return &job.GUID, nil
 		},
 	}
 

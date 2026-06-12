@@ -107,16 +107,20 @@ func (c *PackagesClient) Update(ctx context.Context, guid string, request *capi.
 	return &pkg, nil
 }
 
-// Delete deletes a package.
-func (c *PackagesClient) Delete(ctx context.Context, guid string) error {
+// Delete issues DELETE /v3/packages/{guid}. CF v3 returns 202 Accepted with a
+// Location header pointing at /v3/jobs/{jobGuid}. We extract the job GUID from
+// the header and return a Job with its GUID populated; callers use Jobs().Get
+// or Jobs().PollUntilComplete for full state. Same pattern as Apps().Delete
+// and Roles().Delete.
+func (c *PackagesClient) Delete(ctx context.Context, guid string) (*capi.Job, error) {
 	path := "/v3/packages/" + guid
 
-	_, err := c.httpClient.Delete(ctx, path)
+	resp, err := c.httpClient.Delete(ctx, path)
 	if err != nil {
-		return fmt.Errorf("deleting package: %w", err)
+		return nil, fmt.Errorf("deleting package: %w", err)
 	}
 
-	return nil
+	return jobFromLocationHeader(resp, "deleting package")
 }
 
 // Upload uploads bits to a package.

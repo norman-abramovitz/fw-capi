@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
@@ -349,42 +350,40 @@ func TestDropletsClient_Update(t *testing.T) {
 		})
 }
 
+// TestDropletsClient_Delete verifies that DELETE /v3/droplets/{guid} returns a
+// *Job populated from the Location header (CF v3 async contract: 202 + Location).
 func TestDropletsClient_Delete(t *testing.T) {
 	t.Parallel()
 
-	tests := []TestDeleteOperation{
-		{
-			Name:         "successful delete",
-			GUID:         "test-droplet-guid",
-			ExpectedPath: "/v3/droplets/test-droplet-guid",
-			StatusCode:   http.StatusAccepted,
-			WantErr:      false,
+	RunJobDeleteTest(t, "droplet delete", "/v3/droplets/test-droplet-guid", "droplet.delete",
+		func(httpClient *internalhttp.Client) interface{} {
+			return NewDropletsClient(httpClient)
 		},
-		{
-			Name:         "droplet not found",
-			GUID:         "non-existent-guid",
-			ExpectedPath: "/v3/droplets/non-existent-guid",
-			StatusCode:   http.StatusNotFound,
-			WantErr:      true,
-			ErrMessage:   "CF-ResourceNotFound",
-			Response: map[string]interface{}{
-				"errors": []map[string]interface{}{
-					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Droplet not found",
-					},
-				},
-			},
+		func(client interface{}) (*capi.Job, error) {
+			return client.(*DropletsClient).Delete(context.Background(), "test-droplet-guid")
 		},
-	}
+	)
+}
 
-	RunDeleteTests(t, tests, func(serverURL string, ctx context.Context, guid string) error {
-		client, err := New(ctx, &capi.Config{APIEndpoint: serverURL})
-		require.NoError(t, err)
+// TestDropletsClient_DeleteMissingLocation pins the failure mode when CF returns
+// 202 without a Location header — must error rather than return a nil-GUID Job.
+func TestDropletsClient_DeleteMissingLocation(t *testing.T) {
+	t.Parallel()
 
-		return client.Droplets().Delete(ctx, guid)
-	})
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/droplets/test-droplet-guid", request.URL.Path)
+		assert.Equal(t, "DELETE", request.Method)
+
+		writer.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	client := NewDropletsClient(httpClient)
+
+	job, err := client.Delete(context.Background(), "test-droplet-guid")
+	require.Error(t, err)
+	assert.Nil(t, job)
 }
 
 func TestDropletsClient_Copy(t *testing.T) {

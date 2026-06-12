@@ -212,14 +212,14 @@ func buildOrgQuotaUpdateRequest() *capi.OrganizationQuotaUpdateRequest {
 func cleanupOrgQuota(ctx context.Context, client capi.Client, quota *capi.OrganizationQuota) {
 	log.Println("\n   Cleaning up - deleting demo quota...")
 
-	err := client.OrganizationQuotas().Delete(ctx, quota.GUID)
+	job, err := client.OrganizationQuotas().Delete(ctx, quota.GUID)
 	if err != nil {
 		log.Printf("   Failed to delete organization quota: %v", err)
 
 		return
 	}
 
-	log.Printf("   Deleted quota: %s\n", quota.Name)
+	log.Printf("   Deleted quota: %s (job: %s)\n", quota.Name, job.GUID)
 }
 
 func findOrganizationForSpaceQuota(ctx context.Context, client capi.Client) (string, string, error) {
@@ -316,12 +316,12 @@ func showSpaceQuotaDetails(ctx context.Context, client capi.Client, spaceQuotaGU
 func cleanupSpaceQuota(ctx context.Context, client capi.Client, spaceQuota *capi.SpaceQuotaV3) error {
 	log.Println("\n   Cleaning up - deleting demo space quota...")
 
-	err := client.SpaceQuotas().Delete(ctx, spaceQuota.GUID)
+	job, err := client.SpaceQuotas().Delete(ctx, spaceQuota.GUID)
 	if err != nil {
 		return fmt.Errorf("failed to delete space quota: %w", err)
 	}
 
-	log.Printf("   Deleted space quota: %s\n", spaceQuota.Name)
+	log.Printf("   Deleted space quota: %s (job: %s)\n", spaceQuota.Name, job.GUID)
 
 	return nil
 }

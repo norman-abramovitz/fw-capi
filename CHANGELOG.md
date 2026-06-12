@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `DropletsClient.Delete`, `PackagesClient.Delete`, `OrganizationQuotasClient.Delete`,
+  and `SpaceQuotasClient.Delete` now return `(*Job, error)` instead of bare `error`.
+  CF v3 DELETE endpoints for these resources are async: 202 Accepted with an empty
+  body and the job reference in the `Location` header (`/v3/jobs/{guid}`). The prior
+  implementations discarded the header, leaving callers unable to poll for completion.
+  Interfaces, impls, tests, CLI call sites, and examples updated in lockstep.
+
 ## [3.216.4] - 2026-04-24
 
 ### Removed

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
@@ -399,42 +400,40 @@ func TestPackagesClient_Update(t *testing.T) {
 	assert.Equal(t, "1.0.0", pkg.Metadata.Annotations["version"])
 }
 
+// TestPackagesClient_Delete verifies that DELETE /v3/packages/{guid} returns a
+// *Job populated from the Location header (CF v3 async contract: 202 + Location).
 func TestPackagesClient_Delete(t *testing.T) {
 	t.Parallel()
 
-	tests := []TestDeleteOperation{
-		{
-			Name:         "successful delete",
-			GUID:         "test-package-guid",
-			ExpectedPath: "/v3/packages/test-package-guid",
-			StatusCode:   http.StatusAccepted,
-			WantErr:      false,
+	RunJobDeleteTest(t, "package delete", "/v3/packages/test-package-guid", "package.delete",
+		func(httpClient *internalhttp.Client) interface{} {
+			return NewPackagesClient(httpClient)
 		},
-		{
-			Name:         "package not found",
-			GUID:         "non-existent-guid",
-			ExpectedPath: "/v3/packages/non-existent-guid",
-			StatusCode:   http.StatusNotFound,
-			WantErr:      true,
-			ErrMessage:   "CF-ResourceNotFound",
-			Response: map[string]interface{}{
-				"errors": []map[string]interface{}{
-					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Package not found",
-					},
-				},
-			},
+		func(client interface{}) (*capi.Job, error) {
+			return client.(*PackagesClient).Delete(context.Background(), "test-package-guid")
 		},
-	}
+	)
+}
 
-	RunDeleteTests(t, tests, func(serverURL string, ctx context.Context, guid string) error {
-		client, err := New(ctx, &capi.Config{APIEndpoint: serverURL})
-		require.NoError(t, err)
+// TestPackagesClient_DeleteMissingLocation pins the failure mode when CF returns
+// 202 without a Location header — must error rather than return a nil-GUID Job.
+func TestPackagesClient_DeleteMissingLocation(t *testing.T) {
+	t.Parallel()
 
-		return client.Packages().Delete(ctx, guid)
-	})
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/packages/test-package-guid", request.URL.Path)
+		assert.Equal(t, "DELETE", request.Method)
+
+		writer.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	client := NewPackagesClient(httpClient)
+
+	job, err := client.Delete(context.Background(), "test-package-guid")
+	require.Error(t, err)
+	assert.Nil(t, job)
 }
 
 func TestPackagesClient_Upload(t *testing.T) {

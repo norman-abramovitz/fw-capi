@@ -99,16 +99,20 @@ func (c *OrganizationQuotasClient) Update(ctx context.Context, guid string, requ
 	return &quota, nil
 }
 
-// Delete implements capi.OrganizationQuotasClient.Delete.
-func (c *OrganizationQuotasClient) Delete(ctx context.Context, guid string) error {
+// Delete issues DELETE /v3/organization_quotas/{guid}. CF v3 returns 202 Accepted
+// with a Location header pointing at /v3/jobs/{jobGuid}. We extract the job GUID
+// from the header and return a Job with its GUID populated; callers use Jobs().Get
+// or Jobs().PollUntilComplete for full state. Same pattern as Apps().Delete and
+// Roles().Delete.
+func (c *OrganizationQuotasClient) Delete(ctx context.Context, guid string) (*capi.Job, error) {
 	path := "/v3/organization_quotas/" + guid
 
-	_, err := c.httpClient.Delete(ctx, path)
+	resp, err := c.httpClient.Delete(ctx, path)
 	if err != nil {
-		return fmt.Errorf("deleting organization quota: %w", err)
+		return nil, fmt.Errorf("deleting organization quota: %w", err)
 	}
 
-	return nil
+	return jobFromLocationHeader(resp, "deleting organization quota")
 }
 
 // ApplyToOrganizations implements capi.OrganizationQuotasClient.ApplyToOrganizations.

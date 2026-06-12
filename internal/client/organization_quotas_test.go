@@ -9,6 +9,7 @@ import (
 	"time"
 
 	. "github.com/fivetwenty-io/capi/v3/internal/client"
+	internalhttp "github.com/fivetwenty-io/capi/v3/internal/http"
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -158,22 +159,40 @@ func TestOrganizationQuotasClient_Update(t *testing.T) {
 	})
 }
 
+// TestOrganizationQuotasClient_Delete verifies that DELETE /v3/organization_quotas/{guid}
+// returns a *Job populated from the Location header (CF v3 async contract: 202 + Location).
 func TestOrganizationQuotasClient_Delete(t *testing.T) {
+	t.Parallel()
+
+	RunJobDeleteTest(t, "organization quota delete", "/v3/organization_quotas/quota-guid", "organization_quota.delete",
+		func(httpClient *internalhttp.Client) interface{} {
+			return NewOrganizationQuotasClient(httpClient)
+		},
+		func(client interface{}) (*capi.Job, error) {
+			return client.(*OrganizationQuotasClient).Delete(context.Background(), "quota-guid")
+		},
+	)
+}
+
+// TestOrganizationQuotasClient_DeleteMissingLocation pins the failure mode when CF
+// returns 202 without a Location header — must error rather than return a nil-GUID Job.
+func TestOrganizationQuotasClient_DeleteMissingLocation(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/organization_quotas/quota-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
-		writer.WriteHeader(http.StatusNoContent)
+		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
 
-	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
-	require.NoError(t, err)
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	client := NewOrganizationQuotasClient(httpClient)
 
-	err = c.OrganizationQuotas().Delete(context.Background(), "quota-guid")
-	require.NoError(t, err)
+	job, err := client.Delete(context.Background(), "quota-guid")
+	require.Error(t, err)
+	assert.Nil(t, job)
 }
 
 //nolint:dupl // Acceptable duplication - each test validates different relationship endpoints for different resource types

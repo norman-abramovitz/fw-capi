@@ -328,7 +328,11 @@ type DropletsClient interface {
 	ListForApp(ctx context.Context, appGUID string, params *QueryParams) (*ListResponse[Droplet], error)
 	ListForPackage(ctx context.Context, packageGUID string, params *QueryParams) (*ListResponse[Droplet], error)
 	Update(ctx context.Context, guid string, request *DropletUpdateRequest) (*Droplet, error)
-	Delete(ctx context.Context, guid string) error
+	// Delete issues DELETE /v3/droplets/{guid}. CF v3 returns 202 Accepted with a
+	// Location header pointing at /v3/jobs/{jobGuid}. The returned Job has its GUID
+	// populated from that header; callers use Jobs().Get or Jobs().PollUntilComplete
+	// for full async state. Same pattern as Apps().Delete and Roles().Delete.
+	Delete(ctx context.Context, guid string) (*Job, error)
 	Copy(ctx context.Context, sourceGUID string, request *DropletCopyRequest) (*Droplet, error)
 	Download(ctx context.Context, guid string) ([]byte, error)
 	Upload(ctx context.Context, guid string, bits []byte) (*Droplet, error)
@@ -339,7 +343,11 @@ type PackagesClient interface {
 	Get(ctx context.Context, guid string) (*Package, error)
 	List(ctx context.Context, params *QueryParams) (*ListResponse[Package], error)
 	Update(ctx context.Context, guid string, request *PackageUpdateRequest) (*Package, error)
-	Delete(ctx context.Context, guid string) error
+	// Delete issues DELETE /v3/packages/{guid}. CF v3 returns 202 Accepted with a
+	// Location header pointing at /v3/jobs/{jobGuid}. The returned Job has its GUID
+	// populated from that header; callers use Jobs().Get or Jobs().PollUntilComplete
+	// for full async state. Same pattern as Apps().Delete and Roles().Delete.
+	Delete(ctx context.Context, guid string) (*Job, error)
 	Upload(ctx context.Context, guid string, zipFile []byte) (*Package, error)
 	Download(ctx context.Context, guid string) ([]byte, error)
 	Copy(ctx context.Context, sourceGUID string, request *PackageCopyRequest) (*Package, error)
@@ -436,7 +444,11 @@ type OrganizationQuotasClient interface {
 	Get(ctx context.Context, guid string) (*OrganizationQuota, error)
 	List(ctx context.Context, params *QueryParams) (*ListResponse[OrganizationQuota], error)
 	Update(ctx context.Context, guid string, request *OrganizationQuotaUpdateRequest) (*OrganizationQuota, error)
-	Delete(ctx context.Context, guid string) error
+	// Delete issues DELETE /v3/organization_quotas/{guid}. CF v3 returns 202 Accepted
+	// with a Location header pointing at /v3/jobs/{jobGuid}. The returned Job has its
+	// GUID populated from that header; callers use Jobs().Get or Jobs().PollUntilComplete
+	// for full async state. Same pattern as Apps().Delete and Roles().Delete.
+	Delete(ctx context.Context, guid string) (*Job, error)
 	ApplyToOrganizations(ctx context.Context, quotaGUID string, orgGUIDs []string) (*ToManyRelationship, error)
 }
 
@@ -446,7 +458,11 @@ type SpaceQuotasClient interface {
 	Get(ctx context.Context, guid string) (*SpaceQuotaV3, error)
 	List(ctx context.Context, params *QueryParams) (*ListResponse[SpaceQuotaV3], error)
 	Update(ctx context.Context, guid string, request *SpaceQuotaV3UpdateRequest) (*SpaceQuotaV3, error)
-	Delete(ctx context.Context, guid string) error
+	// Delete issues DELETE /v3/space_quotas/{guid}. CF v3 returns 202 Accepted with a
+	// Location header pointing at /v3/jobs/{jobGuid}. The returned Job has its GUID
+	// populated from that header; callers use Jobs().Get or Jobs().PollUntilComplete
+	// for full async state. Same pattern as Apps().Delete and Roles().Delete.
+	Delete(ctx context.Context, guid string) (*Job, error)
 	ApplyToSpaces(ctx context.Context, quotaGUID string, spaceGUIDs []string) (*ToManyRelationship, error)
 	RemoveFromSpace(ctx context.Context, quotaGUID string, spaceGUID string) error
 }
