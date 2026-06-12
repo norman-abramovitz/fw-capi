@@ -89,6 +89,45 @@ func TestSpaceQuotasClient_Get(t *testing.T) {
 	assert.Equal(t, 1024, *quota.Apps.TotalMemoryInMB)
 }
 
+// TestSpaceQuotasClient_Get_AppFields verifies that the real CF v3 JSON field names
+// per_process_memory_in_mb and per_app_tasks are correctly unmarshalled into the renamed
+// Go struct fields PerProcessMemoryInMB and PerAppTasks. A real CF returns these names;
+// the old names (total_instance_memory_in_mb / total_app_tasks) were rejected with 422.
+func TestSpaceQuotasClient_Get_AppFields(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/space_quotas/space-quota-guid", request.URL.Path)
+		assert.Equal(t, "GET", request.Method)
+
+		// Simulate a real CF response with the correct field names.
+		_, _ = writer.Write([]byte(`{
+			"guid": "space-quota-guid",
+			"created_at": "2024-01-01T00:00:00Z",
+			"updated_at": "2024-01-01T00:00:00Z",
+			"name": "test-space-quota",
+			"apps": {
+				"total_memory_in_mb": 1024,
+				"per_process_memory_in_mb": 256,
+				"per_app_tasks": 5,
+				"total_instances": 3,
+				"log_rate_limit_in_bytes_per_second": 512
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	quota, err := c.SpaceQuotas().Get(context.Background(), "space-quota-guid")
+	require.NoError(t, err)
+	require.NotNil(t, quota.Apps)
+	assert.Equal(t, 1024, *quota.Apps.TotalMemoryInMB)
+	assert.Equal(t, 256, *quota.Apps.PerProcessMemoryInMB)
+	assert.Equal(t, 5, *quota.Apps.PerAppTasks)
+}
+
 func TestSpaceQuotasClient_List(t *testing.T) {
 	t.Parallel()
 

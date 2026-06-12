@@ -1571,10 +1571,10 @@ type OrganizationQuota struct {
 // OrganizationQuotaApps represents app limits in an organization quota.
 type OrganizationQuotaApps struct {
 	TotalMemoryInMB              *int `json:"total_memory_in_mb,omitempty"                 yaml:"total_memory_in_mb,omitempty"`
-	TotalInstanceMemoryInMB      *int `json:"total_instance_memory_in_mb,omitempty"        yaml:"total_instance_memory_in_mb,omitempty"`
+	PerProcessMemoryInMB         *int `json:"per_process_memory_in_mb,omitempty"           yaml:"per_process_memory_in_mb,omitempty"`
 	LogRateLimitInBytesPerSecond *int `json:"log_rate_limit_in_bytes_per_second,omitempty" yaml:"log_rate_limit_in_bytes_per_second,omitempty"`
 	TotalInstances               *int `json:"total_instances,omitempty"                    yaml:"total_instances,omitempty"`
-	TotalAppTasks                *int `json:"total_app_tasks,omitempty"                    yaml:"total_app_tasks,omitempty"`
+	PerAppTasks                  *int `json:"per_app_tasks,omitempty"                      yaml:"per_app_tasks,omitempty"`
 }
 
 // OrganizationQuotaServices represents service limits in an organization quota.
@@ -1641,10 +1641,10 @@ type SpaceQuotaV3 struct {
 // SpaceQuotaApps represents app limits in a space quota.
 type SpaceQuotaApps struct {
 	TotalMemoryInMB              *int `json:"total_memory_in_mb,omitempty"                 yaml:"total_memory_in_mb,omitempty"`
-	TotalInstanceMemoryInMB      *int `json:"total_instance_memory_in_mb,omitempty"        yaml:"total_instance_memory_in_mb,omitempty"`
+	PerProcessMemoryInMB         *int `json:"per_process_memory_in_mb,omitempty"           yaml:"per_process_memory_in_mb,omitempty"`
 	LogRateLimitInBytesPerSecond *int `json:"log_rate_limit_in_bytes_per_second,omitempty" yaml:"log_rate_limit_in_bytes_per_second,omitempty"`
 	TotalInstances               *int `json:"total_instances,omitempty"                    yaml:"total_instances,omitempty"`
-	TotalAppTasks                *int `json:"total_app_tasks,omitempty"                    yaml:"total_app_tasks,omitempty"`
+	PerAppTasks                  *int `json:"per_app_tasks,omitempty"                      yaml:"per_app_tasks,omitempty"`
 }
 
 // SpaceQuotaServices represents service limits in a space quota.

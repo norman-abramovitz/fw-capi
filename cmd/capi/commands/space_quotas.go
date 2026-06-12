@@ -294,9 +294,9 @@ func displayAppLimitsTable(apps *capi.SpaceQuotaApps) error {
 	appTable.Header("Limit", "Value")
 
 	addAppLimitRow(appTable, "Total Memory", apps.TotalMemoryInMB, func(v int) string { return fmt.Sprintf("%d MB", v) })
-	addAppLimitRow(appTable, "Instance Memory", apps.TotalInstanceMemoryInMB, func(v int) string { return fmt.Sprintf("%d MB", v) })
+	addAppLimitRow(appTable, "Instance Memory", apps.PerProcessMemoryInMB, func(v int) string { return fmt.Sprintf("%d MB", v) })
 	addAppLimitRow(appTable, "Total Instances", apps.TotalInstances, strconv.Itoa)
-	addAppLimitRow(appTable, "Total App Tasks", apps.TotalAppTasks, strconv.Itoa)
+	addAppLimitRow(appTable, "Total App Tasks", apps.PerAppTasks, strconv.Itoa)
 
 	if apps.LogRateLimitInBytesPerSecond != nil {
 		_ = appTable.Append("Log Rate Limit", fmt.Sprintf("%d bytes/sec", *apps.LogRateLimitInBytesPerSecond))
@@ -454,19 +454,19 @@ func buildSpaceQuotaAppLimits(cmd *cobra.Command, config *spaceQuotaCreateConfig
 // AppLimitsConfig interface for extracting app limits from config structs
 
 // Implement AppLimitsConfig for spaceQuotaCreateConfig.
-func (c *spaceQuotaCreateConfig) GetTotalMemoryInMB() int         { return c.totalMemoryInMB }
-func (c *spaceQuotaCreateConfig) GetTotalInstanceMemoryInMB() int { return c.totalInstanceMemoryInMB }
-func (c *spaceQuotaCreateConfig) GetTotalInstances() int          { return c.totalInstances }
-func (c *spaceQuotaCreateConfig) GetTotalAppTasks() int           { return c.totalAppTasks }
+func (c *spaceQuotaCreateConfig) GetTotalMemoryInMB() int      { return c.totalMemoryInMB }
+func (c *spaceQuotaCreateConfig) GetPerProcessMemoryInMB() int { return c.totalInstanceMemoryInMB }
+func (c *spaceQuotaCreateConfig) GetTotalInstances() int       { return c.totalInstances }
+func (c *spaceQuotaCreateConfig) GetPerAppTasks() int          { return c.totalAppTasks }
 func (c *spaceQuotaCreateConfig) GetLogRateLimitInBytesPerSecond() int {
 	return c.logRateLimitInBytesPerSecond
 }
 
 // Implement AppLimitsConfig for spaceQuotaUpdateConfig.
-func (c *spaceQuotaUpdateConfig) GetTotalMemoryInMB() int         { return c.totalMemoryInMB }
-func (c *spaceQuotaUpdateConfig) GetTotalInstanceMemoryInMB() int { return c.totalInstanceMemoryInMB }
-func (c *spaceQuotaUpdateConfig) GetTotalInstances() int          { return c.totalInstances }
-func (c *spaceQuotaUpdateConfig) GetTotalAppTasks() int           { return c.totalAppTasks }
+func (c *spaceQuotaUpdateConfig) GetTotalMemoryInMB() int      { return c.totalMemoryInMB }
+func (c *spaceQuotaUpdateConfig) GetPerProcessMemoryInMB() int { return c.totalInstanceMemoryInMB }
+func (c *spaceQuotaUpdateConfig) GetTotalInstances() int       { return c.totalInstances }
+func (c *spaceQuotaUpdateConfig) GetPerAppTasks() int          { return c.totalAppTasks }
 func (c *spaceQuotaUpdateConfig) GetLogRateLimitInBytesPerSecond() int {
 	return c.logRateLimitInBytesPerSecond
 }

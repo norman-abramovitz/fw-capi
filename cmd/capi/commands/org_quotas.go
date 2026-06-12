@@ -225,8 +225,8 @@ func renderOrgQuotaAppLimits(apps *capi.OrganizationQuotaApps) {
 	_ = appTable.Append("Total Memory", totalMemory)
 
 	instanceMemory := constants.Unlimited
-	if apps.TotalInstanceMemoryInMB != nil {
-		instanceMemory = fmt.Sprintf("%d MB", *apps.TotalInstanceMemoryInMB)
+	if apps.PerProcessMemoryInMB != nil {
+		instanceMemory = fmt.Sprintf("%d MB", *apps.PerProcessMemoryInMB)
 	}
 
 	_ = appTable.Append("Instance Memory", instanceMemory)
@@ -239,8 +239,8 @@ func renderOrgQuotaAppLimits(apps *capi.OrganizationQuotaApps) {
 	_ = appTable.Append("Total Instances", totalInstances)
 
 	totalAppTasks := constants.Unlimited
-	if apps.TotalAppTasks != nil {
-		totalAppTasks = strconv.Itoa(*apps.TotalAppTasks)
+	if apps.PerAppTasks != nil {
+		totalAppTasks = strconv.Itoa(*apps.PerAppTasks)
 	}
 
 	_ = appTable.Append("Total App Tasks", totalAppTasks)
@@ -414,19 +414,19 @@ func buildOrgQuotaCreateRequest(cmd *cobra.Command, config *orgQuotaCreateConfig
 // AppLimitsConfig provides a common interface for extracting app limit values.
 
 // Implement AppLimitsConfig for orgQuotaCreateConfig.
-func (c *orgQuotaCreateConfig) GetTotalMemoryInMB() int         { return c.totalMemoryInMB }
-func (c *orgQuotaCreateConfig) GetTotalInstanceMemoryInMB() int { return c.totalInstanceMemoryInMB }
-func (c *orgQuotaCreateConfig) GetTotalInstances() int          { return c.totalInstances }
-func (c *orgQuotaCreateConfig) GetTotalAppTasks() int           { return c.totalAppTasks }
+func (c *orgQuotaCreateConfig) GetTotalMemoryInMB() int      { return c.totalMemoryInMB }
+func (c *orgQuotaCreateConfig) GetPerProcessMemoryInMB() int { return c.totalInstanceMemoryInMB }
+func (c *orgQuotaCreateConfig) GetTotalInstances() int       { return c.totalInstances }
+func (c *orgQuotaCreateConfig) GetPerAppTasks() int          { return c.totalAppTasks }
 func (c *orgQuotaCreateConfig) GetLogRateLimitInBytesPerSecond() int {
 	return c.logRateLimitInBytesPerSecond
 }
 
 // Implement AppLimitsConfig for orgQuotaUpdateConfig.
-func (c *orgQuotaUpdateConfig) GetTotalMemoryInMB() int         { return c.totalMemoryInMB }
-func (c *orgQuotaUpdateConfig) GetTotalInstanceMemoryInMB() int { return c.totalInstanceMemoryInMB }
-func (c *orgQuotaUpdateConfig) GetTotalInstances() int          { return c.totalInstances }
-func (c *orgQuotaUpdateConfig) GetTotalAppTasks() int           { return c.totalAppTasks }
+func (c *orgQuotaUpdateConfig) GetTotalMemoryInMB() int      { return c.totalMemoryInMB }
+func (c *orgQuotaUpdateConfig) GetPerProcessMemoryInMB() int { return c.totalInstanceMemoryInMB }
+func (c *orgQuotaUpdateConfig) GetTotalInstances() int       { return c.totalInstances }
+func (c *orgQuotaUpdateConfig) GetPerAppTasks() int          { return c.totalAppTasks }
 func (c *orgQuotaUpdateConfig) GetLogRateLimitInBytesPerSecond() int {
 	return c.logRateLimitInBytesPerSecond
 }

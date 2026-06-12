@@ -131,10 +131,10 @@ func buildOrgQuotaCreateRequest() *capi.OrganizationQuotaCreateRequest {
 	return &capi.OrganizationQuotaCreateRequest{
 		Name: "demo-org-quota",
 		Apps: &capi.OrganizationQuotaApps{
-			TotalMemoryInMB:         &totalMemory,
-			TotalInstanceMemoryInMB: &instanceMemory,
-			TotalInstances:          &totalInstances,
-			TotalAppTasks:           &totalAppTasks,
+			TotalMemoryInMB:      &totalMemory,
+			PerProcessMemoryInMB: &instanceMemory,
+			TotalInstances:       &totalInstances,
+			PerAppTasks:          &totalAppTasks,
 		},
 		Services: &capi.OrganizationQuotaServices{
 			PaidServicesAllowed:   &paidServices,

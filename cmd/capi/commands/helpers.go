@@ -113,9 +113,9 @@ var (
 // AppLimitsConfig defines the interface for app limit configurations used by quota commands.
 type AppLimitsConfig interface {
 	GetTotalMemoryInMB() int
-	GetTotalInstanceMemoryInMB() int
+	GetPerProcessMemoryInMB() int
 	GetTotalInstances() int
-	GetTotalAppTasks() int
+	GetPerAppTasks() int
 	GetLogRateLimitInBytesPerSecond() int
 }
 
@@ -123,9 +123,9 @@ type AppLimitsConfig interface {
 type AppLimitsBuilder[T any] interface {
 	Build() *T
 	SetTotalMemoryInMB(value *int) AppLimitsBuilder[T]
-	SetTotalInstanceMemoryInMB(value *int) AppLimitsBuilder[T]
+	SetPerProcessMemoryInMB(value *int) AppLimitsBuilder[T]
 	SetTotalInstances(value *int) AppLimitsBuilder[T]
-	SetTotalAppTasks(value *int) AppLimitsBuilder[T]
+	SetPerAppTasks(value *int) AppLimitsBuilder[T]
 	SetLogRateLimitInBytesPerSecond(value *int) AppLimitsBuilder[T]
 }
 
@@ -144,8 +144,8 @@ func (b *OrganizationQuotaAppsBuilder) SetTotalMemoryInMB(value *int) AppLimitsB
 	return b
 }
 
-func (b *OrganizationQuotaAppsBuilder) SetTotalInstanceMemoryInMB(value *int) AppLimitsBuilder[capi.OrganizationQuotaApps] {
-	b.apps.TotalInstanceMemoryInMB = value
+func (b *OrganizationQuotaAppsBuilder) SetPerProcessMemoryInMB(value *int) AppLimitsBuilder[capi.OrganizationQuotaApps] {
+	b.apps.PerProcessMemoryInMB = value
 
 	return b
 }
@@ -156,8 +156,8 @@ func (b *OrganizationQuotaAppsBuilder) SetTotalInstances(value *int) AppLimitsBu
 	return b
 }
 
-func (b *OrganizationQuotaAppsBuilder) SetTotalAppTasks(value *int) AppLimitsBuilder[capi.OrganizationQuotaApps] {
-	b.apps.TotalAppTasks = value
+func (b *OrganizationQuotaAppsBuilder) SetPerAppTasks(value *int) AppLimitsBuilder[capi.OrganizationQuotaApps] {
+	b.apps.PerAppTasks = value
 
 	return b
 }
@@ -183,8 +183,8 @@ func (b *SpaceQuotaAppsBuilder) SetTotalMemoryInMB(value *int) AppLimitsBuilder[
 	return b
 }
 
-func (b *SpaceQuotaAppsBuilder) SetTotalInstanceMemoryInMB(value *int) AppLimitsBuilder[capi.SpaceQuotaApps] {
-	b.apps.TotalInstanceMemoryInMB = value
+func (b *SpaceQuotaAppsBuilder) SetPerProcessMemoryInMB(value *int) AppLimitsBuilder[capi.SpaceQuotaApps] {
+	b.apps.PerProcessMemoryInMB = value
 
 	return b
 }
@@ -195,8 +195,8 @@ func (b *SpaceQuotaAppsBuilder) SetTotalInstances(value *int) AppLimitsBuilder[c
 	return b
 }
 
-func (b *SpaceQuotaAppsBuilder) SetTotalAppTasks(value *int) AppLimitsBuilder[capi.SpaceQuotaApps] {
-	b.apps.TotalAppTasks = value
+func (b *SpaceQuotaAppsBuilder) SetPerAppTasks(value *int) AppLimitsBuilder[capi.SpaceQuotaApps] {
+	b.apps.PerAppTasks = value
 
 	return b
 }
@@ -221,8 +221,8 @@ func buildAppLimitsGeneric[T any](cmd *cobra.Command, config AppLimitsConfig, bu
 	}
 
 	if cmd.Flags().Changed("instance-memory") {
-		instanceMemory := config.GetTotalInstanceMemoryInMB()
-		builder.SetTotalInstanceMemoryInMB(&instanceMemory)
+		instanceMemory := config.GetPerProcessMemoryInMB()
+		builder.SetPerProcessMemoryInMB(&instanceMemory)
 	}
 
 	if cmd.Flags().Changed("instances") {
@@ -231,8 +231,8 @@ func buildAppLimitsGeneric[T any](cmd *cobra.Command, config AppLimitsConfig, bu
 	}
 
 	if cmd.Flags().Changed("app-tasks") {
-		appTasks := config.GetTotalAppTasks()
-		builder.SetTotalAppTasks(&appTasks)
+		appTasks := config.GetPerAppTasks()
+		builder.SetPerAppTasks(&appTasks)
 	}
 
 	if cmd.Flags().Changed("log-rate-limit") {
