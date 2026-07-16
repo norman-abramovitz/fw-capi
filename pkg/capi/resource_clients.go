@@ -221,6 +221,16 @@ type RoutesClient interface {
 	RouteSharingClient
 }
 
+// RoutePoliciesClient defines operations for route policies
+// (CF v3 3.225.0, experimental).
+type RoutePoliciesClient interface {
+	Create(ctx context.Context, request *RoutePolicyCreateRequest) (*RoutePolicy, error)
+	Get(ctx context.Context, guid string, opts ...RoutePolicyGetOption) (*RoutePolicy, error)
+	List(ctx context.Context, params *QueryParams, opts ...RoutePolicyListOption) (*ListResponse[RoutePolicy], error)
+	Update(ctx context.Context, guid string, request *RoutePolicyUpdateRequest) (*RoutePolicy, error)
+	Delete(ctx context.Context, guid string) error
+}
+
 // ServiceBrokersClient defines operations for service brokers.
 type ServiceBrokersClient interface {
 	Create(ctx context.Context, request *ServiceBrokerCreateRequest) (*Job, error)

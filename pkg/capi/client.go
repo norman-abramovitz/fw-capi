@@ -24,6 +24,7 @@ type CoreResourceClients interface {
 type InfrastructureClients interface {
 	Domains() DomainsClient
 	Routes() RoutesClient
+	RoutePolicies() RoutePoliciesClient
 	SecurityGroups() SecurityGroupsClient
 	IsolationSegments() IsolationSegmentsClient
 	Stacks() StacksClient

@@ -858,6 +858,39 @@ func WithRouteAppGUIDs(guids ...string) RouteListOption { //nolint:ireturn // se
 	return routeListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
 }
 
+// ---- route policies (filters) ----
+
+type routePolicyListScalar struct{ scalarOption }
+
+func (routePolicyListScalar) routePolicyList() {}
+
+// WithRoutePolicyGUIDs filters route policies by GUID.
+func WithRoutePolicyGUIDs(guids ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	return routePolicyListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+}
+
+// WithRoutePolicyRouteGUIDs filters route policies by route GUID.
+func WithRoutePolicyRouteGUIDs(guids ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	return routePolicyListScalar{scalarOption{"route_guids", strings.Join(guids, ",")}}
+}
+
+// WithRoutePolicySpaceGUIDs filters route policies by the route's space GUID.
+func WithRoutePolicySpaceGUIDs(guids ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	return routePolicyListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+}
+
+// WithRoutePolicySources filters route policies by exact source string
+// (e.g. "cf:any", "cf:app:<guid>").
+func WithRoutePolicySources(sources ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	return routePolicyListScalar{scalarOption{"sources", strings.Join(sources, ",")}}
+}
+
+// WithRoutePolicySourceGUIDs filters route policies by the GUID portion of
+// the source (the app, space, or org GUID).
+func WithRoutePolicySourceGUIDs(guids ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	return routePolicyListScalar{scalarOption{"source_guids", strings.Join(guids, ",")}}
+}
+
 // ---- spaces (filters) ----
 
 type spaceListScalar struct{ scalarOption }

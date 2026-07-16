@@ -48,7 +48,8 @@ func TestIncludeConstants_Encoding(t *testing.T) {
 		want string
 	}{
 		{"apps", capi.ApplyQueryOptions(nil, []capi.AppGetOption{capi.AppIncludeSpace, capi.AppIncludeSpaceOrganization}), "space,space.organization"},
-		{"routes", capi.ApplyQueryOptions(nil, []capi.RouteGetOption{capi.RouteIncludeDomain, capi.RouteIncludeSpace, capi.RouteIncludeSpaceOrganization}), "domain,space,space.organization"},
+		{"routes", capi.ApplyQueryOptions(nil, []capi.RouteGetOption{capi.RouteIncludeDomain, capi.RouteIncludeSpace, capi.RouteIncludeSpaceOrganization, capi.RouteIncludeRoutePolicies}), "domain,space,space.organization,route_policies"},
+		{"route policies", capi.ApplyQueryOptions(nil, []capi.RoutePolicyGetOption{capi.RoutePolicyIncludeRoute, capi.RoutePolicyIncludeSource}), "route,source"},
 		{"spaces", capi.ApplyQueryOptions(nil, []capi.SpaceGetOption{capi.SpaceIncludeOrganization}), "organization"},
 		{"scb", capi.ApplyQueryOptions(nil, []capi.ServiceCredentialBindingGetOption{capi.ServiceCredentialBindingIncludeApp, capi.ServiceCredentialBindingIncludeServiceInstance}), "app,service_instance"},
 		{"plans", capi.ApplyQueryOptions(nil, []capi.ServicePlanGetOption{capi.ServicePlanIncludeSpaceOrganization, capi.ServicePlanIncludeServiceOffering}), "space.organization,service_offering"},

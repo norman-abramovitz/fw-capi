@@ -34,6 +34,7 @@ type Client struct {
 	spaces                    capi.SpacesClient
 	domains                   capi.DomainsClient
 	routes                    capi.RoutesClient
+	routePolicies             capi.RoutePoliciesClient
 	serviceBrokers            capi.ServiceBrokersClient
 	serviceOfferings          capi.ServiceOfferingsClient
 	servicePlans              capi.ServicePlansClient
@@ -407,6 +408,11 @@ func (c *Client) Routes() capi.RoutesClient {
 	return c.routes
 }
 
+// RoutePolicies implements capi.Client.RoutePolicies.
+func (c *Client) RoutePolicies() capi.RoutePoliciesClient {
+	return c.routePolicies
+}
+
 // ServiceBrokers implements capi.Client.ServiceBrokers.
 func (c *Client) ServiceBrokers() capi.ServiceBrokersClient {
 	return c.serviceBrokers
@@ -590,6 +596,7 @@ func (c *Client) initializeResourceClients() {
 	c.deployments = NewDeploymentsClient(c.httpClient)
 	c.domains = NewDomainsClient(c.httpClient)
 	c.routes = NewRoutesClient(c.httpClient)
+	c.routePolicies = NewRoutePoliciesClient(c.httpClient)
 	c.serviceBrokers = NewServiceBrokersClient(c.httpClient)
 	c.serviceOfferings = NewServiceOfferingsClient(c.httpClient)
 	c.servicePlans = NewServicePlansClient(c.httpClient)

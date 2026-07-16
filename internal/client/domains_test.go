@@ -509,3 +509,69 @@ func runGetTestsForDomains(t *testing.T, tests []struct {
 		})
 	}
 }
+
+func TestDomainsClient_Create_IdentityAware(t *testing.T) {
+	t.Parallel()
+
+	scope := capi.RoutePoliciesScopeOrg
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/domains", request.URL.Path)
+		assert.Equal(t, "POST", request.Method)
+
+		var requestBody map[string]interface{}
+
+		err := json.NewDecoder(request.Body).Decode(&requestBody)
+		assert.NoError(t, err)
+		assert.Equal(t, true, requestBody["enforce_route_policies"])
+		assert.Equal(t, "org", requestBody["route_policies_scope"])
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
+		_, _ = writer.Write([]byte(`{
+		  "guid": "domain-guid",
+		  "name": "apps.identity",
+		  "internal": false,
+		  "supported_protocols": ["http"],
+		  "enforce_route_policies": true,
+		  "route_policies_scope": "org"
+		}`))
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	domain, err := client.Domains().Create(context.Background(), &capi.DomainCreateRequest{
+		Name:                 "apps.identity",
+		EnforceRoutePolicies: boolPtr(true),
+		RoutePoliciesScope:   &scope,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, domain)
+	assert.True(t, domain.EnforceRoutePolicies)
+	assert.Equal(t, capi.RoutePoliciesScopeOrg, domain.RoutePoliciesScope)
+}
+
+func TestDomainsClient_Get_OmitsRoutePolicyFieldsByDefault(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+		  "guid": "domain-guid",
+		  "name": "example.com",
+		  "internal": false,
+		  "supported_protocols": ["http"]
+		}`))
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	domain, err := client.Domains().Get(context.Background(), "domain-guid")
+	require.NoError(t, err)
+	assert.False(t, domain.EnforceRoutePolicies)
+	assert.Empty(t, domain.RoutePoliciesScope)
+}

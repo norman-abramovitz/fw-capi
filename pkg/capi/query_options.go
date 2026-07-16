@@ -145,11 +145,42 @@ func (routeInclude) routeGet()                 {}
 func (routeInclude) routeList()                {}
 func (r routeInclude) applyQuery(v url.Values) { appendInclude(v, string(r)) }
 
-// Valid include values for routes (CF v3 3.222.0).
+// Valid include values for routes (CF v3 3.225.0).
 const (
 	RouteIncludeDomain            routeInclude = "domain"
 	RouteIncludeSpace             routeInclude = "space"
 	RouteIncludeSpaceOrganization routeInclude = "space.organization"
+	// RouteIncludeRoutePolicies includes the route policies attached to
+	// each route (CF v3 3.225.0, experimental).
+	RouteIncludeRoutePolicies routeInclude = "route_policies"
+)
+
+// ---- route policies ----
+
+// RoutePolicyGetOption configures GET /v3/route_policies/{guid}.
+type RoutePolicyGetOption interface {
+	QueryOption
+	routePolicyGet()
+}
+
+// RoutePolicyListOption configures GET /v3/route_policies.
+type RoutePolicyListOption interface {
+	QueryOption
+	routePolicyList()
+}
+
+type routePolicyInclude string
+
+func (routePolicyInclude) routePolicyGet()           {}
+func (routePolicyInclude) routePolicyList()          {}
+func (r routePolicyInclude) applyQuery(v url.Values) { appendInclude(v, string(r)) }
+
+// Valid include values for route policies (CF v3 3.225.0).
+// RoutePolicyIncludeSource batch-loads the app, space, or organization
+// referenced by each policy's source into included.apps/spaces/organizations.
+const (
+	RoutePolicyIncludeRoute  routePolicyInclude = "route"
+	RoutePolicyIncludeSource routePolicyInclude = "source"
 )
 
 // RouteDestinationsOption configures GET /v3/routes/{guid}/destinations.

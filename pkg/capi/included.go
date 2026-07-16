@@ -94,9 +94,10 @@ func AppIncludedFrom(list *ListResponse[App]) (*AppIncludedResources, error) {
 
 // RouteIncludedResources carries the included block of route list responses.
 type RouteIncludedResources struct {
-	Domains       []Domain       `json:"domains,omitempty"       yaml:"domains,omitempty"`
-	Spaces        []Space        `json:"spaces,omitempty"        yaml:"spaces,omitempty"`
-	Organizations []Organization `json:"organizations,omitempty" yaml:"organizations,omitempty"`
+	Domains       []Domain       `json:"domains,omitempty"        yaml:"domains,omitempty"`
+	Spaces        []Space        `json:"spaces,omitempty"         yaml:"spaces,omitempty"`
+	Organizations []Organization `json:"organizations,omitempty"  yaml:"organizations,omitempty"`
+	RoutePolicies []RoutePolicy  `json:"route_policies,omitempty" yaml:"route_policies,omitempty"`
 }
 
 // RouteIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
@@ -109,6 +110,54 @@ func RouteIncludedFrom(list *ListResponse[Route]) (*RouteIncludedResources, erro
 	var err error
 
 	out.Domains, err = decodeIncluded[Domain](list.Included, "domains")
+	if err != nil {
+		return nil, err
+	}
+
+	out.Spaces, err = decodeIncluded[Space](list.Included, "spaces")
+	if err != nil {
+		return nil, err
+	}
+
+	out.Organizations, err = decodeIncluded[Organization](list.Included, "organizations")
+	if err != nil {
+		return nil, err
+	}
+
+	out.RoutePolicies, err = decodeIncluded[RoutePolicy](list.Included, "route_policies")
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// RoutePolicyIncludedResources carries the included block of route policy
+// list responses. include=route fills Routes; include=source fills Apps,
+// Spaces, and Organizations with the resources referenced by each policy's
+// source selector.
+type RoutePolicyIncludedResources struct {
+	Routes        []Route        `json:"routes,omitempty"        yaml:"routes,omitempty"`
+	Apps          []App          `json:"apps,omitempty"          yaml:"apps,omitempty"`
+	Spaces        []Space        `json:"spaces,omitempty"        yaml:"spaces,omitempty"`
+	Organizations []Organization `json:"organizations,omitempty" yaml:"organizations,omitempty"`
+}
+
+// RoutePolicyIncludedFrom decodes list.Included into typed slices. The returned struct is never nil; a nil list or absent included block yields empty slices.
+func RoutePolicyIncludedFrom(list *ListResponse[RoutePolicy]) (*RoutePolicyIncludedResources, error) {
+	out := &RoutePolicyIncludedResources{}
+	if list == nil || list.Included == nil {
+		return out, nil
+	}
+
+	var err error
+
+	out.Routes, err = decodeIncluded[Route](list.Included, "routes")
+	if err != nil {
+		return nil, err
+	}
+
+	out.Apps, err = decodeIncluded[App](list.Included, "apps")
 	if err != nil {
 		return nil, err
 	}

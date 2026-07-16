@@ -216,6 +216,17 @@ func (m *MockClient) Domains() capi.DomainsClient {
 	return client
 }
 
+func (m *MockClient) RoutePolicies() capi.RoutePoliciesClient {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+
+	client, _ := args.Get(0).(capi.RoutePoliciesClient)
+
+	return client
+}
+
 func (m *MockClient) Routes() capi.RoutesClient {
 	args := m.Called()
 	if args.Get(0) == nil {

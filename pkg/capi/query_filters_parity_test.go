@@ -38,6 +38,13 @@ func TestParityFilterOptions(t *testing.T) {
 		{"route service_instance_guids", capi.WithRouteServiceInstanceGUIDs("si1"), "service_instance_guids", "si1"},
 		{"route app_guids", capi.WithRouteAppGUIDs("a1"), "app_guids", "a1"},
 
+		// route policies
+		{"route policy guids", capi.WithRoutePolicyGUIDs("p1", "p2"), "guids", "p1,p2"},
+		{"route policy route_guids", capi.WithRoutePolicyRouteGUIDs("r1"), "route_guids", "r1"},
+		{"route policy space_guids", capi.WithRoutePolicySpaceGUIDs("s1"), "space_guids", "s1"},
+		{"route policy sources", capi.WithRoutePolicySources("cf:any", "cf:app:a1"), "sources", "cf:any,cf:app:a1"},
+		{"route policy source_guids", capi.WithRoutePolicySourceGUIDs("a1"), "source_guids", "a1"},
+
 		// spaces
 		{"space names", capi.WithSpaceNames("dev"), "names", "dev"},
 		{"space guids", capi.WithSpaceGUIDs("s1"), "guids", "s1"},

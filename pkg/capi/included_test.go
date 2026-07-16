@@ -117,6 +117,66 @@ func TestSpaceIncludedFrom(t *testing.T) {
 	assert.Equal(t, "space-2", incl.Spaces[0].GUID)
 }
 
+func TestRouteIncludedFrom(t *testing.T) {
+	t.Parallel()
+
+	payload := `{
+	  "resources": [{"guid": "route-1", "host": "api"}],
+	  "included": {
+	    "domains": [{"guid": "domain-1", "name": "apps.identity", "enforce_route_policies": true, "route_policies_scope": "org"}],
+	    "route_policies": [{"guid": "policy-1", "source": "cf:any"}]
+	  }
+	}`
+
+	var list capi.ListResponse[capi.Route]
+	require.NoError(t, json.Unmarshal([]byte(payload), &list))
+
+	incl, err := capi.RouteIncludedFrom(&list)
+	require.NoError(t, err)
+	assert.Len(t, incl.Domains, 1)
+	assert.True(t, incl.Domains[0].EnforceRoutePolicies)
+	assert.Equal(t, capi.RoutePoliciesScopeOrg, incl.Domains[0].RoutePoliciesScope)
+	assert.Len(t, incl.RoutePolicies, 1)
+	assert.Equal(t, "cf:any", incl.RoutePolicies[0].Source)
+}
+
+func TestRoutePolicyIncludedFrom(t *testing.T) {
+	t.Parallel()
+
+	payload := `{
+	  "resources": [{"guid": "policy-1", "source": "cf:app:app-1"}],
+	  "included": {
+	    "routes": [{"guid": "route-1", "host": "api"}],
+	    "apps": [{"guid": "app-1", "name": "frontend"}],
+	    "spaces": [{"guid": "space-1", "name": "dev"}],
+	    "organizations": [{"guid": "org-1", "name": "acme"}]
+	  }
+	}`
+
+	var list capi.ListResponse[capi.RoutePolicy]
+	require.NoError(t, json.Unmarshal([]byte(payload), &list))
+
+	incl, err := capi.RoutePolicyIncludedFrom(&list)
+	require.NoError(t, err)
+	assert.Len(t, incl.Routes, 1)
+	assert.Equal(t, "route-1", incl.Routes[0].GUID)
+	assert.Len(t, incl.Apps, 1)
+	assert.Equal(t, "frontend", incl.Apps[0].Name)
+	assert.Len(t, incl.Spaces, 1)
+	assert.Len(t, incl.Organizations, 1)
+}
+
+func TestRoutePolicyIncludedFrom_NilList(t *testing.T) {
+	t.Parallel()
+
+	incl, err := capi.RoutePolicyIncludedFrom(nil)
+	require.NoError(t, err)
+	assert.Empty(t, incl.Routes)
+	assert.Empty(t, incl.Apps)
+	assert.Empty(t, incl.Spaces)
+	assert.Empty(t, incl.Organizations)
+}
+
 func TestServiceOfferingIncludedFrom(t *testing.T) {
 	t.Parallel()
 

@@ -208,13 +208,33 @@ type RouterGroup struct {
 type Domain struct {
 	Resource
 
-	Name               string              `json:"name"                   yaml:"name"`
-	Internal           bool                `json:"internal"               yaml:"internal"`
-	RouterGroup        *RouterGroup        `json:"router_group,omitempty" yaml:"router_group,omitempty"`
-	SupportedProtocols []string            `json:"supported_protocols"    yaml:"supported_protocols"`
+	Name               string       `json:"name"                   yaml:"name"`
+	Internal           bool         `json:"internal"               yaml:"internal"`
+	RouterGroup        *RouterGroup `json:"router_group,omitempty" yaml:"router_group,omitempty"`
+	SupportedProtocols []string     `json:"supported_protocols"    yaml:"supported_protocols"`
+	// EnforceRoutePolicies marks an identity-aware domain: GoRouter enforces
+	// route policies for routes on this domain via mTLS (CF v3 3.225.0,
+	// experimental). CF omits the field from responses unless true.
+	// Immutable after creation.
+	EnforceRoutePolicies bool `json:"enforce_route_policies,omitempty" yaml:"enforce_route_policies,omitempty"`
+	// RoutePoliciesScope is the operator-defined boundary for allowed
+	// callers; only present when EnforceRoutePolicies is true. Immutable
+	// after creation.
+	RoutePoliciesScope RoutePoliciesScope  `json:"route_policies_scope,omitempty" yaml:"route_policies_scope,omitempty"`
 	Metadata           *Metadata           `json:"metadata,omitempty"     yaml:"metadata,omitempty"`
 	Relationships      DomainRelationships `json:"relationships"          yaml:"relationships"`
 }
+
+// RoutePoliciesScope is the operator-defined boundary for callers allowed
+// by route policies on an identity-aware domain (CF v3 3.225.0).
+type RoutePoliciesScope string
+
+// Valid route policies scopes (CF v3 3.225.0).
+const (
+	RoutePoliciesScopeAny   RoutePoliciesScope = "any"
+	RoutePoliciesScopeOrg   RoutePoliciesScope = "org"
+	RoutePoliciesScopeSpace RoutePoliciesScope = "space"
+)
 
 // DomainCreateRequest represents a request to create a domain.
 type DomainCreateRequest struct {
@@ -222,6 +242,13 @@ type DomainCreateRequest struct {
 	Name string `json:"name" yaml:"name"`
 	// Internal marks a private domain for internal routing.
 	Internal *bool `json:"internal,omitempty" yaml:"internal,omitempty"`
+	// EnforceRoutePolicies creates an identity-aware domain (CF v3 3.225.0,
+	// experimental). Cannot be used with internal domains. Immutable after
+	// creation.
+	EnforceRoutePolicies *bool `json:"enforce_route_policies,omitempty" yaml:"enforce_route_policies,omitempty"`
+	// RoutePoliciesScope bounds allowed callers (any, org, or space).
+	// Required when EnforceRoutePolicies is true. Immutable after creation.
+	RoutePoliciesScope *RoutePoliciesScope `json:"route_policies_scope,omitempty" yaml:"route_policies_scope,omitempty"`
 	// RouterGroup associates a TCP router group when creating TCP domains.
 	RouterGroup *string `json:"router_group,omitempty" yaml:"router_group,omitempty"`
 	// Relationships optionally set the owning organization or shared orgs.
@@ -343,6 +370,70 @@ type RouteReservationRequest struct {
 	// Port to check (TCP routes).
 	Port *int `json:"port,omitempty" yaml:"port,omitempty"`
 }
+
+// RoutePolicy represents a route policy on an identity-aware domain
+// (CF v3 3.225.0, experimental). Route policies control which apps,
+// spaces, or organizations may call routes on domains that have
+// enforce_route_policies enabled.
+type RoutePolicy struct {
+	Resource
+
+	// Source is the policy selector: "cf:app:<guid>", "cf:space:<guid>",
+	// "cf:org:<guid>", or "cf:any".
+	Source        string                   `json:"source"             yaml:"source"`
+	Metadata      *Metadata                `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Relationships RoutePolicyRelationships `json:"relationships"      yaml:"relationships"`
+	// Included carries related resources when the request used typed
+	// include options. Nil when no includes were requested.
+	Included *RoutePolicyIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
+}
+
+// RoutePolicyRelationships represents route policy relationships. Route is
+// the only writable relationship; App, Space, and Organization are read-only
+// and derived from Source by CF (data is null except for the matching
+// source type).
+type RoutePolicyRelationships struct {
+	Route        Relationship  `json:"route"                  yaml:"route"`
+	App          *Relationship `json:"app,omitempty"          yaml:"app,omitempty"`
+	Space        *Relationship `json:"space,omitempty"        yaml:"space,omitempty"`
+	Organization *Relationship `json:"organization,omitempty" yaml:"organization,omitempty"`
+}
+
+// RoutePolicyCreateRequest represents a request to create a route policy.
+// The route's domain must have enforce_route_policies set to true and must
+// not be internal. Source is unique per route; "cf:any" cannot be combined
+// with other sources on the same route.
+type RoutePolicyCreateRequest struct {
+	// Source is the policy selector: "cf:app:<guid>", "cf:space:<guid>",
+	// "cf:org:<guid>", or "cf:any". See the RoutePolicySource helpers.
+	Source string `json:"source" yaml:"source"`
+	// Relationships must include the Route the policy applies to.
+	Relationships RoutePolicyRelationships `json:"relationships" yaml:"relationships"`
+	// Metadata sets labels/annotations on the route policy.
+	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+}
+
+// RoutePolicyUpdateRequest represents a request to update a route policy.
+// Only metadata is updatable; source and route are immutable after creation.
+type RoutePolicyUpdateRequest struct {
+	// Metadata updates labels/annotations; nil leaves it unchanged.
+	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+}
+
+// RoutePolicySourceAny is the route policy source selector allowing any
+// caller. It cannot be combined with other sources on the same route.
+const RoutePolicySourceAny = "cf:any"
+
+// RoutePolicySourceApp returns the source selector allowing a specific app.
+func RoutePolicySourceApp(guid string) string { return "cf:app:" + guid }
+
+// RoutePolicySourceSpace returns the source selector allowing all apps in
+// a space.
+func RoutePolicySourceSpace(guid string) string { return "cf:space:" + guid }
+
+// RoutePolicySourceOrganization returns the source selector allowing all
+// apps in an organization.
+func RoutePolicySourceOrganization(guid string) string { return "cf:org:" + guid }
 
 // User represents a user.
 type User struct {

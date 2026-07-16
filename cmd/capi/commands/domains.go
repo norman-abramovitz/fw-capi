@@ -377,6 +377,11 @@ func addDomainOptionalInfo(table *tablewriter.Table, domain *capi.Domain) {
 	if domain.RouterGroup != nil {
 		_ = table.Append("Router Group", domain.RouterGroup.GUID)
 	}
+
+	if domain.EnforceRoutePolicies {
+		_ = table.Append("Enforce Route Policies", True)
+		_ = table.Append("Route Policies Scope", string(domain.RoutePoliciesScope))
+	}
 }
 
 func addDomainOrganizationInfo(ctx context.Context, client capi.Client, table *tablewriter.Table, domain *capi.Domain) {
@@ -418,11 +423,13 @@ func addDomainSharedOrgs(ctx context.Context, client capi.Client, table *tablewr
 
 func newDomainsCreateCommand() *cobra.Command {
 	var (
-		name        string
-		internal    bool
-		routerGroup string
-		orgName     string
-		labels      map[string]string
+		name                 string
+		internal             bool
+		enforceRoutePolicies bool
+		routePoliciesScope   string
+		routerGroup          string
+		orgName              string
+		labels               map[string]string
 	)
 
 	cmd := &cobra.Command{
@@ -434,6 +441,8 @@ func newDomainsCreateCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&name, "name", "n", "", "domain name (required)")
 	cmd.Flags().BoolVar(&internal, "internal", false, "create as internal domain")
+	cmd.Flags().BoolVar(&enforceRoutePolicies, "enforce-route-policies", false, "create as identity-aware domain (experimental; immutable)")
+	cmd.Flags().StringVar(&routePoliciesScope, "route-policies-scope", "", "allowed-caller boundary: any, org, or space (required with --enforce-route-policies)")
 	cmd.Flags().StringVar(&routerGroup, "router-group", "", "router group for TCP domains")
 	cmd.Flags().StringVarP(&orgName, "org", "o", "", "organization name for private domains")
 	cmd.Flags().StringToStringVar(&labels, "labels", nil, "labels to apply (key=value)")
@@ -480,6 +489,31 @@ func buildDomainCreateRequest(ctx context.Context, client capi.Client, cmd *cobr
 	createReq := &capi.DomainCreateRequest{
 		Name:     name,
 		Internal: &internal,
+	}
+
+	enforceRoutePolicies, _ := cmd.Flags().GetBool("enforce-route-policies")
+	routePoliciesScope, _ := cmd.Flags().GetString("route-policies-scope")
+
+	if routePoliciesScope != "" && !enforceRoutePolicies {
+		return nil, ErrScopeRequiresEnforce
+	}
+
+	if enforceRoutePolicies {
+		if internal {
+			return nil, ErrEnforceIncompatibleInternal
+		}
+
+		if routePoliciesScope == "" {
+			return nil, ErrScopeRequiredWithEnforce
+		}
+
+		scope := capi.RoutePoliciesScope(routePoliciesScope)
+		if scope != capi.RoutePoliciesScopeAny && scope != capi.RoutePoliciesScopeOrg && scope != capi.RoutePoliciesScopeSpace {
+			return nil, ErrInvalidRoutePoliciesScope
+		}
+
+		createReq.EnforceRoutePolicies = &enforceRoutePolicies
+		createReq.RoutePoliciesScope = &scope
 	}
 
 	if routerGroup != "" {

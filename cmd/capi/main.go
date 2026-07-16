@@ -128,6 +128,7 @@ func addResourceCommands(cmd *cobra.Command) {
 	cmd.AddCommand(commands.NewServicesCommand())
 	cmd.AddCommand(commands.NewDomainsCommand())
 	cmd.AddCommand(commands.NewRoutesCommand())
+	cmd.AddCommand(commands.NewRoutePoliciesCommand())
 	cmd.AddCommand(commands.NewSecurityGroupsCommand())
 	cmd.AddCommand(commands.NewBuildpacksCommand())
 	cmd.AddCommand(commands.NewStacksCommand())
