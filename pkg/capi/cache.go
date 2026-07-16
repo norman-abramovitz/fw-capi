@@ -65,7 +65,8 @@ func NewMemoryCache(maxSize int) *MemoryCache {
 
 // Get retrieves an item from the cache.
 func (c *MemoryCache) Get(ctx context.Context, key string) (*CacheEntry, error) {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return nil, err
 	}
 
@@ -87,7 +88,8 @@ func (c *MemoryCache) Get(ctx context.Context, key string) (*CacheEntry, error) 
 
 // Set stores an item in the cache.
 func (c *MemoryCache) Set(ctx context.Context, key string, entry *CacheEntry) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return err
 	}
 
@@ -121,7 +123,8 @@ func (c *MemoryCache) Set(ctx context.Context, key string, entry *CacheEntry) er
 
 // Delete removes an item from the cache.
 func (c *MemoryCache) Delete(ctx context.Context, key string) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return err
 	}
 
@@ -135,7 +138,8 @@ func (c *MemoryCache) Delete(ctx context.Context, key string) error {
 
 // Clear removes all items from the cache.
 func (c *MemoryCache) Clear(ctx context.Context) error {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return err
 	}
 

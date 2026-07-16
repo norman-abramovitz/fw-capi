@@ -287,7 +287,8 @@ func (c *Client) PostRaw(ctx context.Context, path string, body []byte, contentT
 	}
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil && c.logger != nil {
+		err := resp.Body.Close()
+		if err != nil && c.logger != nil {
 			c.logger.Warn("failed to close response body", map[string]interface{}{"error": err.Error()})
 		}
 	}()
@@ -388,7 +389,8 @@ func (c *Client) executeHTTPRequest(httpReq *retryablehttp.Request) (*Response, 
 	}
 
 	defer func() {
-		if err := httpResp.Body.Close(); err != nil && c.logger != nil {
+		err := httpResp.Body.Close()
+		if err != nil && c.logger != nil {
 			c.logger.Warn("failed to close response body", map[string]interface{}{"error": err.Error()})
 		}
 	}()

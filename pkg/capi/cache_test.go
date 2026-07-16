@@ -328,8 +328,10 @@ func TestCacheStats_ConcurrentIncrements(t *testing.T) {
 	manager := capi.NewCacheManager(cache, nil)
 	ctx := context.Background()
 
-	const goroutines = 50
-	const opsEach = 20
+	const (
+		goroutines = 50
+		opsEach    = 20
+	)
 
 	var wg sync.WaitGroup
 

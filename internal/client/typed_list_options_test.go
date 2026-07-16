@@ -22,6 +22,7 @@ func captureQueryServer[T any](t *testing.T, captured *url.Values) *httptest.Ser
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		*captured = r.URL.Query()
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(capi.ListResponse[T]{})

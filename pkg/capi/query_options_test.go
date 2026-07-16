@@ -182,9 +182,9 @@ func TestServiceInstanceInclude_Constants(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
+
 			v := capi.ApplyQueryOptions(nil, c.opts)
 			assert.Equal(t, c.want, v.Get("include"))
 		})
@@ -231,9 +231,9 @@ func TestWithTimestampFilter_ValidOps(t *testing.T) {
 	want := "2024-03-15T12:00:00Z"
 
 	for _, op := range []string{"gt", "gte", "lt", "lte"} {
-		op := op
 		t.Run(op, func(t *testing.T) {
 			t.Parallel()
+
 			v := capi.ApplyQueryOptions(nil, []capi.QueryOption{
 				capi.WithTimestampFilter("updated_at", op, ts),
 			})
@@ -262,9 +262,9 @@ func TestWithTimestampFilter_InvalidOpIsNoop(t *testing.T) {
 	ts := time.Now().UTC()
 
 	for _, bad := range []string{"", "eq", "ne", "GT", ">=", "after"} {
-		bad := bad
 		t.Run(bad, func(t *testing.T) {
 			t.Parallel()
+
 			v := capi.ApplyQueryOptions(nil, []capi.QueryOption{
 				capi.WithTimestampFilter("created_at", bad, ts),
 			})
