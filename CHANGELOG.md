@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.225.0] - 2026-07-16
+
+Adds support for the CF API 3.223.0–3.225.0 delta (upstream capi-release
+1.238.0–1.240.0).
+
+### Added
+
+- Route policies resource client (`RoutePolicies()`), covering the new
+  experimental identity-aware routing endpoints (CF API v3.225.0):
+  `Create`, `Get`, `List`, `Update` (metadata only), and `Delete` on
+  `/v3/route_policies`. Includes the `RoutePolicy` type with `Source`
+  selector helpers (`RoutePolicySourceApp/Space/Organization` and
+  `RoutePolicySourceAny`), typed list filters (`WithRoutePolicyGUIDs`,
+  `WithRoutePolicyRouteGUIDs`, `WithRoutePolicySpaceGUIDs`,
+  `WithRoutePolicySources`, `WithRoutePolicySourceGUIDs`), typed include
+  options (`RoutePolicyIncludeRoute`, `RoutePolicyIncludeSource`), and
+  `RoutePolicyIncludedFrom` for decoding the `included` block (routes,
+  apps, spaces, organizations). New `capi route-policies` CLI command
+  group (list/create/get/update/delete).
+- `Domain.EnforceRoutePolicies` (`bool`) and `Domain.RoutePoliciesScope`
+  (new `RoutePoliciesScope` enum: `any`, `org`, `space`) for
+  identity-aware domains, settable on `DomainCreateRequest` and exposed
+  via `capi domains create --enforce-route-policies
+  --route-policies-scope`. Both fields are immutable after creation and
+  omitted from CF responses unless enforcement is enabled. The create
+  command validates the flag combinations client-side (scope requires
+  enforcement and vice versa; incompatible with `--internal`), and
+  `capi domains get` renders both fields when enforcement is on.
+  (CF API v3.225.0)
+- `RouteIncludeRoutePolicies` include option for route Get/List
+  (`include=route_policies`) and `RouteIncludedResources.RoutePolicies`
+  for decoding the included policies. (CF API v3.225.0)
+- `Space.Suspended` (`bool`) plus `Suspended` fields on
+  `SpaceCreateRequest` and `SpaceUpdateRequest`, mirroring the existing
+  organization suspension surface; suspended spaces block non-admin
+  writes. CLI: `capi spaces create --suspended` and a Status row in
+  `capi spaces get`. (CF API v3.224.0)
+- Readiness health check fields on manifest types:
+  `ReadinessHealthCheckType`, `ReadinessHealthCheckHTTPEndpoint`,
+  `ReadinessHealthCheckInterval`, and
+  `ReadinessHealthCheckInvocationTimeout` on both `ManifestApplication`
+  and `ManifestProcess`, with snake_case JSON and hyphenated YAML tags.
+  (CF API v3.223.0 manifest schema)
+
+### Notes
+
+- Verified against CF API 3.223.0–3.225.0 release notes and docs
+  (capi-release 1.238.0–1.240.0): the 3.223.0 status-code doc
+  alignments (org quota apply, list roles, update user now documented
+  as 200 OK) need no client change — response handling accepts any
+  2xx status. The 3.224.0 lifecycle-data note (buildpacks may be
+  empty, stack may be null for backfilled records) is already
+  tolerated by the existing types (`Lifecycle.Data` map,
+  `Droplet.Stack *string`).
+
+## [3.222.4] - 2026-06-26
+
 ### Added
 
 - Typed `List` entity and enum filter constructors for the endpoints that
