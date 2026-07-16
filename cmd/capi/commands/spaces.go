@@ -288,8 +288,15 @@ func outputSpaceAsYAML(space *capi.Space) error {
 func outputSpaceAsDetailedTable(ctx context.Context, client capi.Client, space *capi.Space) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header("Property", "Value")
+
+	status := Active
+	if space.Suspended {
+		status = Suspended
+	}
+
 	_ = table.Append("Name", space.Name)
 	_ = table.Append("GUID", space.GUID)
+	_ = table.Append("Status", status)
 	_ = table.Append("Created", space.CreatedAt.Format(TimeFormatDisplay))
 	_ = table.Append("Updated", space.UpdatedAt.Format(TimeFormatDisplay))
 
@@ -380,9 +387,10 @@ func newSpacesGetCommand() *cobra.Command {
 
 func newSpacesCreateCommand() *cobra.Command {
 	var (
-		name    string
-		orgName string
-		labels  map[string]string
+		name      string
+		orgName   string
+		suspended bool
+		labels    map[string]string
 	)
 
 	cmd := &cobra.Command{
@@ -431,6 +439,10 @@ func newSpacesCreateCommand() *cobra.Command {
 				},
 			}
 
+			if suspended {
+				createReq.Suspended = &suspended
+			}
+
 			if labels != nil {
 				createReq.Metadata = &capi.Metadata{
 					Labels: labels,
@@ -450,6 +462,7 @@ func newSpacesCreateCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&name, "name", "n", "", "space name (required)")
 	cmd.Flags().StringVarP(&orgName, "org", "o", "", "organization name (required)")
+	cmd.Flags().BoolVar(&suspended, "suspended", false, "create the space in a suspended state (admin only)")
 	cmd.Flags().StringToStringVar(&labels, "labels", nil, "labels to apply (key=value)")
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("org")

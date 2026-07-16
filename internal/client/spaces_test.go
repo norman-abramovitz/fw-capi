@@ -467,3 +467,61 @@ func TestSpacesClient_GetWithInclude(t *testing.T) {
 	require.NotNil(t, space.Included)
 	assert.Equal(t, "org-1", space.Included.Organizations[0].GUID)
 }
+
+func TestSpacesClient_SuspendedField(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+
+		switch request.Method {
+		case http.MethodPost:
+			assert.Equal(t, "/v3/spaces", request.URL.Path)
+
+			var requestBody map[string]interface{}
+
+			err := json.NewDecoder(request.Body).Decode(&requestBody)
+			assert.NoError(t, err)
+			assert.Equal(t, true, requestBody["suspended"])
+
+			writer.WriteHeader(http.StatusCreated)
+			_, _ = writer.Write([]byte(`{
+			  "guid": "space-guid", "name": "dev", "suspended": true,
+			  "relationships": {"organization": {"data": {"guid": "org-guid"}}}
+			}`))
+		case http.MethodPatch:
+			assert.Equal(t, "/v3/spaces/space-guid", request.URL.Path)
+
+			var requestBody map[string]interface{}
+
+			err := json.NewDecoder(request.Body).Decode(&requestBody)
+			assert.NoError(t, err)
+			assert.Equal(t, false, requestBody["suspended"])
+
+			_, _ = writer.Write([]byte(`{
+			  "guid": "space-guid", "name": "dev", "suspended": false,
+			  "relationships": {"organization": {"data": {"guid": "org-guid"}}}
+			}`))
+		}
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	space, err := client.Spaces().Create(context.Background(), &capi.SpaceCreateRequest{
+		Name: "dev",
+		Relationships: capi.SpaceRelationships{
+			Organization: capi.Relationship{Data: &capi.RelationshipData{GUID: "org-guid"}},
+		},
+		Suspended: boolPtr(true),
+	})
+	require.NoError(t, err)
+	assert.True(t, space.Suspended)
+
+	space, err = client.Spaces().Update(context.Background(), "space-guid", &capi.SpaceUpdateRequest{
+		Suspended: boolPtr(false),
+	})
+	require.NoError(t, err)
+	assert.False(t, space.Suspended)
+}

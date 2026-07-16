@@ -52,6 +52,8 @@ const (
 	Partial      = "partial"
 	Compatible   = "compatible"
 	Incompatible = "incompatible"
+	Active       = "active"
+	Suspended    = "suspended"
 	List         = "list"
 	Create       = "create"
 	Update       = "update"

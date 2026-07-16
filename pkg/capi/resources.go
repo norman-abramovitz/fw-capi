@@ -130,7 +130,11 @@ type OrganizationUsageSummary struct {
 type Space struct {
 	Resource
 
-	Name          string             `json:"name"               yaml:"name"`
+	Name string `json:"name" yaml:"name"`
+	// Suspended reports whether the space is suspended (CF v3 3.224.0);
+	// non-admins and non-org-managers are blocked from creating, updating,
+	// or deleting resources in a suspended space.
+	Suspended     bool               `json:"suspended"          yaml:"suspended"`
 	Metadata      *Metadata          `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	Relationships SpaceRelationships `json:"relationships"      yaml:"relationships"`
 	// Included carries related resources when the request used typed
@@ -144,6 +148,9 @@ type SpaceCreateRequest struct {
 	Name string `json:"name" yaml:"name"`
 	// Relationships must include an Organization relationship.
 	Relationships SpaceRelationships `json:"relationships" yaml:"relationships"`
+	// Suspended optionally creates the space in a suspended state
+	// (CF v3 3.224.0; admin only).
+	Suspended *bool `json:"suspended,omitempty" yaml:"suspended,omitempty"`
 	// Metadata sets labels/annotations on the space.
 	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
@@ -152,6 +159,10 @@ type SpaceCreateRequest struct {
 type SpaceUpdateRequest struct {
 	// Name updates the space name; nil leaves it unchanged.
 	Name *string `json:"name,omitempty" yaml:"name,omitempty"`
+	// Suspended suspends or unsuspends the space (CF v3 3.224.0; admins
+	// and org managers only — space managers cannot change it). Nil leaves
+	// it unchanged.
+	Suspended *bool `json:"suspended,omitempty" yaml:"suspended,omitempty"`
 	// Metadata updates labels/annotations; nil leaves it unchanged.
 	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
