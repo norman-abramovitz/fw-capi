@@ -79,6 +79,7 @@ func newAuthRetryTransport(base http.RoundTripper, tokenManager auth.TokenManage
 func (t *authRetryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.base.RoundTrip(req)
 	if err != nil {
+		//nolint:wrapcheck // transport errors must pass through unwrapped so net/http wraps them in *url.Error itself
 		return resp, err
 	}
 
@@ -171,6 +172,7 @@ func (t *authRetryTransport) replay(req *http.Request, token string, original *h
 	// this wrapper so a second 401 is returned unchanged).
 	_ = original.Body.Close()
 
+	//nolint:wrapcheck // transport errors must pass through unwrapped so net/http wraps them in *url.Error itself
 	return t.base.RoundTrip(retryReq)
 }
 

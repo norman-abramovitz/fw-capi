@@ -51,7 +51,7 @@ func testRefreshExpiredToken(t *testing.T) {
 			AccessToken:  "new-access-token",
 			RefreshToken: "new-refresh-token",
 			ExpiresIn:    3600,
-			TokenType:    "bearer",
+			TokenType:    testTokenTypeBearer,
 		}
 		_ = json.NewEncoder(writer).Encode(response)
 	}))
@@ -90,7 +90,7 @@ func testClientCredentials(t *testing.T) {
 		response := auth.Token{
 			AccessToken: "client-token",
 			ExpiresIn:   3600,
-			TokenType:   "bearer",
+			TokenType:   testTokenTypeBearer,
 		}
 		_ = json.NewEncoder(writer).Encode(response)
 	}))
@@ -124,7 +124,7 @@ func testPasswordGrant(t *testing.T) {
 			AccessToken:  "password-token",
 			RefreshToken: "refresh-token",
 			ExpiresIn:    3600,
-			TokenType:    "bearer",
+			TokenType:    testTokenTypeBearer,
 		}
 		_ = json.NewEncoder(writer).Encode(response)
 	}))
@@ -201,7 +201,7 @@ func TestOAuth2TokenManager_RefreshToken(t *testing.T) {
 		response := auth.Token{
 			AccessToken: "refreshed-token",
 			ExpiresIn:   3600,
-			TokenType:   "bearer",
+			TokenType:   testTokenTypeBearer,
 		}
 		_ = json.NewEncoder(writer).Encode(response)
 	}))

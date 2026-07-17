@@ -16,6 +16,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test constants shared across HTTP client test cases (also referenced from
+// authretry_test.go, which is part of the same http_test package).
+const (
+	testPathApps     = "/v3/apps"
+	testFieldName    = "name"
+	testFieldKey     = "key"
+	testFieldValue   = "value"
+	testLogFieldsKey = "fields"
+	testLogLevelKey  = "level"
+	testLogMsgKey    = "msg"
+	testAppNameValue = "test-app"
+)
+
 // MockTokenManager for testing.
 type MockTokenManager struct {
 	token string
@@ -36,23 +49,23 @@ func (m *MockTokenManager) SetToken(token string, expiresAt time.Time) {
 
 // MockLogger for testing.
 type MockLogger struct {
-	logs []map[string]interface{}
+	logs []map[string]any
 }
 
-func (l *MockLogger) Debug(msg string, fields map[string]interface{}) {
-	l.logs = append(l.logs, map[string]interface{}{"level": "debug", "msg": msg, "fields": fields})
+func (l *MockLogger) Debug(msg string, fields map[string]any) {
+	l.logs = append(l.logs, map[string]any{testLogLevelKey: "debug", testLogMsgKey: msg, testLogFieldsKey: fields})
 }
 
-func (l *MockLogger) Info(msg string, fields map[string]interface{}) {
-	l.logs = append(l.logs, map[string]interface{}{"level": "info", "msg": msg, "fields": fields})
+func (l *MockLogger) Info(msg string, fields map[string]any) {
+	l.logs = append(l.logs, map[string]any{testLogLevelKey: "info", testLogMsgKey: msg, testLogFieldsKey: fields})
 }
 
-func (l *MockLogger) Warn(msg string, fields map[string]interface{}) {
-	l.logs = append(l.logs, map[string]interface{}{"level": "warn", "msg": msg, "fields": fields})
+func (l *MockLogger) Warn(msg string, fields map[string]any) {
+	l.logs = append(l.logs, map[string]any{testLogLevelKey: "warn", testLogMsgKey: msg, testLogFieldsKey: fields})
 }
 
-func (l *MockLogger) Error(msg string, fields map[string]interface{}) {
-	l.logs = append(l.logs, map[string]interface{}{"level": "error", "msg": msg, "fields": fields})
+func (l *MockLogger) Error(msg string, fields map[string]any) {
+	l.logs = append(l.logs, map[string]any{testLogLevelKey: "error", testLogMsgKey: msg, testLogFieldsKey: fields})
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing
@@ -62,12 +75,12 @@ func TestClient_Do(t *testing.T) {
 		t.Parallel()
 
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			assert.Equal(t, "/v3/apps", request.URL.Path)
-			assert.Equal(t, "GET", request.Method)
+			assert.Equal(t, testPathApps, request.URL.Path)
+			assert.Equal(t, http.MethodGet, request.Method)
 			assert.Equal(t, "Bearer test-token", request.Header.Get("Authorization"))
 			assert.Equal(t, "application/json", request.Header.Get("Accept"))
 
-			response := map[string]string{"guid": "app-guid", "name": "test-app"}
+			response := map[string]string{"guid": "app-guid", testFieldName: testAppNameValue}
 			_ = json.NewEncoder(writer).Encode(response)
 		}))
 		defer server.Close()
@@ -76,8 +89,8 @@ func TestClient_Do(t *testing.T) {
 		client := capihttp.NewClient(server.URL, tokenManager)
 
 		req := &capihttp.Request{
-			Method: "GET",
-			Path:   "/v3/apps",
+			Method: http.MethodGet,
+			Path:   testPathApps,
 		}
 
 		resp, err := client.Do(context.Background(), req)
@@ -89,14 +102,14 @@ func TestClient_Do(t *testing.T) {
 		err = json.Unmarshal(resp.Body, &result)
 		require.NoError(t, err)
 		assert.Equal(t, "app-guid", result["guid"])
-		assert.Equal(t, "test-app", result["name"])
+		assert.Equal(t, testAppNameValue, result[testFieldName])
 	})
 
 	t.Run("request with query parameters", func(t *testing.T) {
 		t.Parallel()
 
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			assert.Equal(t, "/v3/apps", request.URL.Path)
+			assert.Equal(t, testPathApps, request.URL.Path)
 			assert.Equal(t, "page=2", request.URL.RawQuery)
 			writer.WriteHeader(http.StatusOK)
 		}))
@@ -105,8 +118,8 @@ func TestClient_Do(t *testing.T) {
 		client := capihttp.NewClient(server.URL, nil)
 
 		req := &capihttp.Request{
-			Method: "GET",
-			Path:   "/v3/apps",
+			Method: http.MethodGet,
+			Path:   testPathApps,
 			Query:  url.Values{"page": []string{"2"}},
 		}
 
@@ -119,13 +132,13 @@ func TestClient_Do(t *testing.T) {
 		t.Parallel()
 
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			assert.Equal(t, "POST", request.Method)
+			assert.Equal(t, http.MethodPost, request.Method)
 			assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
 
 			var body map[string]string
 
 			_ = json.NewDecoder(request.Body).Decode(&body)
-			assert.Equal(t, "test-app", body["name"])
+			assert.Equal(t, testAppNameValue, body[testFieldName])
 
 			writer.WriteHeader(http.StatusCreated)
 		}))
@@ -134,9 +147,9 @@ func TestClient_Do(t *testing.T) {
 		client := capihttp.NewClient(server.URL, nil)
 
 		req := &capihttp.Request{
-			Method: "POST",
-			Path:   "/v3/apps",
-			Body:   map[string]string{"name": "test-app"},
+			Method: http.MethodPost,
+			Path:   testPathApps,
+			Body:   map[string]string{testFieldName: testAppNameValue},
 		}
 
 		resp, err := client.Do(context.Background(), req)
@@ -166,7 +179,7 @@ func TestClient_Do(t *testing.T) {
 		client := capihttp.NewClient(server.URL, nil)
 
 		req := &capihttp.Request{
-			Method: "GET",
+			Method: http.MethodGet,
 			Path:   "/v3/apps/invalid",
 		}
 
@@ -193,8 +206,8 @@ func TestClient_Do(t *testing.T) {
 		client := capihttp.NewClient(server.URL, nil)
 
 		req := &capihttp.Request{
-			Method: "GET",
-			Path:   "/v3/apps",
+			Method: http.MethodGet,
+			Path:   testPathApps,
 			Headers: map[string]string{
 				"X-Custom-Header": "custom-value",
 			},
@@ -218,8 +231,8 @@ func TestClient_Do(t *testing.T) {
 		client := capihttp.NewClient(server.URL, nil, capihttp.WithLogger(logger), capihttp.WithDebug(true))
 
 		req := &capihttp.Request{
-			Method: "GET",
-			Path:   "/v3/apps",
+			Method: http.MethodGet,
+			Path:   testPathApps,
 		}
 
 		_, err := client.Do(context.Background(), req)
@@ -242,31 +255,31 @@ func TestClient_Methods(t *testing.T) {
 		fn     func(*capihttp.Client, context.Context) (*capihttp.Response, error)
 	}{
 		{
-			name:   "GET",
-			method: "GET",
+			name:   http.MethodGet,
+			method: http.MethodGet,
 			fn: func(c *capihttp.Client, ctx context.Context) (*capihttp.Response, error) {
 				return c.Get(ctx, "/test", nil)
 			},
 		},
 		{
-			name:   "POST",
-			method: "POST",
+			name:   http.MethodPost,
+			method: http.MethodPost,
 			fn: func(c *capihttp.Client, ctx context.Context) (*capihttp.Response, error) {
-				return c.Post(ctx, "/test", map[string]string{"key": "value"})
+				return c.Post(ctx, "/test", map[string]string{testFieldKey: testFieldValue})
 			},
 		},
 		{
 			name:   "PUT",
 			method: "PUT",
 			fn: func(c *capihttp.Client, ctx context.Context) (*capihttp.Response, error) {
-				return c.Put(ctx, "/test", map[string]string{"key": "value"})
+				return c.Put(ctx, "/test", map[string]string{testFieldKey: testFieldValue})
 			},
 		},
 		{
 			name:   "PATCH",
 			method: "PATCH",
 			fn: func(c *capihttp.Client, ctx context.Context) (*capihttp.Response, error) {
-				return c.Patch(ctx, "/test", map[string]string{"key": "value"})
+				return c.Patch(ctx, "/test", map[string]string{testFieldKey: testFieldValue})
 			},
 		},
 		{

@@ -8,6 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Test constants shared across auth_test package files (oauth_test.go and
+// token_test.go are both part of the same external test package).
+const (
+	testAccessToken     = "test-token"
+	testTokenTypeBearer = "bearer"
+)
+
 func TestToken_Valid(t *testing.T) {
 	t.Parallel()
 
@@ -46,14 +53,14 @@ func getTokenValidityTestCases() []struct {
 		{
 			name: "valid token without expiry",
 			token: &auth.Token{
-				AccessToken: "test-token",
+				AccessToken: testAccessToken,
 			},
 			expected: true,
 		},
 		{
 			name: "valid token with future expiry",
 			token: &auth.Token{
-				AccessToken: "test-token",
+				AccessToken: testAccessToken,
 				ExpiresAt:   time.Now().Add(1 * time.Hour),
 			},
 			expected: true,
@@ -61,7 +68,7 @@ func getTokenValidityTestCases() []struct {
 		{
 			name: "expired token",
 			token: &auth.Token{
-				AccessToken: "test-token",
+				AccessToken: testAccessToken,
 				ExpiresAt:   time.Now().Add(-1 * time.Hour),
 			},
 			expected: false,
@@ -69,7 +76,7 @@ func getTokenValidityTestCases() []struct {
 		{
 			name: "token expiring within buffer",
 			token: &auth.Token{
-				AccessToken: "test-token",
+				AccessToken: testAccessToken,
 				ExpiresAt:   time.Now().Add(15 * time.Second),
 			},
 			expected: false, // Should be false due to 30 second buffer
@@ -77,7 +84,7 @@ func getTokenValidityTestCases() []struct {
 		{
 			name: "token expiring just outside buffer",
 			token: &auth.Token{
-				AccessToken: "test-token",
+				AccessToken: testAccessToken,
 				ExpiresAt:   time.Now().Add(35 * time.Second),
 			},
 			expected: true,
@@ -105,8 +112,8 @@ func testSetAndGetToken(t *testing.T) {
 
 	store := auth.NewTokenStore()
 	token := &auth.Token{
-		AccessToken: "test-token",
-		TokenType:   "bearer",
+		AccessToken: testAccessToken,
+		TokenType:   testTokenTypeBearer,
 	}
 
 	store.Set(token)
@@ -121,7 +128,7 @@ func testClearToken(t *testing.T) {
 
 	store := auth.NewTokenStore()
 	token := &auth.Token{
-		AccessToken: "test-token",
+		AccessToken: testAccessToken,
 	}
 
 	store.Set(token)

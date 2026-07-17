@@ -25,6 +25,13 @@ var (
 	errTokenExplode   = errors.New("test: get-token exploded")
 )
 
+// Test constants for token-refresh fixtures. testPathApps, testFieldName,
+// and testFieldKey are declared in client_test.go (same http_test package).
+const (
+	testTokenInitial   = "initial"
+	testTokenRefreshed = "refreshed"
+)
+
 // refreshingTokenManager is a token manager stub that can be configured to
 // fail either the initial GetToken, the RefreshToken call, or the post-
 // refresh GetToken call. It tracks how many times each method is called so
@@ -82,30 +89,30 @@ func TestAuthRetryTransport_Refresh401(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		n := atomic.AddInt32(&attempts, 1)
 
 		if n == 1 {
-			assert.Equal(t, "Bearer initial", r.Header.Get("Authorization"))
-			w.WriteHeader(http.StatusUnauthorized)
+			assert.Equal(t, "Bearer initial", request.Header.Get("Authorization"))
+			writer.WriteHeader(http.StatusUnauthorized)
 
 			return
 		}
 
-		assert.Equal(t, "Bearer refreshed", r.Header.Get("Authorization"))
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"ok":true}`))
+		assert.Equal(t, "Bearer refreshed", request.Header.Get("Authorization"))
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte(`{"ok":true}`))
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{
-		initialToken:   "initial",
-		refreshedToken: "refreshed",
+	tokenManager := &refreshingTokenManager{
+		initialToken:   testTokenInitial,
+		refreshedToken: testTokenRefreshed,
 	}
-	client := capihttp.NewClient(server.URL, tm,
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Get(context.Background(), "/v3/apps", nil)
+	resp, err := client.Get(context.Background(), testPathApps, nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -114,7 +121,7 @@ func TestAuthRetryTransport_Refresh401(t *testing.T) {
 	assert.True(t, body["ok"])
 
 	assert.Equal(t, int32(2), atomic.LoadInt32(&attempts), "server should see exactly two attempts")
-	assert.Equal(t, int32(1), atomic.LoadInt32(&tm.refreshCalls), "RefreshToken should be called exactly once")
+	assert.Equal(t, int32(1), atomic.LoadInt32(&tokenManager.refreshCalls), "RefreshToken should be called exactly once")
 }
 
 // TestAuthRetryTransport_NonUnauthorizedPassThrough verifies that a non-401
@@ -124,24 +131,24 @@ func TestAuthRetryTransport_NonUnauthorizedPassThrough(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attempts, 1)
 
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"ok":true}`))
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte(`{"ok":true}`))
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{initialToken: "initial", refreshedToken: "refreshed"}
-	client := capihttp.NewClient(server.URL, tm,
+	tokenManager := &refreshingTokenManager{initialToken: testTokenInitial, refreshedToken: testTokenRefreshed}
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Get(context.Background(), "/v3/apps", nil)
+	resp, err := client.Get(context.Background(), testPathApps, nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
-	assert.Equal(t, int32(0), atomic.LoadInt32(&tm.refreshCalls), "no refresh should occur on 200")
+	assert.Equal(t, int32(0), atomic.LoadInt32(&tokenManager.refreshCalls), "no refresh should occur on 200")
 }
 
 // TestAuthRetryTransport_RefreshFailureReturnsOriginal401 verifies that a
@@ -151,27 +158,27 @@ func TestAuthRetryTransport_RefreshFailureReturnsOriginal401(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attempts, 1)
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"errors":[{"code":10002,"title":"CF-NotAuthenticated","detail":"Not authenticated"}]}`))
+		writer.WriteHeader(http.StatusUnauthorized)
+		_, _ = writer.Write([]byte(`{"errors":[{"code":10002,"title":"CF-NotAuthenticated","detail":"Not authenticated"}]}`))
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{
-		initialToken: "initial",
+	tokenManager := &refreshingTokenManager{
+		initialToken: testTokenInitial,
 		refreshErr:   errRefreshExplode,
 	}
-	client := capihttp.NewClient(server.URL, tm,
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Get(context.Background(), "/v3/apps", nil)
+	resp, err := client.Get(context.Background(), testPathApps, nil)
 	require.Error(t, err)
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	assert.Contains(t, string(resp.Body), "CF-NotAuthenticated")
 
 	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts), "server should see exactly one attempt when refresh fails")
-	assert.Equal(t, int32(1), atomic.LoadInt32(&tm.refreshCalls))
+	assert.Equal(t, int32(1), atomic.LoadInt32(&tokenManager.refreshCalls))
 }
 
 // TestAuthRetryTransport_PostRefreshGetTokenFailure verifies that a failure
@@ -182,27 +189,27 @@ func TestAuthRetryTransport_PostRefreshGetTokenFailure(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attempts, 1)
-		w.WriteHeader(http.StatusUnauthorized)
+		writer.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{
-		initialToken:  "initial",
+	tokenManager := &refreshingTokenManager{
+		initialToken:  testTokenInitial,
 		postRefreshEr: errTokenExplode,
 	}
-	client := capihttp.NewClient(server.URL, tm,
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Get(context.Background(), "/v3/apps", nil)
+	resp, err := client.Get(context.Background(), testPathApps, nil)
 	require.Error(t, err)
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 
 	// Exactly one server attempt: refresh succeeded but the follow-up
 	// GetToken failed before a retry could be issued.
 	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
-	assert.Equal(t, int32(1), atomic.LoadInt32(&tm.refreshCalls))
+	assert.Equal(t, int32(1), atomic.LoadInt32(&tokenManager.refreshCalls))
 }
 
 // streamingReadCloser is an io.ReadCloser that, when paired with a request
@@ -212,6 +219,7 @@ type streamingReadCloser struct {
 	inner io.Reader
 }
 
+//nolint:wrapcheck // test fixture: pass the underlying reader's error through unwrapped
 func (s *streamingReadCloser) Read(p []byte) (int, error) { return s.inner.Read(p) }
 func (s *streamingReadCloser) Close() error               { return nil }
 
@@ -226,22 +234,22 @@ func TestAuthRetryTransport_StreamingBodyNoRetry(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attempts, 1)
 
-		_, _ = io.Copy(io.Discard, r.Body)
+		_, _ = io.Copy(io.Discard, request.Body)
 
-		w.WriteHeader(http.StatusUnauthorized)
+		writer.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{initialToken: "initial", refreshedToken: "refreshed"}
+	tokenManager := &refreshingTokenManager{initialToken: testTokenInitial, refreshedToken: testTokenRefreshed}
 
-	transport := capihttp.NewAuthRetryTransportForTest(http.DefaultTransport, tm)
+	transport := capihttp.NewAuthRetryTransportForTest(http.DefaultTransport, tokenManager)
 
 	streaming := &streamingReadCloser{inner: bytes.NewReader([]byte("streamed"))}
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+"/v3/apps", streaming)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+testPathApps, streaming)
 	require.NoError(t, err)
 
 	// http.NewRequestWithContext only populates GetBody for body types it
@@ -258,7 +266,7 @@ func TestAuthRetryTransport_StreamingBodyNoRetry(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	// Exactly one server attempt — the streaming body prevents retry.
 	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
-	assert.Equal(t, int32(0), atomic.LoadInt32(&tm.refreshCalls),
+	assert.Equal(t, int32(0), atomic.LoadInt32(&tokenManager.refreshCalls),
 		"streaming body must not trigger RefreshToken because replay is impossible")
 }
 
@@ -270,15 +278,15 @@ func TestAuthRetryTransport_NilTokenManager(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attempts, 1)
-		w.WriteHeader(http.StatusUnauthorized)
+		writer.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer server.Close()
 
 	transport := capihttp.NewAuthRetryTransportForTest(http.DefaultTransport, nil)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/v3/apps", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+testPathApps, nil)
 	require.NoError(t, err)
 
 	resp, err := transport.RoundTrip(req)
@@ -298,37 +306,37 @@ func TestAuthRetryTransport_RewindableBodyRetries(t *testing.T) {
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n := atomic.AddInt32(&attempts, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		attemptCount := atomic.AddInt32(&attempts, 1)
 
-		body, _ := io.ReadAll(r.Body)
+		body, _ := io.ReadAll(request.Body)
 		assert.Contains(t, string(body), `"name":"test-app"`,
 			"body must be replayed verbatim on retry")
 
-		if n == 1 {
-			w.WriteHeader(http.StatusUnauthorized)
+		if attemptCount == 1 {
+			writer.WriteHeader(http.StatusUnauthorized)
 
 			return
 		}
 
-		assert.Equal(t, "Bearer refreshed", r.Header.Get("Authorization"))
-		w.WriteHeader(http.StatusCreated)
+		assert.Equal(t, "Bearer refreshed", request.Header.Get("Authorization"))
+		writer.WriteHeader(http.StatusCreated)
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{
-		initialToken:   "initial",
-		refreshedToken: "refreshed",
+	tokenManager := &refreshingTokenManager{
+		initialToken:   testTokenInitial,
+		refreshedToken: testTokenRefreshed,
 	}
-	client := capihttp.NewClient(server.URL, tm,
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Post(context.Background(), "/v3/apps", map[string]string{"name": "test-app"})
+	resp, err := client.Post(context.Background(), testPathApps, map[string]string{testFieldName: testAppNameValue})
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	assert.Equal(t, int32(2), atomic.LoadInt32(&attempts))
-	assert.Equal(t, int32(1), atomic.LoadInt32(&tm.refreshCalls))
+	assert.Equal(t, int32(1), atomic.LoadInt32(&tokenManager.refreshCalls))
 }
 
 // serializingTokenManager is a token manager whose RefreshToken publishes
@@ -389,61 +397,61 @@ func TestAuthRetryTransport_ConcurrentRefresh(t *testing.T) {
 		successfulReplays int32
 	)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attemptsTotal, 1)
 
 		// Any request carrying the INITIAL token gets a 401. Any request
 		// carrying the refreshed token succeeds. This lets us assert that
 		// every caller eventually replays with the refreshed token.
-		auth := r.Header.Get("Authorization")
+		auth := request.Header.Get("Authorization")
 		if auth == "Bearer initial" {
-			w.WriteHeader(http.StatusUnauthorized)
+			writer.WriteHeader(http.StatusUnauthorized)
 
 			return
 		}
 
 		if auth == "Bearer refreshed-initial" {
 			atomic.AddInt32(&successfulReplays, 1)
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"ok":true}`))
+			writer.WriteHeader(http.StatusOK)
+			_, _ = writer.Write([]byte(`{"ok":true}`))
 
 			return
 		}
 
 		t.Errorf("unexpected Authorization header: %q", auth)
-		w.WriteHeader(http.StatusInternalServerError)
+		writer.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer server.Close()
 
-	tm := &serializingTokenManager{
-		current:      "initial",
+	tokenManager := &serializingTokenManager{
+		current:      testTokenInitial,
 		refreshDelay: 50 * time.Millisecond,
 	}
 
-	client := capihttp.NewClient(server.URL, tm,
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
-	wg.Add(concurrency)
+	waitGroup.Add(concurrency)
 
 	errs := make([]error, concurrency)
 	statuses := make([]int, concurrency)
 
-	for i := range concurrency {
+	for iteration := range concurrency {
 		go func() {
-			defer wg.Done()
+			defer waitGroup.Done()
 
-			resp, err := client.Get(context.Background(), "/v3/apps", nil)
-			errs[i] = err
+			resp, err := client.Get(context.Background(), testPathApps, nil)
+			errs[iteration] = err
 
 			if resp != nil {
-				statuses[i] = resp.StatusCode
+				statuses[iteration] = resp.StatusCode
 			}
 		}()
 	}
 
-	wg.Wait()
+	waitGroup.Wait()
 
 	for i, err := range errs {
 		require.NoError(t, err, "goroutine %d", i)
@@ -455,7 +463,7 @@ func TestAuthRetryTransport_ConcurrentRefresh(t *testing.T) {
 	assert.Equal(
 		t,
 		int32(1),
-		atomic.LoadInt32(&tm.refreshCalls),
+		atomic.LoadInt32(&tokenManager.refreshCalls),
 		"RefreshToken must be called exactly once across %d concurrent 401s", concurrency,
 	)
 
@@ -477,24 +485,24 @@ func TestAuthRetryTransport_SecondUnauthorizedOnReplayReturnsToCaller(t *testing
 
 	var attempts int32
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		atomic.AddInt32(&attempts, 1)
 
 		// Always 401, regardless of how the Authorization header looks.
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"errors":[{"code":10002,"title":"CF-NotAuthenticated","detail":"still bad"}]}`))
+		writer.WriteHeader(http.StatusUnauthorized)
+		_, _ = writer.Write([]byte(`{"errors":[{"code":10002,"title":"CF-NotAuthenticated","detail":"still bad"}]}`))
 	}))
 	defer server.Close()
 
-	tm := &refreshingTokenManager{
-		initialToken:   "initial",
-		refreshedToken: "refreshed",
+	tokenManager := &refreshingTokenManager{
+		initialToken:   testTokenInitial,
+		refreshedToken: testTokenRefreshed,
 	}
 
-	client := capihttp.NewClient(server.URL, tm,
+	client := capihttp.NewClient(server.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Get(context.Background(), "/v3/apps", nil)
+	resp, err := client.Get(context.Background(), testPathApps, nil)
 	// The client surfaces the 401 as an error via its error mapper, but
 	// the important contract here is that there is no infinite loop and
 	// exactly TWO server attempts occurred (one original plus one replay).
@@ -512,7 +520,7 @@ func TestAuthRetryTransport_SecondUnauthorizedOnReplayReturnsToCaller(t *testing
 	assert.Equal(
 		t,
 		int32(1),
-		atomic.LoadInt32(&tm.refreshCalls),
+		atomic.LoadInt32(&tokenManager.refreshCalls),
 		"RefreshToken must be called exactly once (no second refresh on second 401)",
 	)
 }
@@ -533,32 +541,32 @@ func TestAuthRetryTransport_RefreshEndpointReturns401(t *testing.T) {
 	)
 
 	// Fake UAA token endpoint that always 401s the refresh attempt.
-	uaa := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	uaa := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		atomic.AddInt32(&uaaCalls, 1)
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"error":"invalid_client","error_description":"client not trusted"}`))
+		writer.WriteHeader(http.StatusUnauthorized)
+		_, _ = writer.Write([]byte(`{"error":"invalid_client","error_description":"client not trusted"}`))
 	}))
 	defer uaa.Close()
 
 	// Target API that always 401s (so the retry path is exercised but the
 	// refresh attempt never succeeds).
-	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	api := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		atomic.AddInt32(&apiCalls, 1)
-		w.WriteHeader(http.StatusUnauthorized)
+		writer.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer api.Close()
 
-	tm := auth.NewOAuth2TokenManager(&auth.OAuth2Config{
+	tokenManager := auth.NewOAuth2TokenManager(&auth.OAuth2Config{
 		TokenURL:     uaa.URL,
 		ClientID:     "test-client",
 		ClientSecret: "test-secret",
 		AccessToken:  "seed-access-token",
 	})
 
-	client := capihttp.NewClient(api.URL, tm,
+	client := capihttp.NewClient(api.URL, tokenManager,
 		capihttp.WithRetryConfig(0, time.Millisecond, time.Millisecond))
 
-	resp, err := client.Get(context.Background(), "/v3/apps", nil)
+	resp, err := client.Get(context.Background(), testPathApps, nil)
 	require.Error(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)

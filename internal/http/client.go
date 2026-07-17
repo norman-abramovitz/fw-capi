@@ -19,10 +19,10 @@ import (
 
 // Logger interface for HTTP client logging.
 type Logger interface {
-	Debug(msg string, fields map[string]interface{})
-	Info(msg string, fields map[string]interface{})
-	Warn(msg string, fields map[string]interface{})
-	Error(msg string, fields map[string]interface{})
+	Debug(msg string, fields map[string]any)
+	Info(msg string, fields map[string]any)
+	Warn(msg string, fields map[string]any)
+	Error(msg string, fields map[string]any)
 }
 
 // Client wraps the HTTP client with retry logic and authentication.
@@ -143,7 +143,7 @@ type Request struct {
 	Method  string
 	Path    string
 	Query   url.Values
-	Body    interface{}
+	Body    any
 	Headers map[string]string
 }
 
@@ -200,7 +200,7 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values) (*Respo
 }
 
 // Post performs a POST request.
-func (c *Client) Post(ctx context.Context, path string, body interface{}) (*Response, error) {
+func (c *Client) Post(ctx context.Context, path string, body any) (*Response, error) {
 	return c.Do(ctx, &Request{
 		Method: "POST",
 		Path:   path,
@@ -209,7 +209,7 @@ func (c *Client) Post(ctx context.Context, path string, body interface{}) (*Resp
 }
 
 // Put performs a PUT request.
-func (c *Client) Put(ctx context.Context, path string, body interface{}) (*Response, error) {
+func (c *Client) Put(ctx context.Context, path string, body any) (*Response, error) {
 	return c.Do(ctx, &Request{
 		Method: "PUT",
 		Path:   path,
@@ -218,7 +218,7 @@ func (c *Client) Put(ctx context.Context, path string, body interface{}) (*Respo
 }
 
 // Patch performs a PATCH request.
-func (c *Client) Patch(ctx context.Context, path string, body interface{}) (*Response, error) {
+func (c *Client) Patch(ctx context.Context, path string, body any) (*Response, error) {
 	return c.Do(ctx, &Request{
 		Method: "PATCH",
 		Path:   path,
@@ -289,7 +289,7 @@ func (c *Client) PostRaw(ctx context.Context, path string, body []byte, contentT
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil && c.logger != nil {
-			c.logger.Warn("failed to close response body", map[string]interface{}{"error": err.Error()})
+			c.logger.Warn("failed to close response body", map[string]any{"error": err.Error()})
 		}
 	}()
 
@@ -334,7 +334,7 @@ func (c *Client) GetAuthToken(ctx context.Context) (string, error) {
 }
 
 // prepareRequestBody marshals the request body to JSON if present.
-func (c *Client) prepareRequestBody(body interface{}) (io.Reader, error) {
+func (c *Client) prepareRequestBody(body any) (io.Reader, error) {
 	if body == nil {
 		return nil, nil
 	}
@@ -391,7 +391,7 @@ func (c *Client) executeHTTPRequest(httpReq *retryablehttp.Request) (*Response, 
 	defer func() {
 		err := httpResp.Body.Close()
 		if err != nil && c.logger != nil {
-			c.logger.Warn("failed to close response body", map[string]interface{}{"error": err.Error()})
+			c.logger.Warn("failed to close response body", map[string]any{"error": err.Error()})
 		}
 	}()
 
@@ -450,12 +450,13 @@ func (c *Client) buildURL(path string, query url.Values) (string, error) {
 // friends, while still being able to inspect the underlying CF error
 // envelope via errors.As(err, &capi.ResponseError{}).
 func (c *Client) parseError(resp *Response) error {
+	//nolint:wrapcheck // MapHTTPError already returns a sentinel-wrapping error; wrapping again would double-wrap it.
 	return capi.MapHTTPError(resp.StatusCode, resp.Body)
 }
 
 // logRequest logs the HTTP request details.
 func (c *Client) logRequest(req *retryablehttp.Request) {
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"method": req.Method,
 		"url":    req.URL.String(),
 	}
@@ -478,7 +479,7 @@ func (c *Client) logRequest(req *retryablehttp.Request) {
 
 // logResponse logs the HTTP response details.
 func (c *Client) logResponse(resp *Response) {
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"status_code": resp.StatusCode,
 		"body_size":   len(resp.Body),
 	}
