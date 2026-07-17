@@ -230,7 +230,7 @@ func (c *AppsClient) GetEnv(ctx context.Context, guid string) (*capi.AppEnvironm
 }
 
 // GetEnvVars implements capi.AppsClient.GetEnvVars.
-func (c *AppsClient) GetEnvVars(ctx context.Context, guid string) (map[string]interface{}, error) {
+func (c *AppsClient) GetEnvVars(ctx context.Context, guid string) (map[string]any, error) {
 	path := fmt.Sprintf("/v3/apps/%s/environment_variables", guid)
 
 	resp, err := c.httpClient.Get(ctx, path, nil)
@@ -240,7 +240,7 @@ func (c *AppsClient) GetEnvVars(ctx context.Context, guid string) (map[string]in
 
 	// The response has a 'var' field that contains the environment variables
 	var result struct {
-		Var map[string]interface{} `json:"var"`
+		Var map[string]any `json:"var"`
 	}
 
 	err = json.Unmarshal(resp.Body, &result)
@@ -252,11 +252,11 @@ func (c *AppsClient) GetEnvVars(ctx context.Context, guid string) (map[string]in
 }
 
 // UpdateEnvVars implements capi.AppsClient.UpdateEnvVars.
-func (c *AppsClient) UpdateEnvVars(ctx context.Context, guid string, envVars map[string]interface{}) (map[string]interface{}, error) {
+func (c *AppsClient) UpdateEnvVars(ctx context.Context, guid string, envVars map[string]any) (map[string]any, error) {
 	path := fmt.Sprintf("/v3/apps/%s/environment_variables", guid)
 
 	// Wrap the variables in a 'var' field as required by the API
-	body := map[string]interface{}{
+	body := map[string]any{
 		"var": envVars,
 	}
 
@@ -266,7 +266,7 @@ func (c *AppsClient) UpdateEnvVars(ctx context.Context, guid string, envVars map
 	}
 
 	var result struct {
-		Var map[string]interface{} `json:"var"`
+		Var map[string]any `json:"var"`
 	}
 
 	err = json.Unmarshal(resp.Body, &result)

@@ -41,8 +41,8 @@ type AppLifecycleClient interface {
 // AppEnvironmentClient provides app environment operations.
 type AppEnvironmentClient interface {
 	GetEnv(ctx context.Context, guid string) (*AppEnvironment, error)
-	GetEnvVars(ctx context.Context, guid string) (map[string]interface{}, error)
-	UpdateEnvVars(ctx context.Context, guid string, envVars map[string]interface{}) (map[string]interface{}, error)
+	GetEnvVars(ctx context.Context, guid string) (map[string]any, error)
+	UpdateEnvVars(ctx context.Context, guid string, envVars map[string]any) (map[string]any, error)
 }
 
 // AppDropletClient provides app droplet operations.
@@ -264,10 +264,10 @@ type ServicePlansClient interface {
 
 // ServiceInstancesClient defines operations for service instances.
 type ServiceInstancesClient interface {
-	Create(ctx context.Context, request *ServiceInstanceCreateRequest) (interface{}, error) // Returns *ServiceInstance for user-provided, *Job for managed
+	Create(ctx context.Context, request *ServiceInstanceCreateRequest) (any, error) // Returns *ServiceInstance for user-provided, *Job for managed
 	Get(ctx context.Context, guid string, opts ...ServiceInstanceGetOption) (*ServiceInstance, error)
 	List(ctx context.Context, params *QueryParams, opts ...ServiceInstanceListOption) (*ListResponse[ServiceInstance], error)
-	Update(ctx context.Context, guid string, request *ServiceInstanceUpdateRequest) (interface{}, error) // Returns *ServiceInstance for user-provided, *Job for managed
+	Update(ctx context.Context, guid string, request *ServiceInstanceUpdateRequest) (any, error) // Returns *ServiceInstance for user-provided, *Job for managed
 	Delete(ctx context.Context, guid string, opts ...DeleteOption) (*Job, error)
 
 	// Parameters for managed instances
@@ -284,7 +284,7 @@ type ServiceInstancesClient interface {
 
 // ServiceCredentialBindingsClient provides operations for Service Credential Bindings (v3 name for service bindings).
 type ServiceCredentialBindingsClient interface {
-	Create(ctx context.Context, request *ServiceCredentialBindingCreateRequest) (interface{}, error) // Returns *ServiceCredentialBinding or *Job
+	Create(ctx context.Context, request *ServiceCredentialBindingCreateRequest) (any, error) // Returns *ServiceCredentialBinding or *Job
 	Get(ctx context.Context, guid string, opts ...ServiceCredentialBindingGetOption) (*ServiceCredentialBinding, error)
 	List(ctx context.Context, params *QueryParams, opts ...ServiceCredentialBindingListOption) (*ListResponse[ServiceCredentialBinding], error)
 	Update(ctx context.Context, guid string, request *ServiceCredentialBindingUpdateRequest) (*ServiceCredentialBinding, error)
@@ -298,7 +298,7 @@ type ServiceBindingsClient = ServiceCredentialBindingsClient
 
 // ServiceRouteBindingsClient defines operations for service route bindings.
 type ServiceRouteBindingsClient interface {
-	Create(ctx context.Context, request *ServiceRouteBindingCreateRequest) (interface{}, error) // Returns *ServiceRouteBinding or *Job
+	Create(ctx context.Context, request *ServiceRouteBindingCreateRequest) (any, error) // Returns *ServiceRouteBinding or *Job
 	Get(ctx context.Context, guid string, opts ...ServiceRouteBindingGetOption) (*ServiceRouteBinding, error)
 	List(ctx context.Context, params *QueryParams, opts ...ServiceRouteBindingListOption) (*ListResponse[ServiceRouteBinding], error)
 	Update(ctx context.Context, guid string, request *ServiceRouteBindingUpdateRequest) (*ServiceRouteBinding, error)
@@ -492,7 +492,7 @@ type SidecarsClient interface {
 type RevisionsClient interface {
 	Get(ctx context.Context, guid string) (*Revision, error)
 	Update(ctx context.Context, guid string, request *RevisionUpdateRequest) (*Revision, error)
-	GetEnvironmentVariables(ctx context.Context, guid string) (map[string]interface{}, error)
+	GetEnvironmentVariables(ctx context.Context, guid string) (map[string]any, error)
 	ListForApp(ctx context.Context, appGUID string, params *QueryParams) (*ListResponse[Revision], error)
 	GetDeployedForApp(ctx context.Context, appGUID string) (*ListResponse[Revision], error)
 }
@@ -500,7 +500,7 @@ type RevisionsClient interface {
 // EnvironmentVariableGroupsClient defines operations for environment variable groups.
 type EnvironmentVariableGroupsClient interface {
 	Get(ctx context.Context, name string) (*EnvironmentVariableGroup, error)
-	Update(ctx context.Context, name string, envVars map[string]interface{}) (*EnvironmentVariableGroup, error)
+	Update(ctx context.Context, name string, envVars map[string]any) (*EnvironmentVariableGroup, error)
 }
 
 // AppUsageEventsClient defines operations for app usage events.

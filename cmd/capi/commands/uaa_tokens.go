@@ -458,8 +458,8 @@ type tokenKeyCommandConfig struct {
 	use          string
 	short        string
 	long         string
-	fetchKeys    func(*UAAClientWrapper) (interface{}, error)
-	displayTable func(interface{}) error
+	fetchKeys    func(*UAAClientWrapper) (any, error)
+	displayTable func(any) error
 }
 
 // createTokenKeyCommand creates a standardized command for token key retrieval.
@@ -521,7 +521,7 @@ func createUsersGetTokenKeyCommand() *cobra.Command {
 		use:   "get-token-key",
 		short: "View JWT signing key",
 		long:  "View the current key used for validating UAA's JWT token signatures",
-		fetchKeys: func(uaaClient *UAAClientWrapper) (interface{}, error) {
+		fetchKeys: func(uaaClient *UAAClientWrapper) (any, error) {
 			key, err := uaaClient.Client().TokenKey()
 			if err != nil {
 				return nil, fmt.Errorf("failed to get token key: %w", err)
@@ -529,7 +529,7 @@ func createUsersGetTokenKeyCommand() *cobra.Command {
 
 			return key, nil
 		},
-		displayTable: func(keys interface{}) error {
+		displayTable: func(keys any) error {
 			key, ok := keys.(*uaa.JWK)
 			if !ok {
 				return fmt.Errorf("%w, got %T", constants.ErrExpectedJWKPointer, keys)
@@ -546,7 +546,7 @@ func createUsersGetTokenKeysCommand() *cobra.Command {
 		use:   "get-token-keys",
 		short: "View all JWT signing keys",
 		long:  "View all keys the UAA has used to sign JWT tokens",
-		fetchKeys: func(uaaClient *UAAClientWrapper) (interface{}, error) {
+		fetchKeys: func(uaaClient *UAAClientWrapper) (any, error) {
 			keys, err := uaaClient.Client().TokenKeys()
 			if err != nil {
 				return nil, fmt.Errorf("failed to get token keys: %w", err)
@@ -554,7 +554,7 @@ func createUsersGetTokenKeysCommand() *cobra.Command {
 
 			return keys, nil
 		},
-		displayTable: func(keys interface{}) error {
+		displayTable: func(keys any) error {
 			keySlice, ok := keys.([]uaa.JWK)
 			if !ok {
 				return fmt.Errorf("%w, got %T", constants.ErrExpectedJWKSlice, keys)
@@ -570,7 +570,7 @@ func createUsersGetTokenKeysCommand() *cobra.Command {
 func displayTokenInfo(token *oauth2.Token, grantType string) error {
 	output := viper.GetString("output")
 
-	tokenInfo := map[string]interface{}{
+	tokenInfo := map[string]any{
 		"grant_type":    grantType,
 		"access_token":  token.AccessToken,
 		"token_type":    token.TokenType,

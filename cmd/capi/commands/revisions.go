@@ -244,7 +244,7 @@ func newRevisionsGetEnvCommand() *cobra.Command {
 	}
 }
 
-func renderRevisionEnvVars(revisionGUID string, envVars map[string]interface{}) error {
+func renderRevisionEnvVars(revisionGUID string, envVars map[string]any) error {
 	envVarsList := make([]EnvVar, 0, len(envVars))
 	for key, value := range envVars {
 		envVarsList = append(envVarsList, EnvVar{

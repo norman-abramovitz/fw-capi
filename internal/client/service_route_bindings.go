@@ -24,7 +24,7 @@ func NewServiceRouteBindingsClient(httpClient *http_internal.Client) *ServiceRou
 }
 
 // Create implements capi.ServiceRouteBindingsClient.Create.
-func (c *ServiceRouteBindingsClient) Create(ctx context.Context, request *capi.ServiceRouteBindingCreateRequest) (interface{}, error) {
+func (c *ServiceRouteBindingsClient) Create(ctx context.Context, request *capi.ServiceRouteBindingCreateRequest) (any, error) {
 	path := "/v3/service_route_bindings"
 
 	resp, err := c.httpClient.Post(ctx, path, request)

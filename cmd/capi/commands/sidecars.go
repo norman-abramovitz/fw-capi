@@ -344,12 +344,12 @@ func outputSidecarsTable(processGUID string, sidecars []capi.Sidecar, pagination
 }
 
 // formatSidecarRow formats a single sidecar for table display.
-func formatSidecarRow(sidecar capi.Sidecar) []interface{} {
+func formatSidecarRow(sidecar capi.Sidecar) []any {
 	memoryStr := formatSidecarMemory(sidecar.MemoryInMB)
 	processTypesStr := truncateSidecarString(strings.Join(sidecar.ProcessTypes, ", "), constants.ProcessTypesDisplayLength)
 	commandStr := truncateSidecarString(sidecar.Command, constants.ShortCommandDisplayLength)
 
-	return []interface{}{
+	return []any{
 		sidecar.Name,
 		sidecar.GUID,
 		commandStr,

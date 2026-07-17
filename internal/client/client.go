@@ -645,19 +645,19 @@ type loggerAdapter struct {
 	logger capi.Logger
 }
 
-func (l *loggerAdapter) Debug(msg string, fields map[string]interface{}) {
+func (l *loggerAdapter) Debug(msg string, fields map[string]any) {
 	l.logger.Debug(msg, fields)
 }
 
-func (l *loggerAdapter) Info(msg string, fields map[string]interface{}) {
+func (l *loggerAdapter) Info(msg string, fields map[string]any) {
 	l.logger.Info(msg, fields)
 }
 
-func (l *loggerAdapter) Warn(msg string, fields map[string]interface{}) {
+func (l *loggerAdapter) Warn(msg string, fields map[string]any) {
 	l.logger.Warn(msg, fields)
 }
 
-func (l *loggerAdapter) Error(msg string, fields map[string]interface{}) {
+func (l *loggerAdapter) Error(msg string, fields map[string]any) {
 	l.logger.Error(msg, fields)
 }
 

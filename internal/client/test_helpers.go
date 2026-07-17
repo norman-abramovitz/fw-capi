@@ -47,7 +47,7 @@ type TestCreateOperation[TRequest, TResponse any] struct {
 	Request      *TRequest
 	ExpectedPath string
 	StatusCode   int
-	Response     interface{} // Can be *TResponse or error response map
+	Response     any // Can be *TResponse or error response map
 	WantErr      bool
 	ErrMessage   string
 }
@@ -83,7 +83,7 @@ type TestDeleteOperation struct {
 	StatusCode   int
 	WantErr      bool
 	ErrMessage   string
-	Response     interface{}
+	Response     any
 }
 
 // RunCreateTests runs a series of create operation tests.
@@ -155,8 +155,8 @@ func RunGetTests[TResponse any](
 
 				if testCase.WantErr {
 					// Return error response format
-					errorResponse := map[string]interface{}{
-						"errors": []map[string]interface{}{
+					errorResponse := map[string]any{
+						"errors": []map[string]any{
 							{
 								"code":   constants.CFErrorCodeNotFound,
 								"title":  "CF-ResourceNotFound",
@@ -610,7 +610,7 @@ func RunCreateTestsSimple[TRequest, TResponse any](
 	tests []struct {
 		name         string
 		request      *TRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -666,7 +666,7 @@ func RunGetTestsSimple[TResponse any](
 	tests []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -766,7 +766,7 @@ func RunListTestSimple[TResource any](
 	testName string,
 	expectedPath string,
 	responseData []TResource,
-	listFunc func(*Client) func(context.Context, string, interface{}) (*capi.ListResponse[TResource], error),
+	listFunc func(*Client) func(context.Context, string, any) (*capi.ListResponse[TResource], error),
 	validateResources func([]TResource),
 	resourceGUID string,
 ) {
@@ -925,8 +925,8 @@ func RunServiceListTest[TResource any](
 	expectedPath string,
 	queryValidation func(*http.Request),
 	responseData []TResource,
-	clientFactory func(*internalhttp.Client) interface{},
-	listCall func(interface{}) (*capi.ListResponse[TResource], error),
+	clientFactory func(*internalhttp.Client) any,
+	listCall func(any) (*capi.ListResponse[TResource], error),
 	validateResults func([]TResource),
 ) {
 	t.Helper()
@@ -981,8 +981,8 @@ func RunJobDeleteTest(
 	testName string,
 	expectedPath string,
 	operationType string,
-	clientFactory func(*internalhttp.Client) interface{},
-	deleteCall func(interface{}) (*capi.Job, error),
+	clientFactory func(*internalhttp.Client) any,
+	deleteCall func(any) (*capi.Job, error),
 ) {
 	t.Helper()
 
@@ -1131,7 +1131,7 @@ func uploadMultipartFile(ctx context.Context, httpClient *internalhttp.Client, p
 }
 
 // RunCreateTestWithValidation runs a create test with validation.
-func RunCreateTestWithValidation(t *testing.T, testName, expectedPath string, statusCode int, response interface{}, wantErr bool, errMessage string, testFunc func(*Client) error) {
+func RunCreateTestWithValidation(t *testing.T, testName, expectedPath string, statusCode int, response any, wantErr bool, errMessage string, testFunc func(*Client) error) {
 	t.Helper()
 	t.Run(testName, func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -1159,7 +1159,7 @@ func RunCreateTestWithValidation(t *testing.T, testName, expectedPath string, st
 }
 
 // RunGetTestWithValidation runs a get test with validation.
-func RunGetTestWithValidation(t *testing.T, testName, guid, expectedPath string, statusCode int, response interface{}, wantErr bool, errMessage string, testFunc func(*Client, string) error) {
+func RunGetTestWithValidation(t *testing.T, testName, guid, expectedPath string, statusCode int, response any, wantErr bool, errMessage string, testFunc func(*Client, string) error) {
 	t.Helper()
 	t.Run(testName, func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

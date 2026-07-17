@@ -40,7 +40,7 @@ func (b *RequestBuilder) Query(query url.Values) *RequestBuilder {
 }
 
 // Body sets the request body.
-func (b *RequestBuilder) Body(body interface{}) *RequestBuilder {
+func (b *RequestBuilder) Body(body any) *RequestBuilder {
 	b.request.Body = body
 
 	return b

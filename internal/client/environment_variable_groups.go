@@ -41,11 +41,11 @@ func (c *EnvironmentVariableGroupsClient) Get(ctx context.Context, name string) 
 }
 
 // Update implements capi.EnvironmentVariableGroupsClient.Update.
-func (c *EnvironmentVariableGroupsClient) Update(ctx context.Context, name string, envVars map[string]interface{}) (*capi.EnvironmentVariableGroup, error) {
+func (c *EnvironmentVariableGroupsClient) Update(ctx context.Context, name string, envVars map[string]any) (*capi.EnvironmentVariableGroup, error) {
 	path := "/v3/environment_variable_groups/" + name
 
 	// Wrap the variables in a 'var' field as required by the API
-	body := map[string]interface{}{
+	body := map[string]any{
 		"var": envVars,
 	}
 

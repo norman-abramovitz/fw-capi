@@ -280,7 +280,7 @@ func newManifestsDiffCommand() *cobra.Command {
 }
 
 // handleJobCompletion handles the display of job completion results.
-func handleJobCompletion(completedJob interface{}) {
+func handleJobCompletion(completedJob any) {
 	// Use reflection to access job fields since we don't know the exact type
 	jobValue := reflect.ValueOf(completedJob)
 
@@ -313,7 +313,7 @@ func handleJobCompletion(completedJob interface{}) {
 }
 
 // formatValue formats a value for display in the diff table.
-func formatValue(v interface{}) string {
+func formatValue(v any) string {
 	if v == nil {
 		return "-"
 	}

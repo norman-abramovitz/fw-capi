@@ -262,7 +262,7 @@ func printEnvironmentVariables(envVars *capi.AppEnv) {
 func setEnvironmentVariablesExample(client capi.Client, ctx context.Context, app *capi.App) {
 	log.Println("=== Setting Environment Variables ===")
 
-	newEnvVars := map[string]interface{}{
+	newEnvVars := map[string]any{
 		"EXAMPLE_VAR": "example-value",
 		"DEBUG":       "true",
 	}

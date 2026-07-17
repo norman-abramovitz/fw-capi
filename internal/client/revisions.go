@@ -61,7 +61,7 @@ func (c *RevisionsClient) Update(ctx context.Context, guid string, request *capi
 }
 
 // GetEnvironmentVariables implements capi.RevisionsClient.GetEnvironmentVariables.
-func (c *RevisionsClient) GetEnvironmentVariables(ctx context.Context, guid string) (map[string]interface{}, error) {
+func (c *RevisionsClient) GetEnvironmentVariables(ctx context.Context, guid string) (map[string]any, error) {
 	path := fmt.Sprintf("/v3/revisions/%s/environment_variables", guid)
 
 	resp, err := c.httpClient.Get(ctx, path, nil)
@@ -71,7 +71,7 @@ func (c *RevisionsClient) GetEnvironmentVariables(ctx context.Context, guid stri
 
 	// The response has a 'var' field that contains the environment variables
 	var result struct {
-		Var map[string]interface{} `json:"var"`
+		Var map[string]any `json:"var"`
 	}
 
 	err = json.Unmarshal(resp.Body, &result)

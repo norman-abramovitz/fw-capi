@@ -362,7 +362,7 @@ func demonstrateEnvironmentVariableGroups(ctx context.Context, client capi.Clien
 	// Demonstrate updating environment variables (commented out to avoid affecting real environment)
 	log.Println("\n   Environment variable update example (commented out for safety):")
 	log.Println("   // Update running environment variables")
-	log.Println("   // newVars := map[string]interface{}{")
+	log.Println("   // newVars := map[string]any{")
 	log.Println("   //     \"DEMO_LOG_LEVEL\": \"debug\",")
 	log.Println("   //     \"DEMO_FEATURE_FLAG\": true,")
 	log.Println("   // }")
@@ -372,7 +372,7 @@ func demonstrateEnvironmentVariableGroups(ctx context.Context, client capi.Clien
 		// Uncomment this section if you want to actually update environment variables
 		// WARNING: This will affect all applications in the CF deployment
 
-		newVars := map[string]interface{}{
+		newVars := map[string]any{
 			"DEMO_LOG_LEVEL":    "debug",
 			"DEMO_FEATURE_FLAG": true,
 			"DEMO_TIMESTAMP":    time.Now().Format(time.RFC3339),

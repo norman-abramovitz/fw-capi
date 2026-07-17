@@ -25,7 +25,7 @@ func NewServiceCredentialBindingsClient(httpClient *http_internal.Client) *Servi
 
 // Create creates a new service credential binding
 // Returns *ServiceCredentialBinding for synchronous operations or *Job for asynchronous operations.
-func (c *ServiceCredentialBindingsClient) Create(ctx context.Context, request *capi.ServiceCredentialBindingCreateRequest) (interface{}, error) {
+func (c *ServiceCredentialBindingsClient) Create(ctx context.Context, request *capi.ServiceCredentialBindingCreateRequest) (any, error) {
 	path := "/v3/service_credential_bindings"
 
 	resp, err := c.httpClient.Post(ctx, path, request)

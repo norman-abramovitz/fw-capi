@@ -25,7 +25,7 @@ func NewServiceInstancesClient(httpClient *http_internal.Client) *ServiceInstanc
 
 // Create creates a new service instance
 // Returns *ServiceInstance for user-provided instances, *Job for managed instances.
-func (c *ServiceInstancesClient) Create(ctx context.Context, request *capi.ServiceInstanceCreateRequest) (interface{}, error) {
+func (c *ServiceInstancesClient) Create(ctx context.Context, request *capi.ServiceInstanceCreateRequest) (any, error) {
 	path := "/v3/service_instances"
 
 	resp, err := c.httpClient.Post(ctx, path, request)
@@ -99,7 +99,7 @@ func (c *ServiceInstancesClient) List(ctx context.Context, params *capi.QueryPar
 
 // Update updates a service instance
 // Returns *ServiceInstance for user-provided instances, *Job for managed instances.
-func (c *ServiceInstancesClient) Update(ctx context.Context, guid string, request *capi.ServiceInstanceUpdateRequest) (interface{}, error) {
+func (c *ServiceInstancesClient) Update(ctx context.Context, guid string, request *capi.ServiceInstanceUpdateRequest) (any, error) {
 	path := "/v3/service_instances/" + guid
 
 	resp, err := c.httpClient.Patch(ctx, path, request)
@@ -168,7 +168,7 @@ func (c *ServiceInstancesClient) GetParameters(ctx context.Context, guid string)
 	// CF returns the parameters as a bare top-level JSON object
 	// ({"key":"value", ...}), not wrapped in {"parameters": ...}, so
 	// unmarshal into the map directly rather than the envelope struct.
-	var params map[string]interface{}
+	var params map[string]any
 
 	err = json.Unmarshal(resp.Body, &params)
 	if err != nil {
@@ -190,7 +190,7 @@ func (c *ServiceInstancesClient) GetCredentials(ctx context.Context, guid string
 	// As with parameters, CF returns the credentials as a bare top-level
 	// JSON object ({"username":"...", ...}), not wrapped in
 	// {"credentials": ...}; unmarshal into the map directly.
-	var creds map[string]interface{}
+	var creds map[string]any
 
 	err = json.Unmarshal(resp.Body, &creds)
 	if err != nil {
