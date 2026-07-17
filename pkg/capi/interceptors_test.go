@@ -33,8 +33,8 @@ func TestInterceptorChain_RequestInterceptors(t *testing.T) {
 	})
 
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/test",
+		Method: http.MethodGet,
+		Path:   testPath,
 	}
 
 	err := chain.ExecuteRequestInterceptors(ctx, req)
@@ -65,8 +65,8 @@ func TestInterceptorChain_ResponseInterceptors(t *testing.T) {
 	})
 
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/test",
+		Method: http.MethodGet,
+		Path:   testPath,
 	}
 	resp := &capi.Response{
 		StatusCode: 200,
@@ -89,8 +89,8 @@ func TestHeaderInterceptor(t *testing.T) {
 	interceptor := capi.HeaderInterceptor(headers)
 	ctx := context.Background()
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/test",
+		Method: http.MethodGet,
+		Path:   testPath,
 	}
 
 	err := interceptor(ctx, req)
@@ -110,8 +110,8 @@ func TestAuthenticationInterceptor(t *testing.T) {
 	interceptor := capi.AuthenticationInterceptor(tokenProvider)
 	ctx := context.Background()
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/test",
+		Method: http.MethodGet,
+		Path:   testPath,
 	}
 
 	err := interceptor(ctx, req)
@@ -158,8 +158,8 @@ func TestMetricsCollector(t *testing.T) {
 
 	ctx := context.Background()
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/v3/apps",
+		Method: http.MethodGet,
+		Path:   testAppsPath,
 	}
 
 	// Execute request interceptor
@@ -182,8 +182,8 @@ func TestMetricsCollector(t *testing.T) {
 
 	// Execute another request with error
 	req2 := &capi.Request{
-		Method: "GET",
-		Path:   "/v3/apps",
+		Method: http.MethodGet,
+		Path:   testAppsPath,
 	}
 
 	// Execute request interceptor for the second request
@@ -271,8 +271,8 @@ func TestRetryResponseInterceptor(t *testing.T) {
 	interceptor := capi.RetryResponseInterceptor(config)
 	ctx := context.Background()
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/test",
+		Method: http.MethodGet,
+		Path:   testPath,
 	}
 
 	// Test retryable status code
@@ -283,7 +283,7 @@ func TestRetryResponseInterceptor(t *testing.T) {
 
 	err := interceptor(ctx, req, resp)
 	require.NoError(t, err)
-	assert.Equal(t, "true", resp.Headers.Get("X-Should-Retry"))
+	assert.Equal(t, stringTrue, resp.Headers.Get("X-Should-Retry"))
 
 	// Test non-retryable status code
 	resp2 := &capi.Response{

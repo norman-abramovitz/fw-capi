@@ -7,6 +7,7 @@ import (
 
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestApplyQueryOptions_NilValuesNoOpts(t *testing.T) {
@@ -14,6 +15,7 @@ func TestApplyQueryOptions_NilValuesNoOpts(t *testing.T) {
 	assert.Nil(t, capi.ApplyQueryOptions[capi.RoleGetOption](nil, nil))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestApplyQueryOptions_AllocatesWhenOptsPresent(t *testing.T) {
 	t.Parallel()
 
@@ -21,6 +23,7 @@ func TestApplyQueryOptions_AllocatesWhenOptsPresent(t *testing.T) {
 	assert.Equal(t, "space", v.Get("include"))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestApplyQueryOptions_IncludesJoinAndDedupe(t *testing.T) {
 	t.Parallel()
 
@@ -30,6 +33,7 @@ func TestApplyQueryOptions_IncludesJoinAndDedupe(t *testing.T) {
 	assert.Equal(t, "space,organization", v.Get("include"))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestApplyQueryOptions_MergesIntoExistingValues(t *testing.T) {
 	t.Parallel()
 
@@ -39,6 +43,7 @@ func TestApplyQueryOptions_MergesIntoExistingValues(t *testing.T) {
 	assert.Equal(t, "2", v.Get("page"))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestIncludeConstants_Encoding(t *testing.T) {
 	t.Parallel()
 
@@ -70,22 +75,23 @@ func TestProcessEmbed_Encoding(t *testing.T) {
 func TestFieldsOptions_Encoding(t *testing.T) {
 	t.Parallel()
 
-	v := capi.ApplyQueryOptions(nil, []capi.ServiceInstanceGetOption{
+	fieldsValues := capi.ApplyQueryOptions(nil, []capi.ServiceInstanceGetOption{
 		capi.WithServiceInstanceFields(capi.ServiceInstanceFieldsSpaceOrganization, "name", "guid"),
 	})
-	assert.Equal(t, "name,guid", v.Get("fields[space.organization]"))
+	assert.Equal(t, "name,guid", fieldsValues.Get("fields[space.organization]"))
 
-	v = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingGetOption{
+	fieldsValues = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingGetOption{
 		capi.WithServiceOfferingFields(capi.ServiceOfferingFieldsServiceBroker, "name", "guid"),
 	})
-	assert.Equal(t, "name,guid", v.Get("fields[service_broker]"))
+	assert.Equal(t, "name,guid", fieldsValues.Get("fields[service_broker]"))
 
-	v = capi.ApplyQueryOptions(nil, []capi.ServicePlanGetOption{
+	fieldsValues = capi.ApplyQueryOptions(nil, []capi.ServicePlanGetOption{
 		capi.WithServicePlanFields(capi.ServicePlanFieldsServiceOfferingServiceBroker, "name"),
 	})
-	assert.Equal(t, "name", v.Get("fields[service_offering.service_broker]"))
+	assert.Equal(t, "name", fieldsValues.Get("fields[service_offering.service_broker]"))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestRouteDestinationsOptions_Encoding(t *testing.T) {
 	t.Parallel()
 
@@ -101,37 +107,38 @@ func TestServiceOfferingPurge_Encoding(t *testing.T) {
 	t.Parallel()
 
 	v := capi.ApplyQueryOptions(nil, []capi.ServiceOfferingDeleteOption{capi.PurgeServiceOffering})
-	assert.Equal(t, "true", v.Get("purge"))
+	assert.Equal(t, stringTrue, v.Get("purge"))
 }
 
 func TestFieldsOptions_UsableInListCalls(t *testing.T) {
 	t.Parallel()
 
-	v := capi.ApplyQueryOptions(nil, []capi.ServicePlanListOption{
+	fieldsValues := capi.ApplyQueryOptions(nil, []capi.ServicePlanListOption{
 		capi.WithServicePlanFields(capi.ServicePlanFieldsServiceOfferingServiceBroker, "name"),
 	})
-	assert.Equal(t, "name", v.Get("fields[service_offering.service_broker]"))
+	assert.Equal(t, "name", fieldsValues.Get("fields[service_offering.service_broker]"))
 
-	v = capi.ApplyQueryOptions(nil, []capi.ServiceInstanceListOption{
+	fieldsValues = capi.ApplyQueryOptions(nil, []capi.ServiceInstanceListOption{
 		capi.WithServiceInstanceFields(capi.ServiceInstanceFieldsSpace, "guid"),
 	})
-	assert.Equal(t, "guid", v.Get("fields[space]"))
+	assert.Equal(t, "guid", fieldsValues.Get("fields[space]"))
 
-	v = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingListOption{
+	fieldsValues = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingListOption{
 		capi.WithServiceOfferingFields(capi.ServiceOfferingFieldsServiceBroker, "name"),
 	})
-	assert.Equal(t, "name", v.Get("fields[service_broker]"))
+	assert.Equal(t, "name", fieldsValues.Get("fields[service_broker]"))
 }
 
 func TestApplyQueryOptions_ScalarOverwritesExistingKey(t *testing.T) {
 	t.Parallel()
 
-	v := url.Values{"purge": {"false"}}
+	v := url.Values{"purge": {stringFalse}}
 	v = capi.ApplyQueryOptions(v, []capi.ServiceOfferingDeleteOption{capi.PurgeServiceOffering})
-	assert.Equal(t, "true", v.Get("purge"))
+	assert.Equal(t, stringTrue, v.Get("purge"))
 	assert.Len(t, v["purge"], 1)
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestApplyQueryOptions_MutatesInPlace(t *testing.T) {
 	t.Parallel()
 
@@ -142,6 +149,7 @@ func TestApplyQueryOptions_MutatesInPlace(t *testing.T) {
 	assert.Equal(t, "space", returned.Get("include"))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestServiceInstanceInclude_Constants(t *testing.T) {
 	t.Parallel()
 
@@ -191,6 +199,7 @@ func TestServiceInstanceInclude_Constants(t *testing.T) {
 	}
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestServiceInstanceInclude_SatisfiesListOption(t *testing.T) {
 	t.Parallel()
 
@@ -201,43 +210,44 @@ func TestServiceInstanceInclude_SatisfiesListOption(t *testing.T) {
 	assert.Equal(t, "space,service_plan.service_offering", v.Get("include"))
 }
 
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestServiceOfferingInclude_Constants(t *testing.T) {
 	t.Parallel()
 
 	// satisfies Get
-	v := capi.ApplyQueryOptions(nil, []capi.ServiceOfferingGetOption{
+	includeValues := capi.ApplyQueryOptions(nil, []capi.ServiceOfferingGetOption{
 		capi.ServiceOfferingIncludeServiceBroker,
 	})
-	assert.Equal(t, "service_broker", v.Get("include"))
+	assert.Equal(t, "service_broker", includeValues.Get("include"))
 
 	// satisfies List
-	v = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingListOption{
+	includeValues = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingListOption{
 		capi.ServiceOfferingIncludeServiceBroker,
 	})
-	assert.Equal(t, "service_broker", v.Get("include"))
+	assert.Equal(t, "service_broker", includeValues.Get("include"))
 
 	// dedupe
-	v = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingGetOption{
+	includeValues = capi.ApplyQueryOptions(nil, []capi.ServiceOfferingGetOption{
 		capi.ServiceOfferingIncludeServiceBroker,
 		capi.ServiceOfferingIncludeServiceBroker,
 	})
-	assert.Equal(t, "service_broker", v.Get("include"))
+	assert.Equal(t, "service_broker", includeValues.Get("include"))
 }
 
 func TestWithTimestampFilter_ValidOps(t *testing.T) {
 	t.Parallel()
 
-	ts := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
+	timestamp := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
 	want := "2024-03-15T12:00:00Z"
 
-	for _, op := range []string{"gt", "gte", "lt", "lte"} {
-		t.Run(op, func(t *testing.T) {
+	for _, operator := range []string{"gt", "gte", "lt", "lte"} {
+		t.Run(operator, func(t *testing.T) {
 			t.Parallel()
 
 			v := capi.ApplyQueryOptions(nil, []capi.QueryOption{
-				capi.WithTimestampFilter("updated_at", op, ts),
+				capi.WithTimestampFilter("updated_at", operator, timestamp),
 			})
-			key := "updated_at[" + op + "]"
+			key := "updated_at[" + operator + "]"
 			assert.Equal(t, want, v.Get(key), "key=%s", key)
 		})
 	}
@@ -247,7 +257,7 @@ func TestWithTimestampFilter_NormalizesToUTC(t *testing.T) {
 	t.Parallel()
 
 	loc, err := time.LoadLocation("America/New_York")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ts := time.Date(2024, 3, 15, 8, 0, 0, 0, loc) // -4h from UTC
 	v := capi.ApplyQueryOptions(nil, []capi.QueryOption{
@@ -259,14 +269,14 @@ func TestWithTimestampFilter_NormalizesToUTC(t *testing.T) {
 func TestWithTimestampFilter_InvalidOpIsNoop(t *testing.T) {
 	t.Parallel()
 
-	ts := time.Now().UTC()
+	timestamp := time.Now().UTC()
 
 	for _, bad := range []string{"", "eq", "ne", "GT", ">=", "after"} {
 		t.Run(bad, func(t *testing.T) {
 			t.Parallel()
 
 			v := capi.ApplyQueryOptions(nil, []capi.QueryOption{
-				capi.WithTimestampFilter("created_at", bad, ts),
+				capi.WithTimestampFilter("created_at", bad, timestamp),
 			})
 			// no key must be set — noop leaves url.Values empty
 			assert.Empty(t, v, "op=%q should produce no query params", bad)

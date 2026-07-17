@@ -105,10 +105,10 @@ type Client interface {
 
 // Logger interface for logging.
 type Logger interface {
-	Debug(msg string, fields map[string]interface{})
-	Info(msg string, fields map[string]interface{})
-	Warn(msg string, fields map[string]interface{})
-	Error(msg string, fields map[string]interface{})
+	Debug(msg string, fields map[string]any)
+	Info(msg string, fields map[string]any)
+	Warn(msg string, fields map[string]any)
+	Error(msg string, fields map[string]any)
 }
 
 // Config represents client configuration for building a capi.Client.
@@ -201,15 +201,15 @@ func NewClient(config *Config) (Client, error) {
 
 // Info represents the /v3/info response.
 type Info struct {
-	Build       string                 `json:"build"       yaml:"build"`
-	CLIVersion  CLIVersion             `json:"cli_version" yaml:"cli_version"`
-	Custom      map[string]interface{} `json:"custom"      yaml:"custom"`
-	Description string                 `json:"description" yaml:"description"`
-	Name        string                 `json:"name"        yaml:"name"`
-	Version     int                    `json:"version"     yaml:"version"`
-	RateLimits  RateLimits             `json:"rate_limits" yaml:"rate_limits"`
-	Links       Links                  `json:"links"       yaml:"links"`
-	CFOnK8s     bool                   `json:"cf_on_k8s"   yaml:"cf_on_k8s"`
+	Build       string         `json:"build"       yaml:"build"`
+	CLIVersion  CLIVersion     `json:"cli_version" yaml:"cli_version"`
+	Custom      map[string]any `json:"custom"      yaml:"custom"`
+	Description string         `json:"description" yaml:"description"`
+	Name        string         `json:"name"        yaml:"name"`
+	Version     int            `json:"version"     yaml:"version"`
+	RateLimits  RateLimits     `json:"rate_limits" yaml:"rate_limits"`
+	Links       Links          `json:"links"       yaml:"links"`
+	CFOnK8s     bool           `json:"cf_on_k8s"   yaml:"cf_on_k8s"`
 }
 
 // CLIVersion represents CLI version information.

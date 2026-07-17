@@ -41,28 +41,28 @@ type ManifestApplication struct {
 	// Readiness health checks determine when an app is ready to receive
 	// traffic (CF v3 3.223.0 manifest schema). Valid types: http, port,
 	// process.
-	ReadinessHealthCheckType              string                 `json:"readiness_health_check_type,omitempty"               yaml:"readiness-health-check-type,omitempty"`
-	ReadinessHealthCheckHTTPEndpoint      string                 `json:"readiness_health_check_http_endpoint,omitempty"      yaml:"readiness-health-check-http-endpoint,omitempty"`
-	ReadinessHealthCheckInterval          *int                   `json:"readiness_health_check_interval,omitempty"           yaml:"readiness-health-check-interval,omitempty"`
-	ReadinessHealthCheckInvocationTimeout *int                   `json:"readiness_health_check_invocation_timeout,omitempty" yaml:"readiness-health-check-invocation-timeout,omitempty"`
-	Env                                   map[string]interface{} `json:"env,omitempty"                                       yaml:"env,omitempty"`
-	Services                              []ManifestService      `json:"services,omitempty"                                  yaml:"services,omitempty"`
-	Routes                                []ManifestRoute        `json:"routes,omitempty"                                    yaml:"routes,omitempty"`
-	RandomRoute                           *bool                  `json:"random_route,omitempty"                              yaml:"random-route,omitempty"`
-	NoRoute                               *bool                  `json:"no_route,omitempty"                                  yaml:"no-route,omitempty"`
-	Processes                             []ManifestProcess      `json:"processes,omitempty"                                 yaml:"processes,omitempty"`
-	Sidecars                              []ManifestSidecar      `json:"sidecars,omitempty"                                  yaml:"sidecars,omitempty"`
-	Metadata                              *ManifestMetadata      `json:"metadata,omitempty"                                  yaml:"metadata,omitempty"`
-	DockerImage                           string                 `json:"docker,omitempty"                                    yaml:"docker,omitempty"`
-	DockerUsername                        string                 `json:"docker_username,omitempty"                           yaml:"docker-username,omitempty"`
-	LogRateLimit                          string                 `json:"log_rate_limit_per_second,omitempty"                 yaml:"log-rate-limit-per-second,omitempty"`
+	ReadinessHealthCheckType              string            `json:"readiness_health_check_type,omitempty"               yaml:"readiness-health-check-type,omitempty"`
+	ReadinessHealthCheckHTTPEndpoint      string            `json:"readiness_health_check_http_endpoint,omitempty"      yaml:"readiness-health-check-http-endpoint,omitempty"`
+	ReadinessHealthCheckInterval          *int              `json:"readiness_health_check_interval,omitempty"           yaml:"readiness-health-check-interval,omitempty"`
+	ReadinessHealthCheckInvocationTimeout *int              `json:"readiness_health_check_invocation_timeout,omitempty" yaml:"readiness-health-check-invocation-timeout,omitempty"`
+	Env                                   map[string]any    `json:"env,omitempty"                                       yaml:"env,omitempty"`
+	Services                              []ManifestService `json:"services,omitempty"                                  yaml:"services,omitempty"`
+	Routes                                []ManifestRoute   `json:"routes,omitempty"                                    yaml:"routes,omitempty"`
+	RandomRoute                           *bool             `json:"random_route,omitempty"                              yaml:"random-route,omitempty"`
+	NoRoute                               *bool             `json:"no_route,omitempty"                                  yaml:"no-route,omitempty"`
+	Processes                             []ManifestProcess `json:"processes,omitempty"                                 yaml:"processes,omitempty"`
+	Sidecars                              []ManifestSidecar `json:"sidecars,omitempty"                                  yaml:"sidecars,omitempty"`
+	Metadata                              *ManifestMetadata `json:"metadata,omitempty"                                  yaml:"metadata,omitempty"`
+	DockerImage                           string            `json:"docker,omitempty"                                    yaml:"docker,omitempty"`
+	DockerUsername                        string            `json:"docker_username,omitempty"                           yaml:"docker-username,omitempty"`
+	LogRateLimit                          string            `json:"log_rate_limit_per_second,omitempty"                 yaml:"log-rate-limit-per-second,omitempty"`
 }
 
 // ManifestService represents a service binding in a manifest.
 type ManifestService struct {
-	Name        string                 `json:"name,omitempty"         yaml:"name,omitempty"`
-	BindingName string                 `json:"binding_name,omitempty" yaml:"binding_name,omitempty"`
-	Parameters  map[string]interface{} `json:"parameters,omitempty"   yaml:"parameters,omitempty"`
+	Name        string         `json:"name,omitempty"         yaml:"name,omitempty"`
+	BindingName string         `json:"binding_name,omitempty" yaml:"binding_name,omitempty"`
+	Parameters  map[string]any `json:"parameters,omitempty"   yaml:"parameters,omitempty"`
 }
 
 // ManifestRoute represents a route in a manifest.
@@ -113,10 +113,10 @@ type ManifestDiff struct {
 
 // ManifestDiffEntry represents a single diff entry.
 type ManifestDiffEntry struct {
-	Op    string      `json:"op"              yaml:"op"`
-	Path  string      `json:"path"            yaml:"path"`
-	Was   interface{} `json:"was,omitempty"   yaml:"was,omitempty"`
-	Value interface{} `json:"value,omitempty" yaml:"value,omitempty"`
+	Op    string `json:"op"              yaml:"op"`
+	Path  string `json:"path"            yaml:"path"`
+	Was   any    `json:"was,omitempty"   yaml:"was,omitempty"`
+	Value any    `json:"value,omitempty" yaml:"value,omitempty"`
 }
 
 // ManifestDiffResponse represents the API response for manifest diff.

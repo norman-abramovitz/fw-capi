@@ -15,14 +15,14 @@ type SpaceIncludedResources struct {
 type SpaceQuota struct {
 	Resource
 
-	Name          string                 `json:"name"`
-	Apps          *AppsQuota             `json:"apps,omitempty"`
-	Services      *ServicesQuota         `json:"services,omitempty"`
-	Routes        *RoutesQuota           `json:"routes,omitempty"`
-	Relationships map[string]interface{} `json:"relationships,omitempty"`
-	Links         Links                  `json:"links,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	UpdatedAt     time.Time              `json:"updated_at"`
+	Name          string         `json:"name"`
+	Apps          *AppsQuota     `json:"apps,omitempty"`
+	Services      *ServicesQuota `json:"services,omitempty"`
+	Routes        *RoutesQuota   `json:"routes,omitempty"`
+	Relationships map[string]any `json:"relationships,omitempty"`
+	Links         Links          `json:"links,omitempty"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
 }
 
 // AppsQuota represents app quota limits.

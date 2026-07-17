@@ -21,7 +21,7 @@ func TestMemoryCache_SetAndGet(t *testing.T) {
 	entry := &capi.CacheEntry{
 		Data:      []byte("test data"),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
-		ETag:      "abc123",
+		ETag:      testETag,
 	}
 
 	// Set entry
@@ -55,7 +55,7 @@ func TestMemoryCache_GetExpired(t *testing.T) {
 	entry := &capi.CacheEntry{
 		Data:      []byte("test data"),
 		ExpiresAt: time.Now().Add(-1 * time.Hour), // Already expired
-		ETag:      "abc123",
+		ETag:      testETag,
 	}
 
 	err := cache.Set(ctx, "key1", entry)
@@ -219,11 +219,11 @@ func TestCacheManager_GetCacheKey(t *testing.T) {
 	assert.Equal(t, "GET:/v3/apps", key1)
 
 	// Test with params
-	params := map[string]string{"page": "1", "per_page": "50"}
+	params := map[string]string{testQueryParamPage: "1", testQueryParamPerPage: "50"}
 	key2 := manager.GetCacheKey("GET", "/v3/apps", params)
 	assert.Contains(t, key2, "GET:/v3/apps:")
-	assert.Contains(t, key2, "page")
-	assert.Contains(t, key2, "per_page")
+	assert.Contains(t, key2, testQueryParamPage)
+	assert.Contains(t, key2, testQueryParamPerPage)
 }
 
 func TestCacheManager_SetAndGet(t *testing.T) {
@@ -333,13 +333,13 @@ func TestCacheStats_ConcurrentIncrements(t *testing.T) {
 		opsEach    = 20
 	)
 
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
-	for g := range goroutines {
-		wg.Add(1)
+	for goroutineIdx := range goroutines {
+		waitGroup.Add(1)
 
 		go func(id int) {
-			defer wg.Done()
+			defer waitGroup.Done()
 
 			for i := range opsEach {
 				key := fmt.Sprintf("g%d-k%d", id, i)
@@ -347,10 +347,10 @@ func TestCacheStats_ConcurrentIncrements(t *testing.T) {
 				_, _ = manager.Get(ctx, key)
 				_, _ = manager.Get(ctx, key+"miss")
 			}
-		}(g)
+		}(goroutineIdx)
 	}
 
-	wg.Wait()
+	waitGroup.Wait()
 
 	stats := manager.GetStats()
 	// Each goroutine does opsEach Sets, opsEach hits, opsEach misses.
@@ -411,7 +411,7 @@ func TestCachingPolicy_ShouldCache(t *testing.T) {
 		CacheGET:     true,
 		CachePOST:    true,
 		CacheErrors:  true,
-		IncludePaths: []string{"/v3/apps"},
+		IncludePaths: []string{testAppsPath},
 	}
 
 	// Only included paths should be cached

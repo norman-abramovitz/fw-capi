@@ -10,6 +10,8 @@ import (
 
 // TestParityFilterOptions covers the entity and enum filter constructors added
 // to the endpoints that also expose include/fields options.
+//
+//nolint:funlen,goconst // Test functions can be longer for comprehensive testing; asserts literal wire-format query keys/values, not test fixtures
 func TestParityFilterOptions(t *testing.T) {
 	t.Parallel()
 
@@ -137,6 +139,8 @@ func TestParityFilterOptions(t *testing.T) {
 // TestParityFilterOptions_ComposeWithInclude proves a filter option and an
 // include option for the same resource coexist on a single List call: the
 // scalar filter sets its key while the include accumulates separately.
+//
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestParityFilterOptions_ComposeWithInclude(t *testing.T) {
 	t.Parallel()
 

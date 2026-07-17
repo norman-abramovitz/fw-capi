@@ -97,18 +97,18 @@ func allSentinelCases() []sentinelCase {
 func TestMapHTTPError_WellFormedBodyWrapsSentinel(t *testing.T) {
 	t.Parallel()
 
-	for _, tc := range allSentinelCases() {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range allSentinelCases() {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := capi.MapHTTPError(tc.status, []byte(wellFormedNotFoundEnvelope))
+			err := capi.MapHTTPError(testCase.status, []byte(wellFormedNotFoundEnvelope))
 			require.Error(t, err)
 
 			require.ErrorIs(
 				t,
-				err, tc.sentinel,
+				err, testCase.sentinel,
 				"errors.Is(err, %v) must be true for status %d",
-				tc.sentinel, tc.status,
+				testCase.sentinel, testCase.status,
 			)
 
 			var envelope *capi.ResponseError
@@ -142,19 +142,19 @@ func TestMapHTTPError_MalformedBodyStillWrapsSentinel(t *testing.T) {
 		{name: "raw string", body: []byte(`"plain string"`)},
 	}
 
-	for _, tc := range allSentinelCases() {
+	for _, testCase := range allSentinelCases() {
 		for _, input := range malformedInputs {
-			t.Run(tc.name+"/"+input.name, func(t *testing.T) {
+			t.Run(testCase.name+"/"+input.name, func(t *testing.T) {
 				t.Parallel()
 
-				err := capi.MapHTTPError(tc.status, input.body)
+				err := capi.MapHTTPError(testCase.status, input.body)
 				require.Error(t, err)
 
 				require.ErrorIs(
 					t,
-					err, tc.sentinel,
+					err, testCase.sentinel,
 					"errors.Is(err, %v) must be true for status %d with malformed body",
-					tc.sentinel, tc.status,
+					testCase.sentinel, testCase.status,
 				)
 
 				// For malformed bodies, MapHTTPError should NOT produce a
@@ -182,21 +182,21 @@ func TestMapHTTPError_MalformedBodyStillWrapsSentinel(t *testing.T) {
 func TestMapHTTPError_EmptyBody(t *testing.T) {
 	t.Parallel()
 
-	for _, tc := range allSentinelCases() {
-		t.Run(tc.name+"/nil body", func(t *testing.T) {
+	for _, testCase := range allSentinelCases() {
+		t.Run(testCase.name+"/nil body", func(t *testing.T) {
 			t.Parallel()
 
-			err := capi.MapHTTPError(tc.status, nil)
+			err := capi.MapHTTPError(testCase.status, nil)
 			require.Error(t, err)
-			require.ErrorIs(t, err, tc.sentinel)
+			require.ErrorIs(t, err, testCase.sentinel)
 			assert.Contains(t, err.Error(), "status")
 		})
-		t.Run(tc.name+"/empty body", func(t *testing.T) {
+		t.Run(testCase.name+"/empty body", func(t *testing.T) {
 			t.Parallel()
 
-			err := capi.MapHTTPError(tc.status, []byte{})
+			err := capi.MapHTTPError(testCase.status, []byte{})
 			require.Error(t, err)
-			require.ErrorIs(t, err, tc.sentinel)
+			require.ErrorIs(t, err, testCase.sentinel)
 			assert.Contains(t, err.Error(), "status")
 		})
 	}
@@ -369,13 +369,13 @@ func TestMapHTTPError_SentinelIdentity(t *testing.T) {
 			"%s message %q must start with 'capi: '", name, s.Error())
 	}
 
-	for nameA, a := range sentinels {
-		for nameB, b := range sentinels {
+	for nameA, sentinelA := range sentinels {
+		for nameB, sentinelB := range sentinels {
 			if nameA == nameB {
 				continue
 			}
 
-			assert.NotErrorIs(t, a, b,
+			assert.NotErrorIs(t, sentinelA, sentinelB,
 				"sentinels must be distinct: %s must not unwrap to %s", nameA, nameB)
 		}
 	}

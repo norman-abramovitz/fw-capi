@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//nolint:funlen // Test functions can be longer for detailed testing
+//nolint:funlen,goconst // Test functions can be longer for detailed testing; asserts literal wire-format query keys/values, not test fixtures
 func TestQueryParams_ToValues(t *testing.T) {
 	t.Parallel()
 
@@ -123,6 +123,7 @@ func TestQueryParams_ToValues(t *testing.T) {
 	}
 }
 
+//nolint:funlen,goconst // Test functions can be longer for comprehensive testing; asserts literal wire-format query keys/values, not test fixtures
 func TestQueryParams_Builders(t *testing.T) {
 	t.Parallel()
 	t.Run("chaining methods", func(t *testing.T) {

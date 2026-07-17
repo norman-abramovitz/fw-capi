@@ -25,8 +25,8 @@ func TestCacheInterceptor(t *testing.T) {
 
 	// Test GET request caching
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/v3/apps",
+		Method: http.MethodGet,
+		Path:   testAppsPath,
 	}
 
 	// First request - should not be cached
@@ -46,8 +46,8 @@ func TestCacheInterceptor(t *testing.T) {
 
 	// Second request - should be cached
 	req2 := &capi.Request{
-		Method: "GET",
-		Path:   "/v3/apps",
+		Method: http.MethodGet,
+		Path:   testAppsPath,
 	}
 
 	err = reqInterceptor(ctx, req2)
@@ -56,8 +56,8 @@ func TestCacheInterceptor(t *testing.T) {
 
 	// Test POST request - should not be cached
 	postReq := &capi.Request{
-		Method: "POST",
-		Path:   "/v3/apps",
+		Method: http.MethodPost,
+		Path:   testAppsPath,
 	}
 
 	err = reqInterceptor(ctx, postReq)
@@ -73,8 +73,8 @@ func TestConditionalRequestInterceptor(t *testing.T) {
 	ctx := context.Background()
 
 	// Store an entry with ETag
-	cacheKey := manager.GetCacheKey("GET", "/v3/apps/123", nil)
-	err := manager.SetWithETag(ctx, cacheKey, []byte("data"), "abc123", 1*time.Hour)
+	cacheKey := manager.GetCacheKey(http.MethodGet, "/v3/apps/123", nil)
+	err := manager.SetWithETag(ctx, cacheKey, []byte("data"), testETag, 1*time.Hour)
 	require.NoError(t, err)
 
 	// Create interceptor
@@ -82,19 +82,19 @@ func TestConditionalRequestInterceptor(t *testing.T) {
 
 	// Test GET request
 	req := &capi.Request{
-		Method:  "GET",
+		Method:  http.MethodGet,
 		Path:    "/v3/apps/123",
 		Headers: make(http.Header),
 	}
 
 	err = interceptor(ctx, req)
 	require.NoError(t, err)
-	assert.Equal(t, "abc123", req.Headers.Get("If-None-Match"))
+	assert.Equal(t, testETag, req.Headers.Get("If-None-Match"))
 
 	// Test non-GET request
 	postReq := &capi.Request{
-		Method:  "POST",
-		Path:    "/v3/apps",
+		Method:  http.MethodPost,
+		Path:    testAppsPath,
 		Headers: make(http.Header),
 	}
 
@@ -175,8 +175,8 @@ func TestConfigureSmartCache(t *testing.T) {
 	// Verify interceptors were added
 	ctx := context.Background()
 	req := &capi.Request{
-		Method: "GET",
-		Path:   "/v3/apps",
+		Method: http.MethodGet,
+		Path:   testAppsPath,
 	}
 
 	// This should not error if interceptors were added correctly

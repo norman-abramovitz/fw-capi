@@ -25,6 +25,20 @@ import (
 // resource-specific entity and enumerated-value filters where typing
 // prevents the most mistakes.
 
+// CF API v3 query parameter names shared by the List filter constructors in
+// this file and in query_options.go.
+const (
+	filterKeyGUIDs                = "guids"
+	filterKeyAppGUIDs             = "app_guids"
+	filterKeyStates               = "states"
+	filterKeySpaceGUIDs           = "space_guids"
+	filterKeyOrganizationGUIDs    = "organization_guids"
+	filterKeyTypes                = "types"
+	filterKeyNames                = "names"
+	filterKeyServiceOfferingGUIDs = "service_offering_guids"
+	filterKeyServiceInstanceGUIDs = "service_instance_guids"
+)
+
 // joinKind comma-joins a slice of string-kinded values (typed enums) into a
 // single CF filter value.
 func joinKind[T ~string](vals []T) string {
@@ -71,12 +85,12 @@ const (
 
 // WithBuildGUIDs filters builds by GUID.
 func WithBuildGUIDs(guids ...string) BuildListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return buildListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return buildListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithBuildAppGUIDs filters builds by app GUID.
 func WithBuildAppGUIDs(guids ...string) BuildListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return buildListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return buildListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithBuildPackageGUIDs filters builds by package GUID.
@@ -86,7 +100,7 @@ func WithBuildPackageGUIDs(guids ...string) BuildListOption { //nolint:ireturn /
 
 // WithBuildStates filters builds by lifecycle state.
 func WithBuildStates(states ...BuildState) BuildListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return buildListScalar{scalarOption{"states", joinKind(states)}}
+	return buildListScalar{scalarOption{filterKeyStates, joinKind(states)}}
 }
 
 // ---- droplets ----
@@ -117,12 +131,12 @@ const (
 
 // WithDropletGUIDs filters droplets by GUID.
 func WithDropletGUIDs(guids ...string) DropletListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return dropletListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return dropletListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDropletAppGUIDs filters droplets by app GUID.
 func WithDropletAppGUIDs(guids ...string) DropletListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return dropletListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return dropletListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDropletPackageGUIDs filters droplets by package GUID.
@@ -132,17 +146,17 @@ func WithDropletPackageGUIDs(guids ...string) DropletListOption { //nolint:iretu
 
 // WithDropletSpaceGUIDs filters droplets by space GUID.
 func WithDropletSpaceGUIDs(guids ...string) DropletListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return dropletListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return dropletListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDropletOrganizationGUIDs filters droplets by organization GUID.
 func WithDropletOrganizationGUIDs(guids ...string) DropletListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return dropletListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return dropletListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDropletStates filters droplets by lifecycle state.
 func WithDropletStates(states ...DropletState) DropletListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return dropletListScalar{scalarOption{"states", joinKind(states)}}
+	return dropletListScalar{scalarOption{filterKeyStates, joinKind(states)}}
 }
 
 // ---- packages ----
@@ -181,32 +195,32 @@ const (
 
 // WithPackageGUIDs filters packages by GUID.
 func WithPackageGUIDs(guids ...string) PackageListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return packageListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return packageListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithPackageAppGUIDs filters packages by app GUID.
 func WithPackageAppGUIDs(guids ...string) PackageListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return packageListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return packageListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithPackageSpaceGUIDs filters packages by space GUID.
 func WithPackageSpaceGUIDs(guids ...string) PackageListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return packageListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return packageListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithPackageOrganizationGUIDs filters packages by organization GUID.
 func WithPackageOrganizationGUIDs(guids ...string) PackageListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return packageListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return packageListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithPackageStates filters packages by lifecycle state.
 func WithPackageStates(states ...PackageState) PackageListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return packageListScalar{scalarOption{"states", joinKind(states)}}
+	return packageListScalar{scalarOption{filterKeyStates, joinKind(states)}}
 }
 
 // WithPackageTypes filters packages by type (bits or docker).
 func WithPackageTypes(types ...PackageType) PackageListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return packageListScalar{scalarOption{"types", joinKind(types)}}
+	return packageListScalar{scalarOption{filterKeyTypes, joinKind(types)}}
 }
 
 // ---- tasks ----
@@ -236,32 +250,32 @@ const (
 
 // WithTaskGUIDs filters tasks by GUID.
 func WithTaskGUIDs(guids ...string) TaskListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return taskListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return taskListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithTaskAppGUIDs filters tasks by app GUID.
 func WithTaskAppGUIDs(guids ...string) TaskListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return taskListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return taskListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithTaskSpaceGUIDs filters tasks by space GUID.
 func WithTaskSpaceGUIDs(guids ...string) TaskListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return taskListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return taskListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithTaskOrganizationGUIDs filters tasks by organization GUID.
 func WithTaskOrganizationGUIDs(guids ...string) TaskListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return taskListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return taskListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithTaskNames filters tasks by name.
 func WithTaskNames(names ...string) TaskListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return taskListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return taskListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithTaskStates filters tasks by state.
 func WithTaskStates(states ...TaskState) TaskListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return taskListScalar{scalarOption{"states", joinKind(states)}}
+	return taskListScalar{scalarOption{filterKeyStates, joinKind(states)}}
 }
 
 // ---- deployments ----
@@ -313,12 +327,12 @@ const (
 
 // WithDeploymentAppGUIDs filters deployments by app GUID.
 func WithDeploymentAppGUIDs(guids ...string) DeploymentListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return deploymentListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return deploymentListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDeploymentStates filters deployments by state.
 func WithDeploymentStates(states ...DeploymentState) DeploymentListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return deploymentListScalar{scalarOption{"states", joinKind(states)}}
+	return deploymentListScalar{scalarOption{filterKeyStates, joinKind(states)}}
 }
 
 // WithDeploymentStatusValues filters deployments by status value.
@@ -345,12 +359,12 @@ func (organizationListScalar) organizationList() {}
 
 // WithOrganizationNames filters organizations by name.
 func WithOrganizationNames(names ...string) OrganizationListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return organizationListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return organizationListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithOrganizationGUIDs filters organizations by GUID.
 func WithOrganizationGUIDs(guids ...string) OrganizationListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return organizationListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return organizationListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- domains ----
@@ -367,17 +381,17 @@ func (domainListScalar) domainList() {}
 
 // WithDomainNames filters domains by name.
 func WithDomainNames(names ...string) DomainListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return domainListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return domainListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithDomainGUIDs filters domains by GUID.
 func WithDomainGUIDs(guids ...string) DomainListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return domainListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return domainListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDomainOrganizationGUIDs filters domains by owning organization GUID.
 func WithDomainOrganizationGUIDs(guids ...string) DomainListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return domainListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return domainListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- organization quotas ----
@@ -394,18 +408,18 @@ func (organizationQuotaListScalar) organizationQuotaList() {}
 
 // WithOrganizationQuotaNames filters organization quotas by name.
 func WithOrganizationQuotaNames(names ...string) OrganizationQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return organizationQuotaListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return organizationQuotaListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithOrganizationQuotaGUIDs filters organization quotas by GUID.
 func WithOrganizationQuotaGUIDs(guids ...string) OrganizationQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return organizationQuotaListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return organizationQuotaListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithOrganizationQuotaOrganizationGUIDs filters organization quotas by
 // associated organization GUID.
 func WithOrganizationQuotaOrganizationGUIDs(guids ...string) OrganizationQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return organizationQuotaListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return organizationQuotaListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- space quotas ----
@@ -422,23 +436,23 @@ func (spaceQuotaListScalar) spaceQuotaList() {}
 
 // WithSpaceQuotaNames filters space quotas by name.
 func WithSpaceQuotaNames(names ...string) SpaceQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceQuotaListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return spaceQuotaListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithSpaceQuotaGUIDs filters space quotas by GUID.
 func WithSpaceQuotaGUIDs(guids ...string) SpaceQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceQuotaListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return spaceQuotaListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithSpaceQuotaOrganizationGUIDs filters space quotas by owning
 // organization GUID.
 func WithSpaceQuotaOrganizationGUIDs(guids ...string) SpaceQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceQuotaListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return spaceQuotaListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithSpaceQuotaSpaceGUIDs filters space quotas by associated space GUID.
 func WithSpaceQuotaSpaceGUIDs(guids ...string) SpaceQuotaListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceQuotaListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return spaceQuotaListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- security groups ----
@@ -455,12 +469,12 @@ func (securityGroupListScalar) securityGroupList() {}
 
 // WithSecurityGroupGUIDs filters security groups by GUID.
 func WithSecurityGroupGUIDs(guids ...string) SecurityGroupListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return securityGroupListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return securityGroupListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithSecurityGroupNames filters security groups by name.
 func WithSecurityGroupNames(names ...string) SecurityGroupListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return securityGroupListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return securityGroupListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithSecurityGroupRunningSpaceGUIDs filters security groups by the spaces
@@ -501,18 +515,18 @@ func (isolationSegmentListScalar) isolationSegmentList() {}
 
 // WithIsolationSegmentGUIDs filters isolation segments by GUID.
 func WithIsolationSegmentGUIDs(guids ...string) IsolationSegmentListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return isolationSegmentListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return isolationSegmentListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithIsolationSegmentNames filters isolation segments by name.
 func WithIsolationSegmentNames(names ...string) IsolationSegmentListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return isolationSegmentListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return isolationSegmentListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithIsolationSegmentOrganizationGUIDs filters isolation segments by the
 // organizations entitled to them.
 func WithIsolationSegmentOrganizationGUIDs(guids ...string) IsolationSegmentListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return isolationSegmentListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return isolationSegmentListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- service brokers ----
@@ -529,18 +543,18 @@ func (serviceBrokerListScalar) serviceBrokerList() {}
 
 // WithServiceBrokerGUIDs filters service brokers by GUID.
 func WithServiceBrokerGUIDs(guids ...string) ServiceBrokerListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceBrokerListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return serviceBrokerListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceBrokerNames filters service brokers by name.
 func WithServiceBrokerNames(names ...string) ServiceBrokerListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceBrokerListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return serviceBrokerListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithServiceBrokerSpaceGUIDs filters service brokers by the space they are
 // scoped to (space-scoped brokers).
 func WithServiceBrokerSpaceGUIDs(guids ...string) ServiceBrokerListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceBrokerListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return serviceBrokerListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- buildpacks ----
@@ -566,12 +580,12 @@ const (
 
 // WithBuildpackGUIDs filters buildpacks by GUID.
 func WithBuildpackGUIDs(guids ...string) BuildpackListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return buildpackListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return buildpackListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithBuildpackNames filters buildpacks by name.
 func WithBuildpackNames(names ...string) BuildpackListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return buildpackListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return buildpackListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithBuildpackStacks filters buildpacks by stack. An empty string matches
@@ -599,12 +613,12 @@ func (stackListScalar) stackList() {}
 
 // WithStackGUIDs filters stacks by GUID.
 func WithStackGUIDs(guids ...string) StackListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return stackListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return stackListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithStackNames filters stacks by name.
 func WithStackNames(names ...string) StackListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return stackListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return stackListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithStackDefault filters stacks by whether they are the default stack.
@@ -626,7 +640,7 @@ func (userListScalar) userList() {}
 
 // WithUserGUIDs filters users by GUID.
 func WithUserGUIDs(guids ...string) UserListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return userListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return userListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithUserUsernames filters users by exact username. Mutually exclusive with
@@ -662,7 +676,7 @@ func (auditEventListScalar) auditEventList() {}
 // WithAuditEventTypes filters audit events by event type (e.g.
 // "audit.app.create").
 func WithAuditEventTypes(types ...string) AuditEventListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return auditEventListScalar{scalarOption{"types", strings.Join(types, ",")}}
+	return auditEventListScalar{scalarOption{filterKeyTypes, strings.Join(types, ",")}}
 }
 
 // WithAuditEventTargetGUIDs filters audit events by target GUID.
@@ -672,12 +686,12 @@ func WithAuditEventTargetGUIDs(guids ...string) AuditEventListOption { //nolint:
 
 // WithAuditEventSpaceGUIDs filters audit events by space GUID.
 func WithAuditEventSpaceGUIDs(guids ...string) AuditEventListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return auditEventListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return auditEventListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithAuditEventOrganizationGUIDs filters audit events by organization GUID.
 func WithAuditEventOrganizationGUIDs(guids ...string) AuditEventListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return auditEventListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return auditEventListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- app usage events ----
@@ -694,7 +708,7 @@ func (appUsageEventListScalar) appUsageEventList() {}
 
 // WithAppUsageEventGUIDs filters app usage events by GUID.
 func WithAppUsageEventGUIDs(guids ...string) AppUsageEventListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return appUsageEventListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return appUsageEventListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithAppUsageEventAfterGUID returns only events recorded after the event
@@ -727,7 +741,7 @@ const (
 
 // WithServiceUsageEventGUIDs filters service usage events by GUID.
 func WithServiceUsageEventGUIDs(guids ...string) ServiceUsageEventListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceUsageEventListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return serviceUsageEventListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceUsageEventAfterGUID returns only events recorded after the event
@@ -745,7 +759,7 @@ func WithServiceUsageEventServiceInstanceTypes(types ...ServiceInstanceType) Ser
 // WithServiceUsageEventServiceOfferingGUIDs filters service usage events by
 // service offering GUID.
 func WithServiceUsageEventServiceOfferingGUIDs(guids ...string) ServiceUsageEventListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceUsageEventListScalar{scalarOption{"service_offering_guids", strings.Join(guids, ",")}}
+	return serviceUsageEventListScalar{scalarOption{filterKeyServiceOfferingGUIDs, strings.Join(guids, ",")}}
 }
 
 // ========================================================================
@@ -777,22 +791,22 @@ const (
 
 // WithAppNames filters apps by name.
 func WithAppNames(names ...string) AppListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return appListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return appListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithAppGUIDs filters apps by GUID.
 func WithAppGUIDs(guids ...string) AppListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return appListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return appListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithAppSpaceGUIDs filters apps by space GUID.
 func WithAppSpaceGUIDs(guids ...string) AppListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return appListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return appListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithAppOrganizationGUIDs filters apps by organization GUID.
 func WithAppOrganizationGUIDs(guids ...string) AppListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return appListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return appListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithAppStacks filters apps by stack name.
@@ -814,7 +828,7 @@ func (routeListScalar) routeList() {}
 
 // WithRouteGUIDs filters routes by GUID.
 func WithRouteGUIDs(guids ...string) RouteListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return routeListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRouteHosts filters routes by host.
@@ -839,23 +853,23 @@ func WithRouteDomainGUIDs(guids ...string) RouteListOption { //nolint:ireturn //
 
 // WithRouteSpaceGUIDs filters routes by space GUID.
 func WithRouteSpaceGUIDs(guids ...string) RouteListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return routeListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRouteOrganizationGUIDs filters routes by organization GUID.
 func WithRouteOrganizationGUIDs(guids ...string) RouteListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return routeListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRouteServiceInstanceGUIDs filters routes by bound service instance GUID.
 func WithRouteServiceInstanceGUIDs(guids ...string) RouteListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeListScalar{scalarOption{"service_instance_guids", strings.Join(guids, ",")}}
+	return routeListScalar{scalarOption{filterKeyServiceInstanceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRouteAppGUIDs filters routes by destination app GUID. Accepted by the
 // CF v3 source though not listed in the API docs for GET /v3/routes.
 func WithRouteAppGUIDs(guids ...string) RouteListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return routeListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- route policies (filters) ----
@@ -866,7 +880,7 @@ func (routePolicyListScalar) routePolicyList() {}
 
 // WithRoutePolicyGUIDs filters route policies by GUID.
 func WithRoutePolicyGUIDs(guids ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routePolicyListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return routePolicyListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRoutePolicyRouteGUIDs filters route policies by route GUID.
@@ -876,7 +890,7 @@ func WithRoutePolicyRouteGUIDs(guids ...string) RoutePolicyListOption { //nolint
 
 // WithRoutePolicySpaceGUIDs filters route policies by the route's space GUID.
 func WithRoutePolicySpaceGUIDs(guids ...string) RoutePolicyListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routePolicyListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return routePolicyListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRoutePolicySources filters route policies by exact source string
@@ -899,17 +913,17 @@ func (spaceListScalar) spaceList() {}
 
 // WithSpaceNames filters spaces by name.
 func WithSpaceNames(names ...string) SpaceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return spaceListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithSpaceGUIDs filters spaces by GUID.
 func WithSpaceGUIDs(guids ...string) SpaceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return spaceListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithSpaceOrganizationGUIDs filters spaces by owning organization GUID.
 func WithSpaceOrganizationGUIDs(guids ...string) SpaceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return spaceListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return spaceListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- roles (filters) ----
@@ -935,22 +949,22 @@ const (
 
 // WithRoleGUIDs filters roles by GUID.
 func WithRoleGUIDs(guids ...string) RoleListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return roleListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return roleListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRoleTypes filters roles by role type.
 func WithRoleTypes(types ...RoleType) RoleListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return roleListScalar{scalarOption{"types", joinKind(types)}}
+	return roleListScalar{scalarOption{filterKeyTypes, joinKind(types)}}
 }
 
 // WithRoleSpaceGUIDs filters roles by space GUID.
 func WithRoleSpaceGUIDs(guids ...string) RoleListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return roleListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return roleListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRoleOrganizationGUIDs filters roles by organization GUID.
 func WithRoleOrganizationGUIDs(guids ...string) RoleListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return roleListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return roleListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithRoleUserGUIDs filters roles by user GUID.
@@ -977,23 +991,23 @@ const (
 
 // WithServiceInstanceNames filters service instances by name.
 func WithServiceInstanceNames(names ...string) ServiceInstanceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceInstanceListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return serviceInstanceListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithServiceInstanceGUIDs filters service instances by GUID.
 func WithServiceInstanceGUIDs(guids ...string) ServiceInstanceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceInstanceListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return serviceInstanceListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceInstanceSpaceGUIDs filters service instances by space GUID.
 func WithServiceInstanceSpaceGUIDs(guids ...string) ServiceInstanceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceInstanceListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return serviceInstanceListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceInstanceOrganizationGUIDs filters service instances by
 // organization GUID.
 func WithServiceInstanceOrganizationGUIDs(guids ...string) ServiceInstanceListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceInstanceListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return serviceInstanceListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceInstanceServicePlanGUIDs filters service instances by service
@@ -1022,12 +1036,12 @@ func (servicePlanListScalar) servicePlanList() {}
 
 // WithServicePlanGUIDs filters service plans by GUID.
 func WithServicePlanGUIDs(guids ...string) ServicePlanListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return servicePlanListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return servicePlanListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServicePlanNames filters service plans by name.
 func WithServicePlanNames(names ...string) ServicePlanListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return servicePlanListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return servicePlanListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithServicePlanAvailable filters service plans by availability.
@@ -1055,7 +1069,7 @@ func WithServicePlanServiceBrokerNames(names ...string) ServicePlanListOption { 
 // WithServicePlanServiceOfferingGUIDs filters service plans by service
 // offering GUID.
 func WithServicePlanServiceOfferingGUIDs(guids ...string) ServicePlanListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return servicePlanListScalar{scalarOption{"service_offering_guids", strings.Join(guids, ",")}}
+	return servicePlanListScalar{scalarOption{filterKeyServiceOfferingGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServicePlanServiceOfferingNames filters service plans by service
@@ -1067,17 +1081,17 @@ func WithServicePlanServiceOfferingNames(names ...string) ServicePlanListOption 
 // WithServicePlanServiceInstanceGUIDs filters service plans by service
 // instance GUID.
 func WithServicePlanServiceInstanceGUIDs(guids ...string) ServicePlanListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return servicePlanListScalar{scalarOption{"service_instance_guids", strings.Join(guids, ",")}}
+	return servicePlanListScalar{scalarOption{filterKeyServiceInstanceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServicePlanSpaceGUIDs filters service plans by space GUID.
 func WithServicePlanSpaceGUIDs(guids ...string) ServicePlanListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return servicePlanListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return servicePlanListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServicePlanOrganizationGUIDs filters service plans by organization GUID.
 func WithServicePlanOrganizationGUIDs(guids ...string) ServicePlanListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return servicePlanListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return servicePlanListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- service offerings (filters) ----
@@ -1088,12 +1102,12 @@ func (serviceOfferingListScalar) serviceOfferingList() {}
 
 // WithServiceOfferingGUIDs filters service offerings by GUID.
 func WithServiceOfferingGUIDs(guids ...string) ServiceOfferingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceOfferingListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return serviceOfferingListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceOfferingNames filters service offerings by name.
 func WithServiceOfferingNames(names ...string) ServiceOfferingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceOfferingListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return serviceOfferingListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithServiceOfferingAvailable filters service offerings by availability.
@@ -1121,13 +1135,13 @@ func WithServiceOfferingServiceBrokerNames(names ...string) ServiceOfferingListO
 
 // WithServiceOfferingSpaceGUIDs filters service offerings by space GUID.
 func WithServiceOfferingSpaceGUIDs(guids ...string) ServiceOfferingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceOfferingListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return serviceOfferingListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceOfferingOrganizationGUIDs filters service offerings by
 // organization GUID.
 func WithServiceOfferingOrganizationGUIDs(guids ...string) ServiceOfferingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return serviceOfferingListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return serviceOfferingListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- service credential bindings (filters) ----
@@ -1148,18 +1162,18 @@ const (
 
 // WithServiceCredentialBindingGUIDs filters bindings by GUID.
 func WithServiceCredentialBindingGUIDs(guids ...string) ServiceCredentialBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return scbListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return scbListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceCredentialBindingNames filters bindings by name.
 func WithServiceCredentialBindingNames(names ...string) ServiceCredentialBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return scbListScalar{scalarOption{"names", strings.Join(names, ",")}}
+	return scbListScalar{scalarOption{filterKeyNames, strings.Join(names, ",")}}
 }
 
 // WithServiceCredentialBindingServiceInstanceGUIDs filters bindings by service
 // instance GUID.
 func WithServiceCredentialBindingServiceInstanceGUIDs(guids ...string) ServiceCredentialBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return scbListScalar{scalarOption{"service_instance_guids", strings.Join(guids, ",")}}
+	return scbListScalar{scalarOption{filterKeyServiceInstanceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceCredentialBindingServiceInstanceNames filters bindings by service
@@ -1183,7 +1197,7 @@ func WithServiceCredentialBindingServicePlanNames(names ...string) ServiceCreden
 // WithServiceCredentialBindingServiceOfferingGUIDs filters bindings by service
 // offering GUID.
 func WithServiceCredentialBindingServiceOfferingGUIDs(guids ...string) ServiceCredentialBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return scbListScalar{scalarOption{"service_offering_guids", strings.Join(guids, ",")}}
+	return scbListScalar{scalarOption{filterKeyServiceOfferingGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceCredentialBindingServiceOfferingNames filters bindings by service
@@ -1194,7 +1208,7 @@ func WithServiceCredentialBindingServiceOfferingNames(names ...string) ServiceCr
 
 // WithServiceCredentialBindingAppGUIDs filters bindings by app GUID.
 func WithServiceCredentialBindingAppGUIDs(guids ...string) ServiceCredentialBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return scbListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return scbListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceCredentialBindingAppNames filters bindings by app name.
@@ -1216,13 +1230,13 @@ func (srbListScalar) srbList() {}
 
 // WithServiceRouteBindingGUIDs filters route bindings by GUID.
 func WithServiceRouteBindingGUIDs(guids ...string) ServiceRouteBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return srbListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return srbListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceRouteBindingServiceInstanceGUIDs filters route bindings by
 // service instance GUID.
 func WithServiceRouteBindingServiceInstanceGUIDs(guids ...string) ServiceRouteBindingListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return srbListScalar{scalarOption{"service_instance_guids", strings.Join(guids, ",")}}
+	return srbListScalar{scalarOption{filterKeyServiceInstanceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithServiceRouteBindingServiceInstanceNames filters route bindings by
@@ -1244,26 +1258,26 @@ func (processListScalar) processList() {}
 
 // WithProcessGUIDs filters processes by GUID.
 func WithProcessGUIDs(guids ...string) ProcessListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return processListScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return processListScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithProcessTypes filters processes by process type (e.g. web, worker). CF
 // does not restrict this to a fixed set.
 func WithProcessTypes(types ...string) ProcessListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return processListScalar{scalarOption{"types", strings.Join(types, ",")}}
+	return processListScalar{scalarOption{filterKeyTypes, strings.Join(types, ",")}}
 }
 
 // WithProcessAppGUIDs filters processes by app GUID.
 func WithProcessAppGUIDs(guids ...string) ProcessListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return processListScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return processListScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithProcessSpaceGUIDs filters processes by space GUID.
 func WithProcessSpaceGUIDs(guids ...string) ProcessListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return processListScalar{scalarOption{"space_guids", strings.Join(guids, ",")}}
+	return processListScalar{scalarOption{filterKeySpaceGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithProcessOrganizationGUIDs filters processes by organization GUID.
 func WithProcessOrganizationGUIDs(guids ...string) ProcessListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return processListScalar{scalarOption{"organization_guids", strings.Join(guids, ",")}}
+	return processListScalar{scalarOption{filterKeyOrganizationGUIDs, strings.Join(guids, ",")}}
 }

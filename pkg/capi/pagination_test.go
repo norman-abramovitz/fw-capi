@@ -49,12 +49,12 @@ func TestPaginationIterator_HasNext(t *testing.T) {
 					TotalResults: 3,
 					TotalPages:   2,
 					Next: &capi.Link{
-						Href: "/test?page=2",
+						Href: testPagedPath,
 					},
 				},
 				Resources: []TestResource{
-					{ID: "1", Name: "Resource 1"},
-					{ID: "2", Name: "Resource 2"},
+					{ID: "1", Name: testResourceName1},
+					{ID: "2", Name: testResourceName2},
 				},
 			},
 			2: {
@@ -66,7 +66,7 @@ func TestPaginationIterator_HasNext(t *testing.T) {
 					},
 				},
 				Resources: []TestResource{
-					{ID: "3", Name: "Resource 3"},
+					{ID: "3", Name: testResourceName3},
 				},
 			},
 		},
@@ -117,8 +117,8 @@ func TestPaginationIterator_All(t *testing.T) {
 					},
 				},
 				Resources: []TestResource{
-					{ID: "1", Name: "Resource 1"},
-					{ID: "2", Name: "Resource 2"},
+					{ID: "1", Name: testResourceName1},
+					{ID: "2", Name: testResourceName2},
 				},
 			},
 			2: {
@@ -127,7 +127,7 @@ func TestPaginationIterator_All(t *testing.T) {
 					TotalPages:   2,
 				},
 				Resources: []TestResource{
-					{ID: "3", Name: "Resource 3"},
+					{ID: "3", Name: testResourceName3},
 				},
 			},
 		},
@@ -155,8 +155,8 @@ func TestPaginationIterator_ForEach(t *testing.T) {
 					TotalPages:   1,
 				},
 				Resources: []TestResource{
-					{ID: "1", Name: "Resource 1"},
-					{ID: "2", Name: "Resource 2"},
+					{ID: "1", Name: testResourceName1},
+					{ID: "2", Name: testResourceName2},
 				},
 			},
 		},
@@ -187,12 +187,12 @@ func TestFetchAllPages(t *testing.T) {
 					TotalResults: 5,
 					TotalPages:   3,
 					Next: &capi.Link{
-						Href: "/test?page=2",
+						Href: testPagedPath,
 					},
 				},
 				Resources: []TestResource{
-					{ID: "1", Name: "Resource 1"},
-					{ID: "2", Name: "Resource 2"},
+					{ID: "1", Name: testResourceName1},
+					{ID: "2", Name: testResourceName2},
 				},
 			},
 			2: {
@@ -204,7 +204,7 @@ func TestFetchAllPages(t *testing.T) {
 					},
 				},
 				Resources: []TestResource{
-					{ID: "3", Name: "Resource 3"},
+					{ID: "3", Name: testResourceName3},
 					{ID: "4", Name: "Resource 4"},
 				},
 			},
@@ -237,12 +237,12 @@ func TestFetchAllPages_WithMaxPages(t *testing.T) {
 					TotalResults: 5,
 					TotalPages:   3,
 					Next: &capi.Link{
-						Href: "/test?page=2",
+						Href: testPagedPath,
 					},
 				},
 				Resources: []TestResource{
-					{ID: "1", Name: "Resource 1"},
-					{ID: "2", Name: "Resource 2"},
+					{ID: "1", Name: testResourceName1},
+					{ID: "2", Name: testResourceName2},
 				},
 			},
 			2: {
@@ -254,7 +254,7 @@ func TestFetchAllPages_WithMaxPages(t *testing.T) {
 					},
 				},
 				Resources: []TestResource{
-					{ID: "3", Name: "Resource 3"},
+					{ID: "3", Name: testResourceName3},
 					{ID: "4", Name: "Resource 4"},
 				},
 			},
@@ -291,12 +291,12 @@ func TestStreamPages(t *testing.T) {
 					TotalResults: 3,
 					TotalPages:   2,
 					Next: &capi.Link{
-						Href: "/test?page=2",
+						Href: testPagedPath,
 					},
 				},
 				Resources: []TestResource{
-					{ID: "1", Name: "Resource 1"},
-					{ID: "2", Name: "Resource 2"},
+					{ID: "1", Name: testResourceName1},
+					{ID: "2", Name: testResourceName2},
 				},
 			},
 			2: {
@@ -305,7 +305,7 @@ func TestStreamPages(t *testing.T) {
 					TotalPages:   2,
 				},
 				Resources: []TestResource{
-					{ID: "3", Name: "Resource 3"},
+					{ID: "3", Name: testResourceName3},
 				},
 			},
 		},

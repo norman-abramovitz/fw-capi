@@ -14,8 +14,8 @@ func TestAPIError_Error(t *testing.T) {
 
 	err := &capi.APIError{
 		Code:   10010,
-		Title:  "CF-ResourceNotFound",
-		Detail: "App not found",
+		Title:  testNotFoundTitle,
+		Detail: testNotFoundDetail,
 	}
 
 	assert.Equal(t, "CF-ResourceNotFound: App not found (code: 10010)", err.Error())
@@ -40,8 +40,8 @@ func TestResponseError_Error(t *testing.T) {
 				Errors: []capi.APIError{
 					{
 						Code:   10010,
-						Title:  "CF-ResourceNotFound",
-						Detail: "App not found",
+						Title:  testNotFoundTitle,
+						Detail: testNotFoundDetail,
 					},
 				},
 			},
@@ -53,8 +53,8 @@ func TestResponseError_Error(t *testing.T) {
 				Errors: []capi.APIError{
 					{
 						Code:   10010,
-						Title:  "CF-ResourceNotFound",
-						Detail: "App not found",
+						Title:  testNotFoundTitle,
+						Detail: testNotFoundDetail,
 					},
 					{
 						Code:   10008,
@@ -82,7 +82,7 @@ func TestResponseError_FirstError(t *testing.T) {
 
 		response := &capi.ResponseError{
 			Errors: []capi.APIError{
-				{Code: 10010, Title: "CF-ResourceNotFound", Detail: "Not found"},
+				{Code: 10010, Title: testNotFoundTitle, Detail: "Not found"},
 				{Code: 10008, Title: "CF-UnprocessableEntity", Detail: "Invalid"},
 			},
 		}
@@ -90,7 +90,7 @@ func TestResponseError_FirstError(t *testing.T) {
 		first := response.FirstError()
 		require.NotNil(t, first)
 		assert.Equal(t, 10010, first.Code)
-		assert.Equal(t, "CF-ResourceNotFound", first.Title)
+		assert.Equal(t, testNotFoundTitle, first.Title)
 	})
 
 	t.Run("without errors", func(t *testing.T) {
@@ -254,8 +254,8 @@ func TestParseResponseError(t *testing.T) {
 		require.NotNil(t, errResp)
 		assert.Len(t, errResp.Errors, 2)
 		assert.Equal(t, 10010, errResp.Errors[0].Code)
-		assert.Equal(t, "CF-ResourceNotFound", errResp.Errors[0].Title)
-		assert.Equal(t, "App not found", errResp.Errors[0].Detail)
+		assert.Equal(t, testNotFoundTitle, errResp.Errors[0].Title)
+		assert.Equal(t, testNotFoundDetail, errResp.Errors[0].Detail)
 	})
 
 	t.Run("invalid JSON", func(t *testing.T) {
@@ -302,7 +302,7 @@ func TestResponseError_JSONMarshaling(t *testing.T) {
 		Errors: []capi.APIError{
 			{
 				Code:   10010,
-				Title:  "CF-ResourceNotFound",
+				Title:  testNotFoundTitle,
 				Detail: "The app could not be found: test-app",
 			},
 		},

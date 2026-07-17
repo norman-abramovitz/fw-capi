@@ -16,7 +16,7 @@ type Request struct {
 	Path     string
 	Headers  http.Header
 	Body     []byte
-	Metadata map[string]interface{}
+	Metadata map[string]any
 }
 
 // Response represents an HTTP response that can be intercepted.
@@ -86,7 +86,7 @@ func (c *InterceptorChain) ExecuteResponseInterceptors(ctx context.Context, req 
 // LoggingInterceptor logs requests and responses.
 func LoggingInterceptor(logger Logger) RequestInterceptor {
 	return func(ctx context.Context, req *Request) error {
-		logger.Debug("API Request", map[string]interface{}{
+		logger.Debug("API Request", map[string]any{
 			"method": req.Method,
 			"path":   req.Path,
 		})
@@ -98,7 +98,7 @@ func LoggingInterceptor(logger Logger) RequestInterceptor {
 // LoggingResponseInterceptor logs responses.
 func LoggingResponseInterceptor(logger Logger) ResponseInterceptor {
 	return func(ctx context.Context, req *Request, resp *Response) error {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"method":      req.Method,
 			"path":        req.Path,
 			"status_code": resp.StatusCode,
@@ -310,7 +310,7 @@ func MetricsRequestInterceptor(collector *MetricsCollector) RequestInterceptor {
 	return func(ctx context.Context, req *Request) error {
 		// Store the start time in the request metadata
 		if req.Metadata == nil {
-			req.Metadata = make(map[string]interface{})
+			req.Metadata = make(map[string]any)
 		}
 
 		req.Metadata["start_time"] = time.Now()
@@ -373,6 +373,12 @@ type CircuitBreakerConfig struct {
 	SuccessThreshold int           // Number of successes to close
 }
 
+// circuitStateClosed is the CircuitBreaker.state value for the closed state
+// (requests pass through normally). The open and half-open states are
+// constants.StatusOpen and constants.StatusHalfOpen; closed has no analog in
+// the shared constants package because it is local to this breaker.
+const circuitStateClosed = "closed"
+
 // CircuitBreaker tracks circuit state. Safe for concurrent use: the request
 // and response interceptors that read and mutate the state below run on every
 // request, so all access is guarded by mu.
@@ -381,7 +387,7 @@ type CircuitBreaker struct {
 	config      *CircuitBreakerConfig
 	failures    int
 	successes   int
-	state       string // "closed", constants.StatusOpen, constants.StatusHalfOpen
+	state       string // circuitStateClosed, constants.StatusOpen, constants.StatusHalfOpen
 	lastFailure time.Time
 	// now returns the current time. It is an unexported seam defaulting to
 	// time.Now; tests override it to drive the timeout transition
@@ -401,7 +407,7 @@ func NewCircuitBreaker(config *CircuitBreakerConfig) *CircuitBreaker {
 
 	return &CircuitBreaker{
 		config: config,
-		state:  "closed",
+		state:  circuitStateClosed,
 		now:    time.Now,
 	}
 }
@@ -450,10 +456,10 @@ func CircuitBreakerResponseInterceptor(breaker *CircuitBreaker) ResponseIntercep
 			case constants.StatusHalfOpen:
 				breaker.successes++
 				if breaker.successes >= breaker.config.SuccessThreshold {
-					breaker.state = "closed"
+					breaker.state = circuitStateClosed
 					breaker.failures = 0
 				}
-			case "closed":
+			case circuitStateClosed:
 				breaker.failures = 0
 			}
 		}

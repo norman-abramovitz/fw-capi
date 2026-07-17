@@ -6,12 +6,12 @@ import "time"
 type App struct {
 	Resource
 
-	Name                 string                 `json:"name"                            yaml:"name"`
-	State                string                 `json:"state"                           yaml:"state"`
-	Lifecycle            Lifecycle              `json:"lifecycle"                       yaml:"lifecycle"`
-	Metadata             *Metadata              `json:"metadata,omitempty"              yaml:"metadata,omitempty"`
-	Relationships        AppRelationships       `json:"relationships"                   yaml:"relationships"`
-	EnvironmentVariables map[string]interface{} `json:"environment_variables,omitempty" yaml:"environment_variables,omitempty"`
+	Name                 string           `json:"name"                            yaml:"name"`
+	State                string           `json:"state"                           yaml:"state"`
+	Lifecycle            Lifecycle        `json:"lifecycle"                       yaml:"lifecycle"`
+	Metadata             *Metadata        `json:"metadata,omitempty"              yaml:"metadata,omitempty"`
+	Relationships        AppRelationships `json:"relationships"                   yaml:"relationships"`
+	EnvironmentVariables map[string]any   `json:"environment_variables,omitempty" yaml:"environment_variables,omitempty"`
 	// Included carries related resources when the request used typed
 	// include options. Nil when no includes were requested.
 	Included *AppIncludedResources `json:"included,omitempty" yaml:"included,omitempty"`
@@ -26,7 +26,7 @@ type AppCreateRequest struct {
 	// Lifecycle optionally specifies staging type/config; if nil, the platform default is used.
 	Lifecycle *Lifecycle `json:"lifecycle,omitempty" yaml:"lifecycle,omitempty"`
 	// EnvironmentVariables sets initial app-level env vars.
-	EnvironmentVariables map[string]interface{} `json:"environment_variables,omitempty" yaml:"environment_variables,omitempty"`
+	EnvironmentVariables map[string]any `json:"environment_variables,omitempty" yaml:"environment_variables,omitempty"`
 	// Metadata sets labels/annotations on the app.
 	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
@@ -48,17 +48,17 @@ type AppRelationships struct {
 
 // Lifecycle represents app lifecycle configuration.
 type Lifecycle struct {
-	Type string                 `json:"type" yaml:"type"`
-	Data map[string]interface{} `json:"data" yaml:"data"`
+	Type string         `json:"type" yaml:"type"`
+	Data map[string]any `json:"data" yaml:"data"`
 }
 
 // AppEnvironment represents app environment information.
 type AppEnvironment struct {
-	StagingEnvJSON       map[string]interface{} `json:"staging_env_json"      yaml:"staging_env_json"`
-	RunningEnvJSON       map[string]interface{} `json:"running_env_json"      yaml:"running_env_json"`
-	EnvironmentVariables map[string]interface{} `json:"environment_variables" yaml:"environment_variables"`
-	SystemEnvJSON        map[string]interface{} `json:"system_env_json"       yaml:"system_env_json"`
-	ApplicationEnvJSON   map[string]interface{} `json:"application_env_json"  yaml:"application_env_json"`
+	StagingEnvJSON       map[string]any `json:"staging_env_json"      yaml:"staging_env_json"`
+	RunningEnvJSON       map[string]any `json:"running_env_json"      yaml:"running_env_json"`
+	EnvironmentVariables map[string]any `json:"environment_variables" yaml:"environment_variables"`
+	SystemEnvJSON        map[string]any `json:"system_env_json"       yaml:"system_env_json"`
+	ApplicationEnvJSON   map[string]any `json:"application_env_json"  yaml:"application_env_json"`
 }
 
 // AppSSHEnabled represents SSH enablement status.
@@ -1260,7 +1260,7 @@ type ServiceOffering struct {
 // ServiceOfferingCatalog represents catalog information for a service offering.
 type ServiceOfferingCatalog struct {
 	ID       string                         `json:"id"                 yaml:"id"`
-	Metadata map[string]interface{}         `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Metadata map[string]any                 `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	Features ServiceOfferingCatalogFeatures `json:"features"           yaml:"features"`
 }
 
@@ -1319,7 +1319,7 @@ type ServicePlanMaintenance struct {
 // ServicePlanCatalog represents catalog information for a service plan.
 type ServicePlanCatalog struct {
 	ID                     string                     `json:"id"                                 yaml:"id"`
-	Metadata               map[string]interface{}     `json:"metadata,omitempty"                 yaml:"metadata,omitempty"`
+	Metadata               map[string]any             `json:"metadata,omitempty"                 yaml:"metadata,omitempty"`
 	MaximumPollingDuration *int                       `json:"maximum_polling_duration,omitempty" yaml:"maximum_polling_duration,omitempty"`
 	Features               ServicePlanCatalogFeatures `json:"features"                           yaml:"features"`
 }
@@ -1349,7 +1349,7 @@ type ServiceBindingSchema struct {
 
 // SchemaDefinition represents a schema definition.
 type SchemaDefinition struct {
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 }
 
 // ServicePlanRelationships represents service plan relationships.
@@ -1437,8 +1437,8 @@ type ServiceInstanceLastOperation struct {
 // ServiceInstanceBrokerProvidedMetadata represents metadata provided by the service broker
 // about a managed service instance.
 type ServiceInstanceBrokerProvidedMetadata struct {
-	Attributes map[string]interface{} `json:"attributes,omitempty" yaml:"attributes,omitempty"` // Broker-specific key-value pairs that MAY imply behavior changes
-	Labels     map[string]interface{} `json:"labels,omitempty"     yaml:"labels,omitempty"`     // Broker-specified key-value pairs for attributes
+	Attributes map[string]any `json:"attributes,omitempty" yaml:"attributes,omitempty"` // Broker-specific key-value pairs that MAY imply behavior changes
+	Labels     map[string]any `json:"labels,omitempty"     yaml:"labels,omitempty"`     // Broker-specified key-value pairs for attributes
 }
 
 // ServiceInstanceRelationships represents service instance relationships.
@@ -1456,11 +1456,11 @@ type ServiceInstanceCreateRequest struct {
 	// Tags are arbitrary labels.
 	Tags []string `json:"tags,omitempty" yaml:"tags,omitempty"`
 	// Parameters are passed to the broker for managed instances.
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 	// Credentials, SyslogDrainURL, and RouteServiceURL apply to user-provided instances.
-	Credentials     map[string]interface{} `json:"credentials,omitempty"       yaml:"credentials,omitempty"`
-	SyslogDrainURL  *string                `json:"syslog_drain_url,omitempty"  yaml:"syslog_drain_url,omitempty"`
-	RouteServiceURL *string                `json:"route_service_url,omitempty" yaml:"route_service_url,omitempty"`
+	Credentials     map[string]any `json:"credentials,omitempty"       yaml:"credentials,omitempty"`
+	SyslogDrainURL  *string        `json:"syslog_drain_url,omitempty"  yaml:"syslog_drain_url,omitempty"`
+	RouteServiceURL *string        `json:"route_service_url,omitempty" yaml:"route_service_url,omitempty"`
 	// Relationships must include Space; ServicePlan is required for managed.
 	Relationships ServiceInstanceRelationships `json:"relationships" yaml:"relationships"`
 	// Metadata sets labels/annotations on the instance.
@@ -1473,11 +1473,11 @@ type ServiceInstanceUpdateRequest struct {
 	Name *string  `json:"name,omitempty" yaml:"name,omitempty"`
 	Tags []string `json:"tags,omitempty" yaml:"tags,omitempty"`
 	// Parameters are passed to the broker for managed instances.
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 	// Credentials, SyslogDrainURL, and RouteServiceURL apply to user-provided instances.
-	Credentials     map[string]interface{} `json:"credentials,omitempty"       yaml:"credentials,omitempty"`
-	SyslogDrainURL  *string                `json:"syslog_drain_url,omitempty"  yaml:"syslog_drain_url,omitempty"`
-	RouteServiceURL *string                `json:"route_service_url,omitempty" yaml:"route_service_url,omitempty"`
+	Credentials     map[string]any `json:"credentials,omitempty"       yaml:"credentials,omitempty"`
+	SyslogDrainURL  *string        `json:"syslog_drain_url,omitempty"  yaml:"syslog_drain_url,omitempty"`
+	RouteServiceURL *string        `json:"route_service_url,omitempty" yaml:"route_service_url,omitempty"`
 	// MaintenanceInfo supplies upgrade target for brokered instances.
 	MaintenanceInfo *ServiceInstanceMaintenance `json:"maintenance_info,omitempty" yaml:"maintenance_info,omitempty"`
 	// Metadata updates labels/annotations; nil leaves it unchanged.
@@ -1488,12 +1488,12 @@ type ServiceInstanceUpdateRequest struct {
 
 // ServiceInstanceParameters represents parameters for a managed service instance.
 type ServiceInstanceParameters struct {
-	Parameters map[string]interface{} `json:"parameters" yaml:"parameters"`
+	Parameters map[string]any `json:"parameters" yaml:"parameters"`
 }
 
 // ServiceInstanceCredentials represents credentials for a user-provided service instance.
 type ServiceInstanceCredentials struct {
-	Credentials map[string]interface{} `json:"credentials" yaml:"credentials"`
+	Credentials map[string]any `json:"credentials" yaml:"credentials"`
 }
 
 // ServiceInstanceSharedSpacesRelationships represents shared spaces relationships.
@@ -1566,7 +1566,7 @@ type ServiceCredentialBindingCreateRequest struct {
 	// "multiple" (experimental). Only valid when Type is "app".
 	Strategy *string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
 	// Parameters are broker-specific binding parameters.
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 	// Metadata sets labels/annotations on the binding.
 	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	// Relationships must include ServiceInstance; App is required for type="app".
@@ -1581,14 +1581,14 @@ type ServiceCredentialBindingUpdateRequest struct {
 
 // ServiceCredentialBindingDetails represents the details of a service credential binding.
 type ServiceCredentialBindingDetails struct {
-	Credentials    map[string]interface{} `json:"credentials"                yaml:"credentials"`
-	SyslogDrainURL *string                `json:"syslog_drain_url,omitempty" yaml:"syslog_drain_url,omitempty"`
-	VolumeMounts   []interface{}          `json:"volume_mounts,omitempty"    yaml:"volume_mounts,omitempty"`
+	Credentials    map[string]any `json:"credentials"                yaml:"credentials"`
+	SyslogDrainURL *string        `json:"syslog_drain_url,omitempty" yaml:"syslog_drain_url,omitempty"`
+	VolumeMounts   []any          `json:"volume_mounts,omitempty"    yaml:"volume_mounts,omitempty"`
 }
 
 // ServiceCredentialBindingParameters represents the parameters of a service credential binding.
 type ServiceCredentialBindingParameters struct {
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 }
 
 // ServiceBinding is an alias for ServiceCredentialBinding for backward compatibility.
@@ -1626,7 +1626,7 @@ type ServiceRouteBindingRelationships struct {
 // ServiceRouteBindingCreateRequest represents a request to create a service route binding.
 type ServiceRouteBindingCreateRequest struct {
 	// Parameters are broker-specific route binding parameters.
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 	// Metadata sets labels/annotations on the route binding.
 	Metadata *Metadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	// Relationships must include ServiceInstance and Route.
@@ -1641,7 +1641,7 @@ type ServiceRouteBindingUpdateRequest struct {
 
 // ServiceRouteBindingParameters represents parameters for a service route binding.
 type ServiceRouteBindingParameters struct {
-	Parameters map[string]interface{} `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Parameters map[string]any `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 }
 
 // LogMessage represents a single log message.
@@ -1889,10 +1889,10 @@ type RevisionUpdateRequest struct {
 
 // EnvironmentVariableGroup represents an environment variable group.
 type EnvironmentVariableGroup struct {
-	Name      string                 `json:"name"                 yaml:"name"`
-	Var       map[string]interface{} `json:"var"                  yaml:"var"`
-	UpdatedAt *time.Time             `json:"updated_at,omitempty" yaml:"updated_at,omitempty"`
-	Links     Links                  `json:"links,omitempty"      yaml:"links,omitempty"`
+	Name      string         `json:"name"                 yaml:"name"`
+	Var       map[string]any `json:"var"                  yaml:"var"`
+	UpdatedAt *time.Time     `json:"updated_at,omitempty" yaml:"updated_at,omitempty"`
+	Links     Links          `json:"links,omitempty"      yaml:"links,omitempty"`
 }
 
 // AppUsageEvent represents an app usage event.
@@ -1954,7 +1954,7 @@ type AuditEvent struct {
 	Type         string                  `json:"type"                   yaml:"type"`
 	Actor        AuditEventActor         `json:"actor"                  yaml:"actor"`
 	Target       AuditEventTarget        `json:"target"                 yaml:"target"`
-	Data         map[string]interface{}  `json:"data"                   yaml:"data"`
+	Data         map[string]any          `json:"data"                   yaml:"data"`
 	Space        *AuditEventSpace        `json:"space,omitempty"        yaml:"space,omitempty"`
 	Organization *AuditEventOrganization `json:"organization,omitempty" yaml:"organization,omitempty"`
 }

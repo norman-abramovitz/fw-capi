@@ -14,6 +14,7 @@ func applyOne(opt capi.QueryOption) url.Values {
 	return capi.ApplyQueryOptions(url.Values{}, []capi.QueryOption{opt})
 }
 
+//nolint:funlen,goconst // Test functions can be longer for comprehensive testing; asserts literal wire-format query keys/values, not test fixtures
 func TestListFilterOptions(t *testing.T) {
 	t.Parallel()
 
@@ -143,6 +144,8 @@ func TestListFilterOptions(t *testing.T) {
 
 // TestListFilterOptions_Compose verifies multiple typed options for one
 // resource accumulate into distinct keys.
+//
+//nolint:goconst // asserts literal wire-format query keys/values, not test fixtures
 func TestListFilterOptions_Compose(t *testing.T) {
 	t.Parallel()
 

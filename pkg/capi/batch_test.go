@@ -744,7 +744,7 @@ func (m *MockAppsClient) GetEnv(ctx context.Context, guid string) (*capi.AppEnvi
 	return result, nil
 }
 
-func (m *MockAppsClient) GetEnvVars(ctx context.Context, guid string) (map[string]interface{}, error) {
+func (m *MockAppsClient) GetEnvVars(ctx context.Context, guid string) (map[string]any, error) {
 	args := m.Called(ctx, guid)
 	if args.Get(0) == nil {
 		err := args.Error(1)
@@ -760,12 +760,12 @@ func (m *MockAppsClient) GetEnvVars(ctx context.Context, guid string) (map[strin
 		return nil, fmt.Errorf("get env vars failed: %w", err)
 	}
 
-	result, _ := args.Get(0).(map[string]interface{})
+	result, _ := args.Get(0).(map[string]any)
 
 	return result, nil
 }
 
-func (m *MockAppsClient) UpdateEnvVars(ctx context.Context, guid string, vars map[string]interface{}) (map[string]interface{}, error) {
+func (m *MockAppsClient) UpdateEnvVars(ctx context.Context, guid string, vars map[string]any) (map[string]any, error) {
 	args := m.Called(ctx, guid, vars)
 	if args.Get(0) == nil {
 		err := args.Error(1)
@@ -781,7 +781,7 @@ func (m *MockAppsClient) UpdateEnvVars(ctx context.Context, guid string, vars ma
 		return nil, fmt.Errorf("update env vars failed: %w", err)
 	}
 
-	result, _ := args.Get(0).(map[string]interface{})
+	result, _ := args.Get(0).(map[string]any)
 
 	return result, nil
 }
@@ -1043,15 +1043,15 @@ func TestBatchExecutor_Execute(t *testing.T) {
 
 	operations := []capi.BatchOperation{
 		{
-			ID:       "op1",
-			Type:     "get",
-			Resource: "app",
+			ID:       testBatchOpID1,
+			Type:     testBatchOpTypeGet,
+			Resource: testBatchResourceApp,
 			Data:     "app-guid-1",
 		},
 		{
 			ID:       "op2",
-			Type:     "get",
-			Resource: "app",
+			Type:     testBatchOpTypeGet,
+			Resource: testBatchResourceApp,
 			Data:     "app-guid-2",
 		},
 	}
@@ -1094,9 +1094,9 @@ func TestBatchExecutor_WithCallback(t *testing.T) {
 	)
 
 	operation := capi.BatchOperation{
-		ID:       "op1",
-		Type:     "get",
-		Resource: "app",
+		ID:       testBatchOpID1,
+		Type:     testBatchOpTypeGet,
+		Resource: testBatchResourceApp,
 		Data:     "app-guid",
 		Callback: func(result *capi.BatchResult) {
 			callbackCalled = true
@@ -1110,7 +1110,7 @@ func TestBatchExecutor_WithCallback(t *testing.T) {
 	assert.True(t, callbackCalled)
 	assert.NotNil(t, callbackResult)
 	assert.True(t, callbackResult.Success)
-	assert.Equal(t, "op1", callbackResult.ID)
+	assert.Equal(t, testBatchOpID1, callbackResult.ID)
 
 	mockClient.AssertExpectations(t)
 	mockApps.AssertExpectations(t)
@@ -1129,9 +1129,9 @@ func TestBatchExecutor_WithError(t *testing.T) {
 	mockApps.On("Get", mock.Anything, "app-guid").Return(nil, capi.ErrAppNotFound)
 
 	operation := capi.BatchOperation{
-		ID:       "op1",
-		Type:     "get",
-		Resource: "app",
+		ID:       testBatchOpID1,
+		Type:     testBatchOpTypeGet,
+		Resource: testBatchResourceApp,
 		Data:     "app-guid",
 	}
 
@@ -1154,7 +1154,7 @@ func TestBatchBuilder(t *testing.T) {
 	builder := capi.NewBatchBuilder()
 
 	req1 := &capi.AppCreateRequest{
-		Name: "app1",
+		Name: testAppName1,
 	}
 	name := "updated-app"
 	req2 := &capi.AppUpdateRequest{
@@ -1172,7 +1172,7 @@ func TestBatchBuilder(t *testing.T) {
 
 	assert.Equal(t, "create-1", operations[0].ID)
 	assert.Equal(t, "create", operations[0].Type)
-	assert.Equal(t, "app", operations[0].Resource)
+	assert.Equal(t, testBatchResourceApp, operations[0].Resource)
 
 	assert.Equal(t, "update-1", operations[1].ID)
 	assert.Equal(t, "update", operations[1].Type)
@@ -1181,7 +1181,7 @@ func TestBatchBuilder(t *testing.T) {
 	assert.Equal(t, "delete", operations[2].Type)
 
 	assert.Equal(t, "get-1", operations[3].ID)
-	assert.Equal(t, "get", operations[3].Type)
+	assert.Equal(t, testBatchOpTypeGet, operations[3].Type)
 }
 
 func TestBatchExecutor_Timeout(t *testing.T) {
@@ -1193,8 +1193,8 @@ func TestBatchExecutor_Timeout(t *testing.T) {
 
 	// Create an operation that will timeout
 	operation := capi.BatchOperation{
-		ID:       "op1",
-		Type:     "get",
+		ID:       testBatchOpID1,
+		Type:     testBatchOpTypeGet,
 		Resource: "unsupported", // This will cause an error in the executor
 		Data:     "test",
 	}

@@ -14,34 +14,34 @@ type QueryOption interface {
 	applyQuery(v url.Values)
 }
 
-// ApplyQueryOptions merges typed options into v and returns it. v is
-// mutated in place; when v is nil and options are present a new map is
-// allocated and returned (append-style semantics — use the return value).
+// ApplyQueryOptions merges typed options into values and returns it. values
+// is mutated in place; when values is nil and options are present a new map
+// is allocated and returned (append-style semantics — use the return value).
 // Include options append to the comma-joined include parameter, skipping
 // duplicates; scalar options overwrite, so a typed option wins over the
 // same key set via QueryParams.
-func ApplyQueryOptions[O QueryOption](v url.Values, opts []O) url.Values {
+func ApplyQueryOptions[O QueryOption](values url.Values, opts []O) url.Values {
 	if len(opts) == 0 {
-		return v
+		return values
 	}
 
-	if v == nil {
-		v = url.Values{}
+	if values == nil {
+		values = url.Values{}
 	}
 
 	for _, o := range opts {
-		o.applyQuery(v)
+		o.applyQuery(values)
 	}
 
-	return v
+	return values
 }
 
 // appendInclude adds value to the comma-joined include parameter,
 // skipping values already present.
-func appendInclude(v url.Values, value string) {
-	current := v.Get("include")
+func appendInclude(values url.Values, value string) {
+	current := values.Get("include")
 	if current == "" {
-		v.Set("include", value)
+		values.Set("include", value)
 
 		return
 	}
@@ -52,7 +52,7 @@ func appendInclude(v url.Values, value string) {
 		}
 	}
 
-	v.Set("include", current+","+value)
+	values.Set("include", current+","+value)
 }
 
 // RoleGetOption configures GET /v3/roles/{guid}.
@@ -195,12 +195,12 @@ func (routeDestinationsScalar) routeDestinations() {}
 
 // WithDestinationGUIDs filters destinations by destination GUIDs.
 func WithDestinationGUIDs(guids ...string) RouteDestinationsOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeDestinationsScalar{scalarOption{"guids", strings.Join(guids, ",")}}
+	return routeDestinationsScalar{scalarOption{filterKeyGUIDs, strings.Join(guids, ",")}}
 }
 
 // WithDestinationAppGUIDs filters destinations by app GUIDs.
 func WithDestinationAppGUIDs(guids ...string) RouteDestinationsOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	return routeDestinationsScalar{scalarOption{"app_guids", strings.Join(guids, ",")}}
+	return routeDestinationsScalar{scalarOption{filterKeyAppGUIDs, strings.Join(guids, ",")}}
 }
 
 // ---- spaces ----
@@ -497,14 +497,14 @@ func (f timestampFilterOption) applyQuery(v url.Values) { v.Set(f.key, f.value) 
 // Returns a no-op option when op is not one of the four valid values,
 // matching the pattern of other constructors in this file that do not panic
 // on bad input.
-func WithTimestampFilter(field string, op string, t time.Time) QueryOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
-	if _, ok := validTimestampOps[op]; !ok {
-		// Invalid op: return no-op option. Callers must use gt, gte, lt, or lte.
+func WithTimestampFilter(field string, operator string, timestamp time.Time) QueryOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	if _, ok := validTimestampOps[operator]; !ok {
+		// Invalid operator: return no-op option. Callers must use gt, gte, lt, or lte.
 		return noopOption{}
 	}
 
 	return timestampFilterOption{
-		key:   fmt.Sprintf("%s[%s]", field, op),
-		value: t.UTC().Format(time.RFC3339),
+		key:   fmt.Sprintf("%s[%s]", field, operator),
+		value: timestamp.UTC().Format(time.RFC3339),
 	}
 }

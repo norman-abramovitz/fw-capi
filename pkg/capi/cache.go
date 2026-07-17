@@ -67,7 +67,7 @@ func NewMemoryCache(maxSize int) *MemoryCache {
 func (c *MemoryCache) Get(ctx context.Context, key string) (*CacheEntry, error) {
 	err := ctx.Err()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cache get: %w", err)
 	}
 
 	c.mu.RLock()
@@ -90,7 +90,7 @@ func (c *MemoryCache) Get(ctx context.Context, key string) (*CacheEntry, error) 
 func (c *MemoryCache) Set(ctx context.Context, key string, entry *CacheEntry) error {
 	err := ctx.Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("cache set: %w", err)
 	}
 
 	c.mu.Lock()
@@ -125,7 +125,7 @@ func (c *MemoryCache) Set(ctx context.Context, key string, entry *CacheEntry) er
 func (c *MemoryCache) Delete(ctx context.Context, key string) error {
 	err := ctx.Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("cache delete: %w", err)
 	}
 
 	c.mu.Lock()
@@ -140,7 +140,7 @@ func (c *MemoryCache) Delete(ctx context.Context, key string) error {
 func (c *MemoryCache) Clear(ctx context.Context) error {
 	err := ctx.Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("cache clear: %w", err)
 	}
 
 	c.mu.Lock()
@@ -312,7 +312,7 @@ func (m *CacheManager) Close() {
 }
 
 // GetCacheKey generates a cache key for a request.
-func (m *CacheManager) GetCacheKey(method, path string, params interface{}) string {
+func (m *CacheManager) GetCacheKey(method, path string, params any) string {
 	key := fmt.Sprintf("%s:%s", method, path)
 
 	if params != nil {

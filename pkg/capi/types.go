@@ -32,9 +32,9 @@ type Links map[string]Link
 // Callers that don't reference Meta are unaffected (zero value, omitted
 // from JSON).
 type Link struct {
-	Href   string                 `json:"href"             yaml:"href"`
-	Method string                 `json:"method,omitempty" yaml:"method,omitempty"`
-	Meta   map[string]interface{} `json:"meta,omitempty"   yaml:"meta,omitempty"`
+	Href   string         `json:"href"             yaml:"href"`
+	Method string         `json:"method,omitempty" yaml:"method,omitempty"`
+	Meta   map[string]any `json:"meta,omitempty"   yaml:"meta,omitempty"`
 }
 
 // Metadata represents labels and annotations.

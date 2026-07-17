@@ -2,6 +2,7 @@ package capi_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
@@ -23,7 +24,7 @@ func TestResource_JSONMarshaling(t *testing.T) {
 			},
 			"related": capi.Link{
 				Href:   "https://api.example.org/v3/related",
-				Method: "POST",
+				Method: http.MethodPost,
 			},
 		},
 	}
@@ -357,7 +358,7 @@ func TestLink_MetaOmittedWhenNil(t *testing.T) {
 
 	// Existing callers that don't set Meta produce wire-identical output to
 	// pre-Meta versions: no `"meta":` key, no `null`.
-	link := capi.Link{Href: "https://example.com/v3/apps", Method: "GET"}
+	link := capi.Link{Href: "https://example.com/v3/apps", Method: http.MethodGet}
 	encoded, err := json.Marshal(link)
 	require.NoError(t, err)
 	assert.NotContains(t, string(encoded), `"meta"`)
@@ -383,7 +384,7 @@ func TestLink_MetaCarriesAPIVersion(t *testing.T) {
 func TestBuildpack_OmitemptyFilenameStack(t *testing.T) {
 	t.Parallel()
 
-	bp := capi.Buildpack{
+	buildpack := capi.Buildpack{
 		Resource:  capi.Resource{GUID: "bp-guid"},
 		Name:      "java_buildpack",
 		State:     "READY",
@@ -394,7 +395,7 @@ func TestBuildpack_OmitemptyFilenameStack(t *testing.T) {
 		// Filename and Stack are nil — must not appear in JSON.
 	}
 
-	data, err := json.Marshal(bp)
+	data, err := json.Marshal(buildpack)
 	require.NoError(t, err)
 
 	assert.NotContains(t, string(data), `"filename"`)
@@ -402,11 +403,11 @@ func TestBuildpack_OmitemptyFilenameStack(t *testing.T) {
 
 	// When set, the fields must appear.
 	name := "java_buildpack.zip"
-	stack := "cflinuxfs4"
-	bp.Filename = &name
-	bp.Stack = &stack
+	stack := testStackName
+	buildpack.Filename = &name
+	buildpack.Stack = &stack
 
-	data, err = json.Marshal(bp)
+	data, err = json.Marshal(buildpack)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"filename":"java_buildpack.zip"`)
@@ -417,16 +418,16 @@ func TestBuildpack_OmitemptyFilenameStack(t *testing.T) {
 func TestPackageChecksum_OmitemptyValue(t *testing.T) {
 	t.Parallel()
 
-	cs := capi.PackageChecksum{Type: "sha256"}
-	data, err := json.Marshal(cs)
+	checksum := capi.PackageChecksum{Type: "sha256"}
+	data, err := json.Marshal(checksum)
 	require.NoError(t, err)
 
 	assert.NotContains(t, string(data), `"value"`)
 
-	v := "abc123"
-	cs.Value = &v
+	v := testETag
+	checksum.Value = &v
 
-	data, err = json.Marshal(cs)
+	data, err = json.Marshal(checksum)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"value":"abc123"`)
@@ -436,20 +437,20 @@ func TestPackageChecksum_OmitemptyValue(t *testing.T) {
 func TestDroplet_OmitemptyError(t *testing.T) {
 	t.Parallel()
 
-	d := capi.Droplet{
+	droplet := capi.Droplet{
 		State:     "STAGED",
-		Lifecycle: capi.Lifecycle{Type: "buildpack", Data: map[string]interface{}{}},
+		Lifecycle: capi.Lifecycle{Type: "buildpack", Data: map[string]any{}},
 	}
 
-	data, err := json.Marshal(d)
+	data, err := json.Marshal(droplet)
 	require.NoError(t, err)
 
 	assert.NotContains(t, string(data), `"error"`)
 
 	msg := "staging failed"
-	d.Error = &msg
+	droplet.Error = &msg
 
-	data, err = json.Marshal(d)
+	data, err = json.Marshal(droplet)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"error":"staging failed"`)
@@ -459,14 +460,14 @@ func TestDroplet_OmitemptyError(t *testing.T) {
 func TestBuild_OmitemptyOptionalFields(t *testing.T) {
 	t.Parallel()
 
-	b := capi.Build{
+	build := capi.Build{
 		State:             "STAGING",
 		StagingMemoryInMB: 1024,
 		StagingDiskInMB:   512,
 		// StagingLogRateLimitBytesPerSecond, Error, Package, Droplet, CreatedBy all nil.
 	}
 
-	data, err := json.Marshal(b)
+	data, err := json.Marshal(build)
 	require.NoError(t, err)
 
 	s := string(data)
@@ -481,7 +482,7 @@ func TestBuild_OmitemptyOptionalFields(t *testing.T) {
 func TestProcess_OmitemptyCommandAndLogRate(t *testing.T) {
 	t.Parallel()
 
-	p := capi.Process{
+	process := capi.Process{
 		Type:       "web",
 		Instances:  1,
 		MemoryInMB: 256,
@@ -489,24 +490,24 @@ func TestProcess_OmitemptyCommandAndLogRate(t *testing.T) {
 		// Command and LogRateLimitInBytesPerSecond are nil.
 	}
 
-	data, err := json.Marshal(p)
+	data, err := json.Marshal(process)
 	require.NoError(t, err)
 
-	s := string(data)
-	assert.NotContains(t, s, `"command"`)
-	assert.NotContains(t, s, `"log_rate_limit_in_bytes_per_second"`)
+	processJSON := string(data)
+	assert.NotContains(t, processJSON, `"command"`)
+	assert.NotContains(t, processJSON, `"log_rate_limit_in_bytes_per_second"`)
 
 	cmd := "bundle exec rails server"
 	rate := 1048576
-	p.Command = &cmd
-	p.LogRateLimitInBytesPerSecond = &rate
+	process.Command = &cmd
+	process.LogRateLimitInBytesPerSecond = &rate
 
-	data, err = json.Marshal(p)
+	data, err = json.Marshal(process)
 	require.NoError(t, err)
 
-	s = string(data)
-	assert.Contains(t, s, `"command":"bundle exec rails server"`)
-	assert.Contains(t, s, `"log_rate_limit_in_bytes_per_second":1048576`)
+	processJSON = string(data)
+	assert.Contains(t, processJSON, `"command":"bundle exec rails server"`)
+	assert.Contains(t, processJSON, `"log_rate_limit_in_bytes_per_second":1048576`)
 }
 
 // TestTask_OmitemptyUser verifies nil User is omitted from Task (O-7).
@@ -540,21 +541,21 @@ func TestTask_OmitemptyUser(t *testing.T) {
 func TestFeatureFlag_OmitemptyCustomErrorMessage(t *testing.T) {
 	t.Parallel()
 
-	ff := capi.FeatureFlag{
+	featureFlag := capi.FeatureFlag{
 		Name:    "app_bits_upload",
 		Enabled: true,
 		// CustomErrorMessage is nil.
 	}
 
-	data, err := json.Marshal(ff)
+	data, err := json.Marshal(featureFlag)
 	require.NoError(t, err)
 
 	assert.NotContains(t, string(data), `"custom_error_message"`)
 
 	msg := "Feature disabled by policy"
-	ff.CustomErrorMessage = &msg
+	featureFlag.CustomErrorMessage = &msg
 
-	data, err = json.Marshal(ff)
+	data, err = json.Marshal(featureFlag)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"custom_error_message":"Feature disabled by policy"`)
@@ -578,13 +579,13 @@ func TestRouteReservation_OmitemptyMatchingRoute(t *testing.T) {
 func TestSpaceQuota_OmitemptyAppsServicesRoutes(t *testing.T) {
 	t.Parallel()
 
-	sq := capi.SpaceQuota{
+	spaceQuota := capi.SpaceQuota{
 		Resource: capi.Resource{GUID: "sq-guid"},
-		Name:     "small",
+		Name:     testPlanName,
 		// Apps, Services, Routes are nil.
 	}
 
-	data, err := json.Marshal(sq)
+	data, err := json.Marshal(spaceQuota)
 	require.NoError(t, err)
 
 	s := string(data)
@@ -597,11 +598,11 @@ func TestSpaceQuota_OmitemptyAppsServicesRoutes(t *testing.T) {
 func TestAppsQuota_OmitemptyIntFields(t *testing.T) {
 	t.Parallel()
 
-	aq := capi.AppsQuota{
+	appsQuota := capi.AppsQuota{
 		// All nil — nothing should appear.
 	}
 
-	data, err := json.Marshal(aq)
+	data, err := json.Marshal(appsQuota)
 	require.NoError(t, err)
 
 	s := string(data)
@@ -611,9 +612,9 @@ func TestAppsQuota_OmitemptyIntFields(t *testing.T) {
 	assert.NotContains(t, s, `"per_app_tasks"`)
 
 	total := 2048
-	aq.TotalMemoryInMB = &total
+	appsQuota.TotalMemoryInMB = &total
 
-	data, err = json.Marshal(aq)
+	data, err = json.Marshal(appsQuota)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"total_memory_in_mb":2048`)
@@ -623,8 +624,8 @@ func TestAppsQuota_OmitemptyIntFields(t *testing.T) {
 func TestServicesQuota_OmitemptyFields(t *testing.T) {
 	t.Parallel()
 
-	sq := capi.ServicesQuota{}
-	data, err := json.Marshal(sq)
+	servicesQuota := capi.ServicesQuota{}
+	data, err := json.Marshal(servicesQuota)
 	require.NoError(t, err)
 
 	s := string(data)
@@ -633,9 +634,9 @@ func TestServicesQuota_OmitemptyFields(t *testing.T) {
 	assert.NotContains(t, s, `"total_service_keys"`)
 
 	allowed := true
-	sq.PaidServicesAllowed = &allowed
+	servicesQuota.PaidServicesAllowed = &allowed
 
-	data, err = json.Marshal(sq)
+	data, err = json.Marshal(servicesQuota)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"paid_services_allowed":true`)
@@ -645,8 +646,8 @@ func TestServicesQuota_OmitemptyFields(t *testing.T) {
 func TestRoutesQuota_OmitemptyFields(t *testing.T) {
 	t.Parallel()
 
-	rq := capi.RoutesQuota{}
-	data, err := json.Marshal(rq)
+	routesQuota := capi.RoutesQuota{}
+	data, err := json.Marshal(routesQuota)
 	require.NoError(t, err)
 
 	s := string(data)
@@ -654,9 +655,9 @@ func TestRoutesQuota_OmitemptyFields(t *testing.T) {
 	assert.NotContains(t, s, `"total_reserved_ports"`)
 
 	routes := 100
-	rq.TotalRoutes = &routes
+	routesQuota.TotalRoutes = &routes
 
-	data, err = json.Marshal(rq)
+	data, err = json.Marshal(routesQuota)
 	require.NoError(t, err)
 
 	assert.Contains(t, string(data), `"total_routes":100`)

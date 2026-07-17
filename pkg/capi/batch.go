@@ -24,12 +24,31 @@ var (
 	ErrRollbackIncomplete             = errors.New("rollback incomplete")
 )
 
+// Batch operation types (BatchOperation.Type). These select which CRUD
+// method a batch entry invokes; distinct from the include/fields query
+// parameter values declared in query_options.go.
+const (
+	batchOpCreate = "create"
+	batchOpUpdate = "update"
+	batchOpDelete = "delete"
+)
+
+// Batch resource types (BatchOperation.Resource). These identify which
+// resource kind a batch entry targets; distinct from the include/fields
+// query parameter values declared in query_options.go (e.g.
+// ServiceCredentialBindingIncludeApp, RoleIncludeSpace), which select
+// related resources to embed in a response rather than a CRUD target.
+const (
+	batchResourceApp   = "app"
+	batchResourceSpace = "space"
+)
+
 // guidFromResult extracts the GUID of a created resource from a BatchResult's
 // Data. Every CF resource type embeds Resource, whose promoted GUID field is
 // found by reflection regardless of the concrete type, so rollback does not
 // need a type switch over every resource. Returns false when Data is nil, not
 // a struct pointer, or carries no non-empty GUID.
-func guidFromResult(data interface{}) (string, bool) {
+func guidFromResult(data any) (string, bool) {
 	if data == nil {
 		return "", false
 	}
@@ -66,25 +85,25 @@ type UpdateDataWrapper[T any] struct {
 // handleCrudOperation is a helper that handles common CRUD pattern.
 func handleCrudOperation(
 	operation BatchOperation,
-	createFunc func() (interface{}, error),
-	updateFunc func() (interface{}, error),
-	deleteFunc func() (interface{}, error),
-	getFunc func() (interface{}, error),
+	createFunc func() (any, error),
+	updateFunc func() (any, error),
+	deleteFunc func() (any, error),
+	getFunc func() (any, error),
 ) *BatchResult {
 	result := &BatchResult{ID: operation.ID}
 
 	switch operation.Type {
-	case "create":
+	case batchOpCreate:
 		data, err := createFunc()
 		result.Success = err == nil
 		result.Data = data
 		result.Error = err
-	case "update":
+	case batchOpUpdate:
 		data, err := updateFunc()
 		result.Success = err == nil
 		result.Data = data
 		result.Error = err
-	case "delete":
+	case batchOpDelete:
 		data, err := deleteFunc()
 		result.Success = err == nil
 		result.Data = data
@@ -104,10 +123,10 @@ func handleCrudOperation(
 // CRUDOperationConfig holds configuration for CRUD operations.
 type CRUDOperationConfig struct {
 	InvalidDataTypeErr error
-	CreateFunc         func(ctx context.Context, operation BatchOperation) (interface{}, error)
-	UpdateFunc         func(ctx context.Context, operation BatchOperation) (interface{}, error)
-	DeleteFunc         func(ctx context.Context, operation BatchOperation) (interface{}, error)
-	GetFunc            func(ctx context.Context, operation BatchOperation) (interface{}, error)
+	CreateFunc         func(ctx context.Context, operation BatchOperation) (any, error)
+	UpdateFunc         func(ctx context.Context, operation BatchOperation) (any, error)
+	DeleteFunc         func(ctx context.Context, operation BatchOperation) (any, error)
+	GetFunc            func(ctx context.Context, operation BatchOperation) (any, error)
 }
 
 // ResourceClientOps defines the operations available for a resource client.
@@ -125,28 +144,28 @@ func createCRUDOperationConfig[TCreateRequest, TUpdateRequest, TResponse any](
 ) CRUDOperationConfig {
 	return CRUDOperationConfig{
 		InvalidDataTypeErr: invalidDataTypeErr,
-		CreateFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		CreateFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if req, ok := operation.Data.(*TCreateRequest); ok {
 				return client.Create(ctx, req)
 			}
 
 			return nil, fmt.Errorf("%w create", invalidDataTypeErr)
 		},
-		UpdateFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		UpdateFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if data, ok := operation.Data.(*UpdateDataWrapper[TUpdateRequest]); ok {
 				return client.Update(ctx, data.GUID, data.Request)
 			}
 
 			return nil, fmt.Errorf("%w update", invalidDataTypeErr)
 		},
-		DeleteFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		DeleteFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return client.Delete(ctx, guid)
 			}
 
 			return nil, fmt.Errorf("%w delete", invalidDataTypeErr)
 		},
-		GetFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		GetFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return client.Get(ctx, guid)
 			}
@@ -161,7 +180,7 @@ type BatchOperation struct {
 	ID       string
 	Type     string // "create", "update", "delete", "get"
 	Resource string // "app", "space", "org", etc.
-	Data     interface{}
+	Data     any
 	Callback func(result *BatchResult)
 }
 
@@ -169,7 +188,7 @@ type BatchOperation struct {
 type BatchResult struct {
 	ID       string
 	Success  bool
-	Data     interface{}
+	Data     any
 	Error    error
 	Duration time.Duration
 }
@@ -242,10 +261,10 @@ func (b *BatchExecutor) Execute(ctx context.Context, operations []BatchOperation
 // executeGenericCrudOperation handles generic CRUD operations using the provided configuration.
 func (b *BatchExecutor) executeGenericCrudOperation(ctx context.Context, operation BatchOperation, config CRUDOperationConfig) *BatchResult {
 	return handleCrudOperation(operation,
-		func() (interface{}, error) { return config.CreateFunc(ctx, operation) },
-		func() (interface{}, error) { return config.UpdateFunc(ctx, operation) },
-		func() (interface{}, error) { return config.DeleteFunc(ctx, operation) },
-		func() (interface{}, error) { return config.GetFunc(ctx, operation) },
+		func() (any, error) { return config.CreateFunc(ctx, operation) },
+		func() (any, error) { return config.UpdateFunc(ctx, operation) },
+		func() (any, error) { return config.DeleteFunc(ctx, operation) },
+		func() (any, error) { return config.GetFunc(ctx, operation) },
 	)
 }
 
@@ -253,28 +272,28 @@ func (b *BatchExecutor) executeGenericCrudOperation(ctx context.Context, operati
 func (b *BatchExecutor) createSpaceOperationConfig() CRUDOperationConfig {
 	return CRUDOperationConfig{
 		InvalidDataTypeErr: ErrInvalidDataTypeSpace,
-		CreateFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		CreateFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if req, ok := operation.Data.(*SpaceCreateRequest); ok {
 				return b.client.Spaces().Create(ctx, req)
 			}
 
 			return nil, fmt.Errorf("%w create", ErrInvalidDataTypeSpace)
 		},
-		UpdateFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		UpdateFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if data, ok := operation.Data.(*UpdateDataWrapper[SpaceUpdateRequest]); ok {
 				return b.client.Spaces().Update(ctx, data.GUID, data.Request)
 			}
 
 			return nil, fmt.Errorf("%w update", ErrInvalidDataTypeSpace)
 		},
-		DeleteFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		DeleteFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.Spaces().Delete(ctx, guid)
 			}
 
 			return nil, fmt.Errorf("%w delete", ErrInvalidDataTypeSpace)
 		},
-		GetFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		GetFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.Spaces().Get(ctx, guid)
 			}
@@ -293,28 +312,28 @@ func (b *BatchExecutor) createOrgOperationConfig() CRUDOperationConfig {
 func (b *BatchExecutor) createRouteOperationConfig() CRUDOperationConfig {
 	return CRUDOperationConfig{
 		InvalidDataTypeErr: ErrInvalidDataTypeRoute,
-		CreateFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		CreateFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if req, ok := operation.Data.(*RouteCreateRequest); ok {
 				return b.client.Routes().Create(ctx, req)
 			}
 
 			return nil, fmt.Errorf("%w create", ErrInvalidDataTypeRoute)
 		},
-		UpdateFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		UpdateFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if data, ok := operation.Data.(*UpdateDataWrapper[RouteUpdateRequest]); ok {
 				return b.client.Routes().Update(ctx, data.GUID, data.Request)
 			}
 
 			return nil, fmt.Errorf("%w update", ErrInvalidDataTypeRoute)
 		},
-		DeleteFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		DeleteFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.Routes().Delete(ctx, guid)
 			}
 
 			return nil, fmt.Errorf("%w delete", ErrInvalidDataTypeRoute)
 		},
-		GetFunc: func(ctx context.Context, operation BatchOperation) (interface{}, error) {
+		GetFunc: func(ctx context.Context, operation BatchOperation) (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.Routes().Get(ctx, guid)
 			}
@@ -331,9 +350,9 @@ func (b *BatchExecutor) executeOperation(ctx context.Context, operation BatchOpe
 	}
 
 	switch operation.Resource {
-	case "app":
+	case batchResourceApp:
 		result = b.executeAppOperation(ctx, operation)
-	case "space":
+	case batchResourceSpace:
 		result = b.executeSpaceOperation(ctx, operation)
 	case "organization":
 		result = b.executeOrgOperation(ctx, operation)
@@ -352,28 +371,28 @@ func (b *BatchExecutor) executeOperation(ctx context.Context, operation BatchOpe
 // executeAppOperation handles app operations using the common CRUD helper.
 func (b *BatchExecutor) executeAppOperation(ctx context.Context, operation BatchOperation) *BatchResult {
 	return handleCrudOperation(operation,
-		func() (interface{}, error) {
+		func() (any, error) {
 			if req, ok := operation.Data.(*AppCreateRequest); ok {
 				return b.client.Apps().Create(ctx, req)
 			}
 
 			return nil, fmt.Errorf("%w create", ErrInvalidDataTypeApp)
 		},
-		func() (interface{}, error) {
+		func() (any, error) {
 			if data, ok := operation.Data.(*UpdateDataWrapper[AppUpdateRequest]); ok {
 				return b.client.Apps().Update(ctx, data.GUID, data.Request)
 			}
 
 			return nil, fmt.Errorf("%w update", ErrInvalidDataTypeApp)
 		},
-		func() (interface{}, error) {
+		func() (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.Apps().Delete(ctx, guid)
 			}
 
 			return nil, fmt.Errorf("%w delete", ErrInvalidDataTypeApp)
 		},
-		func() (interface{}, error) {
+		func() (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.Apps().Get(ctx, guid)
 			}
@@ -407,28 +426,28 @@ func (b *BatchExecutor) executeRouteOperation(ctx context.Context, operation Bat
 // executeServiceInstanceOperation handles service instance operations with special return handling.
 func (b *BatchExecutor) executeServiceInstanceOperation(ctx context.Context, operation BatchOperation) *BatchResult {
 	return handleCrudOperation(operation,
-		func() (interface{}, error) {
+		func() (any, error) {
 			if req, ok := operation.Data.(*ServiceInstanceCreateRequest); ok {
 				return b.client.ServiceInstances().Create(ctx, req)
 			}
 
 			return nil, fmt.Errorf("%w create", ErrInvalidDataTypeServiceInstance)
 		},
-		func() (interface{}, error) {
+		func() (any, error) {
 			if data, ok := operation.Data.(*UpdateDataWrapper[ServiceInstanceUpdateRequest]); ok {
 				return b.client.ServiceInstances().Update(ctx, data.GUID, data.Request)
 			}
 
 			return nil, fmt.Errorf("%w update", ErrInvalidDataTypeServiceInstance)
 		},
-		func() (interface{}, error) {
+		func() (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.ServiceInstances().Delete(ctx, guid)
 			}
 
 			return nil, fmt.Errorf("%w delete", ErrInvalidDataTypeServiceInstance)
 		},
-		func() (interface{}, error) {
+		func() (any, error) {
 			if guid, ok := operation.Data.(string); ok {
 				return b.client.ServiceInstances().Get(ctx, guid)
 			}
@@ -454,8 +473,8 @@ func NewBatchBuilder() *BatchBuilder {
 func (b *BatchBuilder) AddCreateApp(id string, request *AppCreateRequest) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "create",
-		Resource: "app",
+		Type:     batchOpCreate,
+		Resource: batchResourceApp,
 		Data:     request,
 	})
 
@@ -466,8 +485,8 @@ func (b *BatchBuilder) AddCreateApp(id string, request *AppCreateRequest) *Batch
 func (b *BatchBuilder) AddUpdateApp(id, guid string, request *AppUpdateRequest) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "update",
-		Resource: "app",
+		Type:     batchOpUpdate,
+		Resource: batchResourceApp,
 		Data: &UpdateDataWrapper[AppUpdateRequest]{
 			GUID:    guid,
 			Request: request,
@@ -481,8 +500,8 @@ func (b *BatchBuilder) AddUpdateApp(id, guid string, request *AppUpdateRequest) 
 func (b *BatchBuilder) AddDeleteApp(id, guid string) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "delete",
-		Resource: "app",
+		Type:     batchOpDelete,
+		Resource: batchResourceApp,
 		Data:     guid,
 	})
 
@@ -494,7 +513,7 @@ func (b *BatchBuilder) AddGetApp(id, guid string) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
 		Type:     "get",
-		Resource: "app",
+		Resource: batchResourceApp,
 		Data:     guid,
 	})
 
@@ -505,8 +524,8 @@ func (b *BatchBuilder) AddGetApp(id, guid string) *BatchBuilder {
 func (b *BatchBuilder) AddCreateSpace(id string, request *SpaceCreateRequest) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "create",
-		Resource: "space",
+		Type:     batchOpCreate,
+		Resource: batchResourceSpace,
 		Data:     request,
 	})
 
@@ -517,8 +536,8 @@ func (b *BatchBuilder) AddCreateSpace(id string, request *SpaceCreateRequest) *B
 func (b *BatchBuilder) AddUpdateSpace(id, guid string, request *SpaceUpdateRequest) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "update",
-		Resource: "space",
+		Type:     batchOpUpdate,
+		Resource: batchResourceSpace,
 		Data: &UpdateDataWrapper[SpaceUpdateRequest]{
 			GUID:    guid,
 			Request: request,
@@ -532,8 +551,8 @@ func (b *BatchBuilder) AddUpdateSpace(id, guid string, request *SpaceUpdateReque
 func (b *BatchBuilder) AddDeleteSpace(id, guid string) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "delete",
-		Resource: "space",
+		Type:     batchOpDelete,
+		Resource: batchResourceSpace,
 		Data:     guid,
 	})
 
@@ -544,7 +563,7 @@ func (b *BatchBuilder) AddDeleteSpace(id, guid string) *BatchBuilder {
 func (b *BatchBuilder) AddCreateOrganization(id string, request *OrganizationCreateRequest) *BatchBuilder {
 	b.operations = append(b.operations, BatchOperation{
 		ID:       id,
-		Type:     "create",
+		Type:     batchOpCreate,
 		Resource: "organization",
 		Data:     request,
 	})
@@ -645,16 +664,16 @@ func (t *BatchTransaction) performRollback(ctx context.Context) error {
 		irreversible []string
 	)
 
-	for i := len(t.results) - 1; i >= 0; i-- {
-		if !t.results[i].Success {
+	for index := len(t.results) - 1; index >= 0; index-- {
+		if !t.results[index].Success {
 			continue
 		}
 
-		original := t.operations[i]
+		original := t.operations[index]
 
 		switch original.Type {
-		case "create":
-			guid, ok := guidFromResult(t.results[i].Data)
+		case batchOpCreate:
+			guid, ok := guidFromResult(t.results[index].Data)
 			if !ok {
 				irreversible = append(irreversible,
 					fmt.Sprintf("%s (created %s, no GUID in result)", original.ID, original.Resource))
@@ -664,11 +683,11 @@ func (t *BatchTransaction) performRollback(ctx context.Context) error {
 
 			rollbackOps = append(rollbackOps, BatchOperation{
 				ID:       "rollback_" + original.ID,
-				Type:     "delete",
+				Type:     batchOpDelete,
 				Resource: original.Resource,
 				Data:     guid,
 			})
-		case "delete", "update":
+		case batchOpDelete, batchOpUpdate:
 			irreversible = append(irreversible,
 				fmt.Sprintf("%s (%s %s cannot be auto-reversed)", original.ID, original.Type, original.Resource))
 		}
