@@ -85,7 +85,7 @@ vet: ## Run go vet on all source files
 	@echo "$(GREEN)✓ Vet analysis complete$(RESET)"
 
 .PHONY: lint
-lint: fmt vet ## Run fmt and vet
+lint: fmt vet golangci ## Run fmt, vet, and golangci-lint
 
 .PHONY: govulncheck
 govulncheck: ## Run vulnerability check on dependencies

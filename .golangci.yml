@@ -164,5 +164,9 @@ formatters:
       - tmp
 
 # Issues configuration
+# Caps disabled: the defaults (50 per linter, 3 same) silently truncate
+# results and hid hundreds of issues while the repo carried lint debt.
+# The codebase lints clean, so report everything.
 issues:
-  max-same-issues: 3
+  max-issues-per-linter: 0
+  max-same-issues: 0
