@@ -36,7 +36,7 @@ func TestRoutePoliciesClient_Create(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *capi.RoutePolicyCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -100,7 +100,7 @@ func TestRoutePoliciesClient_Create(t *testing.T) {
 			expectedPath: testRoutePoliciesPath,
 			statusCode:   http.StatusUnprocessableEntity,
 			request: &capi.RoutePolicyCreateRequest{
-				Source: capi.RoutePolicySourceSpace("space-guid"),
+				Source: capi.RoutePolicySourceSpace(testSpaceGUID),
 				Relationships: capi.RoutePolicyRelationships{
 					Route: capi.Relationship{Data: &capi.RelationshipData{GUID: testRoutePolicyRoute}},
 				},
@@ -257,7 +257,7 @@ func TestRoutePoliciesClient_List(t *testing.T) {
 		{
 			name: "list with source guid filter and include",
 			opts: []capi.RoutePolicyListOption{
-				capi.WithRoutePolicySourceGUIDs("app-guid"),
+				capi.WithRoutePolicySourceGUIDs(testAppGUID),
 				capi.RoutePolicyIncludeSource,
 			},
 			expectedQuery: "include=source&source_guids=app-guid",
@@ -266,7 +266,7 @@ func TestRoutePoliciesClient_List(t *testing.T) {
 			name: "list with space guids and guids",
 			opts: []capi.RoutePolicyListOption{
 				capi.WithRoutePolicyGUIDs("p1", "p2"),
-				capi.WithRoutePolicySpaceGUIDs("space-guid"),
+				capi.WithRoutePolicySpaceGUIDs(testSpaceGUID),
 			},
 			expectedQuery: "guids=p1,p2&space_guids=space-guid",
 		},
@@ -369,7 +369,7 @@ func TestRoutePoliciesClient_List_IncludedDecoding(t *testing.T) {
 	// Relationship data for null sources decodes to nil Data.
 	policy := result.Resources[0]
 	require.NotNil(t, policy.Relationships.App)
-	assert.Equal(t, "app-guid", policy.Relationships.App.Data.GUID)
+	assert.Equal(t, testAppGUID, policy.Relationships.App.Data.GUID)
 	require.NotNil(t, policy.Relationships.Space)
 	assert.Nil(t, policy.Relationships.Space.Data)
 }

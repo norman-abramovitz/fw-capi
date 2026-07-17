@@ -30,9 +30,9 @@ func TestSidecarsClient_Get(t *testing.T) {
 			},
 			Name:         "test-sidecar",
 			Command:      "echo hello",
-			ProcessTypes: []string{"web", "worker"},
+			ProcessTypes: []string{testWebProcessType, testWorkerProcessType},
 			MemoryInMB:   &memoryInMB,
-			Origin:       "user",
+			Origin:       testUserUsername,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -49,7 +49,7 @@ func TestSidecarsClient_Get(t *testing.T) {
 	assert.Equal(t, "sidecar-guid", sidecar.GUID)
 	assert.Equal(t, "test-sidecar", sidecar.Name)
 	assert.Equal(t, "echo hello", sidecar.Command)
-	assert.Equal(t, []string{"web", "worker"}, sidecar.ProcessTypes)
+	assert.Equal(t, []string{testWebProcessType, testWorkerProcessType}, sidecar.ProcessTypes)
 	assert.Equal(t, 128, *sidecar.MemoryInMB)
 }
 
@@ -132,17 +132,17 @@ func TestSidecarsClient_ListForProcess(t *testing.T) {
 					Resource:     capi.Resource{GUID: "sidecar-1"},
 					Name:         "sidecar-1",
 					Command:      "echo hello1",
-					ProcessTypes: []string{"web"},
+					ProcessTypes: []string{testWebProcessType},
 					MemoryInMB:   &memory1,
-					Origin:       "user",
+					Origin:       testUserUsername,
 				},
 				{
 					Resource:     capi.Resource{GUID: "sidecar-2"},
 					Name:         "sidecar-2",
 					Command:      "echo hello2",
-					ProcessTypes: []string{"worker"},
+					ProcessTypes: []string{testWorkerProcessType},
 					MemoryInMB:   &memory2,
-					Origin:       "user",
+					Origin:       testUserUsername,
 				},
 			},
 		}
@@ -157,7 +157,7 @@ func TestSidecarsClient_ListForProcess(t *testing.T) {
 	require.NoError(t, err)
 
 	params := capi.NewQueryParams().WithPage(1).WithPerPage(10)
-	result, err := client.Sidecars().ListForProcess(context.Background(), "process-guid", params)
+	result, err := client.Sidecars().ListForProcess(context.Background(), testProcessGUID, params)
 
 	require.NoError(t, err)
 	assert.Len(t, result.Resources, 2)

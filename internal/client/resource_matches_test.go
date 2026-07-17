@@ -18,7 +18,7 @@ func TestResourceMatchesClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/resource_matches", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.ResourceMatchesRequest
 
@@ -80,7 +80,7 @@ func TestResourceMatchesClient_CreateEmpty(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/resource_matches", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.ResourceMatchesRequest
 

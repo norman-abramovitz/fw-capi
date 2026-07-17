@@ -20,38 +20,38 @@ func TestAuditEventsClient_Get(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/audit_events/event-guid", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		event := capi.AuditEvent{
 			Resource: capi.Resource{
-				GUID:      "event-guid",
+				GUID:      testEventGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
 			Type: "audit.app.create",
 			Actor: capi.AuditEventActor{
-				GUID: "user-guid",
-				Type: "user",
+				GUID: testUserGUID,
+				Type: testUserUsername,
 				Name: "test@example.com",
 			},
 			Target: capi.AuditEventTarget{
-				GUID: "app-guid",
-				Type: "app",
-				Name: "test-app",
+				GUID: testAppGUID,
+				Type: testAppKey,
+				Name: testAppNameFixture,
 			},
-			Data: map[string]interface{}{
-				"request": map[string]interface{}{
-					"name":       "test-app",
-					"space_guid": "space-guid",
+			Data: map[string]any{
+				"request": map[string]any{
+					"name":       testAppNameFixture,
+					"space_guid": testSpaceGUID,
 				},
 			},
 			Space: &capi.AuditEventSpace{
-				GUID: "space-guid",
-				Name: "test-space",
+				GUID: testSpaceGUID,
+				Name: testSpaceNameFixture,
 			},
 			Organization: &capi.AuditEventOrganization{
-				GUID: "org-guid",
-				Name: "test-org",
+				GUID: testOrgGUID,
+				Name: testOrgNameFixture,
 			},
 		}
 
@@ -62,18 +62,18 @@ func TestAuditEventsClient_Get(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	event, err := client.AuditEvents().Get(context.Background(), "event-guid")
+	event, err := client.AuditEvents().Get(context.Background(), testEventGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "event-guid", event.GUID)
+	assert.Equal(t, testEventGUID, event.GUID)
 	assert.Equal(t, "audit.app.create", event.Type)
-	assert.Equal(t, "user-guid", event.Actor.GUID)
-	assert.Equal(t, "user", event.Actor.Type)
+	assert.Equal(t, testUserGUID, event.Actor.GUID)
+	assert.Equal(t, testUserUsername, event.Actor.Type)
 	assert.Equal(t, "test@example.com", event.Actor.Name)
-	assert.Equal(t, "app-guid", event.Target.GUID)
-	assert.Equal(t, "app", event.Target.Type)
-	assert.Equal(t, "test-app", event.Target.Name)
-	assert.Equal(t, "space-guid", event.Space.GUID)
-	assert.Equal(t, "test-space", event.Space.Name)
+	assert.Equal(t, testAppGUID, event.Target.GUID)
+	assert.Equal(t, testAppKey, event.Target.Type)
+	assert.Equal(t, testAppNameFixture, event.Target.Name)
+	assert.Equal(t, testSpaceGUID, event.Space.GUID)
+	assert.Equal(t, testSpaceNameFixture, event.Space.Name)
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing

@@ -20,16 +20,16 @@ func TestOrganizationsClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/organizations", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.OrganizationCreateRequest
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
-		assert.Equal(t, "test-org", req.Name)
+		assert.Equal(t, testOrgNameFixture, req.Name)
 
 		org := capi.Organization{
 			Resource: capi.Resource{
-				GUID:      "org-guid",
+				GUID:      testOrgGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -47,12 +47,12 @@ func TestOrganizationsClient_Create(t *testing.T) {
 	require.NoError(t, err)
 
 	org, err := c.Organizations().Create(context.Background(), &capi.OrganizationCreateRequest{
-		Name: "test-org",
+		Name: testOrgNameFixture,
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "org-guid", org.GUID)
-	assert.Equal(t, "test-org", org.Name)
+	assert.Equal(t, testOrgGUID, org.GUID)
+	assert.Equal(t, testOrgNameFixture, org.Name)
 }
 
 func TestOrganizationsClient_Get(t *testing.T) {
@@ -64,9 +64,9 @@ func TestOrganizationsClient_Get(t *testing.T) {
 
 		org := capi.Organization{
 			Resource: capi.Resource{
-				GUID: "org-guid",
+				GUID: testOrgGUID,
 			},
-			Name:      "test-org",
+			Name:      testOrgNameFixture,
 			Suspended: false,
 		}
 
@@ -77,10 +77,10 @@ func TestOrganizationsClient_Get(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	org, err := c.Organizations().Get(context.Background(), "org-guid")
+	org, err := c.Organizations().Get(context.Background(), testOrgGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "org-guid", org.GUID)
-	assert.Equal(t, "test-org", org.Name)
+	assert.Equal(t, testOrgGUID, org.GUID)
+	assert.Equal(t, testOrgNameFixture, org.Name)
 }
 
 func TestOrganizationsClient_List(t *testing.T) {
@@ -101,12 +101,12 @@ func TestOrganizationsClient_List(t *testing.T) {
 			},
 			Resources: []capi.Organization{
 				{
-					Resource: capi.Resource{GUID: "org-1"},
-					Name:     "org-1",
+					Resource: capi.Resource{GUID: testOrgName1},
+					Name:     testOrgName1,
 				},
 				{
-					Resource: capi.Resource{GUID: "org-2"},
-					Name:     "org-2",
+					Resource: capi.Resource{GUID: testOrgName2},
+					Name:     testOrgName2,
 				},
 			},
 		}
@@ -123,16 +123,16 @@ func TestOrganizationsClient_List(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Len(t, result.Resources, 2)
-	assert.Equal(t, "org-1", result.Resources[0].Name)
-	assert.Equal(t, "org-2", result.Resources[1].Name)
+	assert.Equal(t, testOrgName1, result.Resources[0].Name)
+	assert.Equal(t, testOrgName2, result.Resources[1].Name)
 }
 
 //nolint:dupl // Acceptable duplication - each test validates different resource types
 func TestOrganizationsClient_Update(t *testing.T) {
 	t.Parallel()
 	RunNameUpdateTest(t, NameUpdateTestCase[capi.OrganizationUpdateRequest, capi.Organization]{
-		ResourceType: "organization",
-		ResourceGUID: "org-guid",
+		ResourceType: testOrganizationType,
+		ResourceGUID: testOrgGUID,
 		ResourcePath: "/v3/organizations/org-guid",
 		NewName:      "updated-org",
 		CreateRequest: func(name string) *capi.OrganizationUpdateRequest {
@@ -161,7 +161,7 @@ func TestOrganizationsClient_Delete(t *testing.T) {
 		assert.Equal(t, "/v3/organizations/org-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -169,10 +169,10 @@ func TestOrganizationsClient_Delete(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := c.Organizations().Delete(context.Background(), "org-guid")
+	job, err := c.Organizations().Delete(context.Background(), testOrgGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestOrganizationsClient_GetUsageSummary(t *testing.T) {
@@ -193,7 +193,7 @@ func TestOrganizationsClient_GetUsageSummary(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	summary, err := c.Organizations().GetUsageSummary(context.Background(), "org-guid")
+	summary, err := c.Organizations().GetUsageSummary(context.Background(), testOrgGUID)
 	require.NoError(t, err)
 	assert.Equal(t, 5, summary.UsageSummary.StartedInstances)
 	assert.Equal(t, 1024, summary.UsageSummary.MemoryInMB)
@@ -213,7 +213,7 @@ func TestOrganizationsClient_ListUsers(t *testing.T) {
 			},
 			Resources: []capi.User{
 				{
-					Resource:         capi.Resource{GUID: "user-1"},
+					Resource:         capi.Resource{GUID: testUserName1},
 					Username:         "user1",
 					PresentationName: "User One",
 				},
@@ -232,7 +232,7 @@ func TestOrganizationsClient_ListUsers(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	result, err := c.Organizations().ListUsers(context.Background(), "org-guid", nil)
+	result, err := c.Organizations().ListUsers(context.Background(), testOrgGUID, nil)
 	require.NoError(t, err)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "user1", result.Resources[0].Username)
@@ -264,7 +264,7 @@ func TestOrganizationsClient_SetDefaultIsolationSegment_Unassign(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	rel, err := client.Organizations().SetDefaultIsolationSegment(context.Background(), "org-guid", "")
+	rel, err := client.Organizations().SetDefaultIsolationSegment(context.Background(), testOrgGUID, "")
 	require.NoError(t, err)
 	assert.Nil(t, rel.Data)
 	assert.JSONEq(t, `{"data":null}`, rawBody)

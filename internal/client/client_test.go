@@ -13,6 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testVersion100 is a shared semver fixture, referenced from droplets_test.go
+// and packages_test.go as well as this file.
+const testVersion100 = "1.0.0"
+
+// testAPIExampleComURL is the fixture API endpoint used across TestNew subtests.
+const testAPIExampleComURL = "https://api.example.com"
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestNew(t *testing.T) {
 	t.Parallel()
@@ -29,7 +36,7 @@ func TestNew(t *testing.T) {
 		t.Parallel()
 
 		config := &capi.Config{
-			APIEndpoint: "https://api.example.com",
+			APIEndpoint: testAPIExampleComURL,
 			AccessToken: "test-token",
 		}
 
@@ -42,8 +49,8 @@ func TestNew(t *testing.T) {
 		t.Parallel()
 
 		config := &capi.Config{
-			APIEndpoint:  "https://api.example.com",
-			ClientID:     "client-id",
+			APIEndpoint:  testAPIExampleComURL,
+			ClientID:     testClientIDFixture,
 			ClientSecret: "client-secret",
 		}
 
@@ -56,9 +63,9 @@ func TestNew(t *testing.T) {
 		t.Parallel()
 
 		config := &capi.Config{
-			APIEndpoint: "https://api.example.com",
-			Username:    "user",
-			Password:    "pass",
+			APIEndpoint: testAPIExampleComURL,
+			Username:    testUserUsername,
+			Password:    testPassPassword,
 		}
 
 		client, err := New(context.Background(), config)
@@ -70,7 +77,7 @@ func TestNew(t *testing.T) {
 		t.Parallel()
 
 		config := &capi.Config{
-			APIEndpoint: "https://api.example.com",
+			APIEndpoint: testAPIExampleComURL,
 		}
 
 		client, err := New(context.Background(), config)
@@ -110,7 +117,7 @@ func TestClient_GetInfo(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/info", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		info := capi.Info{
 			Build:       "1.2.3",
@@ -119,7 +126,7 @@ func TestClient_GetInfo(t *testing.T) {
 			Description: "Test Cloud Foundry",
 			CFOnK8s:     false,
 			CLIVersion: capi.CLIVersion{
-				Minimum:     "1.0.0",
+				Minimum:     testVersion100,
 				Recommended: "2.0.0",
 			},
 			RateLimits: capi.RateLimits{
@@ -157,11 +164,11 @@ func TestClient_GetRootInfo(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		rootInfo := capi.RootInfo{
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: request.Host,
 				},
 				"cloud_controller_v2": capi.Link{
@@ -196,7 +203,7 @@ func TestClient_GetUsageSummary(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/info/usage_summary", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		summary := capi.UsageSummary{
 			UsageSummary: capi.UsageSummaryData{
@@ -204,7 +211,7 @@ func TestClient_GetUsageSummary(t *testing.T) {
 				MemoryInMB:       2048,
 			},
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: request.Host + "/v3/info/usage_summary",
 				},
 			},
@@ -234,14 +241,14 @@ func TestClient_ClearBuildpackCache(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/admin/actions/clear_buildpack_cache", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID: "job-guid",
+				GUID: testJobGUID,
 			},
 			Operation: "clear_buildpack_cache",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -260,16 +267,16 @@ func TestClient_ClearBuildpackCache(t *testing.T) {
 	job, err := client.ClearBuildpackCache(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "clear_buildpack_cache", job.Operation)
-	assert.Equal(t, "PROCESSING", job.State)
+	assert.Equal(t, testStateProcessing, job.State)
 }
 
 func TestClient_ResourceAccessors(t *testing.T) {
 	t.Parallel()
 
 	config := &capi.Config{
-		APIEndpoint: "https://api.example.com",
+		APIEndpoint: testAPIExampleComURL,
 	}
 
 	client, err := New(context.Background(), config)

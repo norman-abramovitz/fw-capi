@@ -20,7 +20,7 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/isolation_segments", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.IsolationSegmentCreateRequest
 
@@ -29,16 +29,16 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 
 		assert.Equal(t, "my-segment", req.Name)
 		assert.NotNil(t, req.Metadata)
-		assert.Equal(t, "value1", req.Metadata.Labels["key1"])
+		assert.Equal(t, testValue1, req.Metadata.Labels["key1"])
 
 		now := time.Now()
 		isolationSegment := capi.IsolationSegment{
 			Resource: capi.Resource{
-				GUID:      "segment-guid",
+				GUID:      testSegmentGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 				Links: capi.Links{
-					"self": capi.Link{
+					testSelfKey: capi.Link{
 						Href: "/v3/isolation_segments/segment-guid",
 					},
 					"organizations": capi.Link{
@@ -63,7 +63,7 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 		Name: "my-segment",
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"key1": "value1",
+				"key1": testValue1,
 			},
 			Annotations: map[string]string{},
 		},
@@ -72,9 +72,9 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 	isolationSegmentResult, err := isolationSegments.Create(context.Background(), request)
 	require.NoError(t, err)
 	assert.NotNil(t, isolationSegmentResult)
-	assert.Equal(t, "segment-guid", isolationSegmentResult.GUID)
+	assert.Equal(t, testSegmentGUID, isolationSegmentResult.GUID)
 	assert.Equal(t, "my-segment", isolationSegmentResult.Name)
-	assert.Equal(t, "value1", isolationSegmentResult.Metadata.Labels["key1"])
+	assert.Equal(t, testValue1, isolationSegmentResult.Metadata.Labels["key1"])
 }
 
 func TestIsolationSegmentsClient_Get(t *testing.T) {
@@ -87,11 +87,11 @@ func TestIsolationSegmentsClient_Get(t *testing.T) {
 		now := time.Now()
 		isolationSegment := capi.IsolationSegment{
 			Resource: capi.Resource{
-				GUID:      "segment-guid",
+				GUID:      testSegmentGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 				Links: capi.Links{
-					"self": capi.Link{
+					testSelfKey: capi.Link{
 						Href: "/v3/isolation_segments/segment-guid",
 					},
 					"organizations": capi.Link{
@@ -114,10 +114,10 @@ func TestIsolationSegmentsClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	isolationSegmentResult, err := isolationSegments.Get(context.Background(), "segment-guid")
+	isolationSegmentResult, err := isolationSegments.Get(context.Background(), testSegmentGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, isolationSegmentResult)
-	assert.Equal(t, "segment-guid", isolationSegmentResult.GUID)
+	assert.Equal(t, testSegmentGUID, isolationSegmentResult.GUID)
 	assert.Equal(t, "my-segment", isolationSegmentResult.Name)
 }
 
@@ -127,8 +127,8 @@ func TestIsolationSegmentsClient_List(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/isolation_segments", request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
-		assert.Equal(t, "segment1,segment2", request.URL.Query().Get("names"))
-		assert.Equal(t, "org-guid", request.URL.Query().Get("organization_guids"))
+		assert.Equal(t, "segment1,segment2", request.URL.Query().Get(testNamesParam))
+		assert.Equal(t, testOrgGUID, request.URL.Query().Get(testOrgGUIDsParam))
 
 		now := time.Now()
 		response := capi.ListResponse[capi.IsolationSegment]{
@@ -168,8 +168,8 @@ func TestIsolationSegmentsClient_List(t *testing.T) {
 
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"names":              {"segment1", "segment2"},
-			"organization_guids": {"org-guid"},
+			testNamesParam:    {"segment1", "segment2"},
+			testOrgGUIDsParam: {testOrgGUID},
 		},
 	}
 
@@ -202,7 +202,7 @@ func TestIsolationSegmentsClient_Update(t *testing.T) {
 		now := time.Now()
 		isolationSegment := capi.IsolationSegment{
 			Resource: capi.Resource{
-				GUID:      "segment-guid",
+				GUID:      testSegmentGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -229,10 +229,10 @@ func TestIsolationSegmentsClient_Update(t *testing.T) {
 		},
 	}
 
-	isolationSegmentResult, err := isolationSegments.Update(context.Background(), "segment-guid", request)
+	isolationSegmentResult, err := isolationSegments.Update(context.Background(), testSegmentGUID, request)
 	require.NoError(t, err)
 	assert.NotNil(t, isolationSegmentResult)
-	assert.Equal(t, "segment-guid", isolationSegmentResult.GUID)
+	assert.Equal(t, testSegmentGUID, isolationSegmentResult.GUID)
 	assert.Equal(t, "updated-segment", isolationSegmentResult.Name)
 	assert.Equal(t, "value2", isolationSegmentResult.Metadata.Labels["key2"])
 }
@@ -251,7 +251,7 @@ func TestIsolationSegmentsClient_Delete(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	err := isolationSegments.Delete(context.Background(), "segment-guid")
+	err := isolationSegments.Delete(context.Background(), testSegmentGUID)
 	require.NoError(t, err)
 }
 
@@ -260,7 +260,7 @@ func TestIsolationSegmentsClient_EntitleOrganizations(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/isolation_segments/segment-guid/relationships/organizations", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.IsolationSegmentEntitleOrganizationsRequest
 
@@ -268,8 +268,8 @@ func TestIsolationSegmentsClient_EntitleOrganizations(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Len(t, requestBody.Data, 2)
-		assert.Equal(t, "org-guid-1", requestBody.Data[0].GUID)
-		assert.Equal(t, "org-guid-2", requestBody.Data[1].GUID)
+		assert.Equal(t, testOrgGUID1, requestBody.Data[0].GUID)
+		assert.Equal(t, testOrgGUID2, requestBody.Data[1].GUID)
 
 		response := requestBody
 
@@ -281,11 +281,11 @@ func TestIsolationSegmentsClient_EntitleOrganizations(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	relationship, err := isolationSegments.EntitleOrganizations(context.Background(), "segment-guid", []string{"org-guid-1", "org-guid-2"})
+	relationship, err := isolationSegments.EntitleOrganizations(context.Background(), testSegmentGUID, []string{testOrgGUID1, testOrgGUID2})
 	require.NoError(t, err)
 	assert.NotNil(t, relationship)
 	assert.Len(t, relationship.Data, 2)
-	assert.Equal(t, "org-guid-1", relationship.Data[0].GUID)
+	assert.Equal(t, testOrgGUID1, relationship.Data[0].GUID)
 }
 
 func TestIsolationSegmentsClient_RevokeOrganization(t *testing.T) {
@@ -302,7 +302,7 @@ func TestIsolationSegmentsClient_RevokeOrganization(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	err := isolationSegments.RevokeOrganization(context.Background(), "segment-guid", "org-guid")
+	err := isolationSegments.RevokeOrganization(context.Background(), testSegmentGUID, testOrgGUID)
 	require.NoError(t, err)
 }
 
@@ -324,7 +324,7 @@ func TestIsolationSegmentsClient_ListOrganizations(t *testing.T) {
 			Resources: []capi.Organization{
 				{
 					Resource: capi.Resource{
-						GUID:      "org-guid-1",
+						GUID:      testOrgGUID1,
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
@@ -333,7 +333,7 @@ func TestIsolationSegmentsClient_ListOrganizations(t *testing.T) {
 				},
 				{
 					Resource: capi.Resource{
-						GUID:      "org-guid-2",
+						GUID:      testOrgGUID2,
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
@@ -351,7 +351,7 @@ func TestIsolationSegmentsClient_ListOrganizations(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	list, err := isolationSegments.ListOrganizations(context.Background(), "segment-guid", nil)
+	list, err := isolationSegments.ListOrganizations(context.Background(), testSegmentGUID, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.Equal(t, 2, list.Pagination.TotalResults)
@@ -378,7 +378,7 @@ func TestIsolationSegmentsClient_ListSpaces(t *testing.T) {
 			Resources: []capi.Space{
 				{
 					Resource: capi.Resource{
-						GUID:      "space-guid-1",
+						GUID:      testSpaceGUID1,
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
@@ -386,7 +386,7 @@ func TestIsolationSegmentsClient_ListSpaces(t *testing.T) {
 				},
 				{
 					Resource: capi.Resource{
-						GUID:      "space-guid-2",
+						GUID:      testSpaceGUID2,
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
@@ -403,7 +403,7 @@ func TestIsolationSegmentsClient_ListSpaces(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	isolationSegments := NewIsolationSegmentsClient(httpClient)
 
-	list, err := isolationSegments.ListSpaces(context.Background(), "segment-guid", nil)
+	list, err := isolationSegments.ListSpaces(context.Background(), testSegmentGUID, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.Equal(t, 2, list.Pagination.TotalResults)
@@ -427,7 +427,7 @@ func TestIsolationSegmentsClient_ListOrganizationsWithParams(t *testing.T) {
 	segments := NewIsolationSegmentsClient(httpClient)
 
 	params := capi.NewQueryParams()
-	params.Filters["guids"] = []string{"org-1", "org-2"}
+	params.Filters["guids"] = []string{testOrgName1, testOrgName2}
 
 	_, err := segments.ListOrganizations(context.Background(), "iso-guid", params)
 	require.NoError(t, err)

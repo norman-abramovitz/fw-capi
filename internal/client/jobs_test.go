@@ -16,25 +16,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testJobPath is the path for the "job-guid" fixture job.
+const testJobPath = "/v3/jobs/job-guid"
+
 func TestJobsClient_Get(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/jobs/job-guid", request.URL.Path)
+		assert.Equal(t, testJobPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID:      "job-guid",
+				GUID:      testJobGUID,
 				CreatedAt: time.Now().Add(-time.Minute),
 				UpdatedAt: time.Now().Add(-30 * time.Second),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/jobs/job-guid",
+					testSelfKey: capi.Link{
+						Href: testJobPath,
 					},
 				},
 			},
-			Operation: "app.apply_manifest",
+			Operation: testApplyManifestOperation,
 			State:     "COMPLETE",
 			Errors:    []capi.APIError{},
 			Warnings: []capi.Warning{
@@ -52,11 +55,11 @@ func TestJobsClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	jobs := NewJobsClient(httpClient)
 
-	job, err := jobs.Get(context.Background(), "job-guid")
+	job, err := jobs.Get(context.Background(), testJobGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
-	assert.Equal(t, "app.apply_manifest", job.Operation)
+	assert.Equal(t, testJobGUID, job.GUID)
+	assert.Equal(t, testApplyManifestOperation, job.Operation)
 	assert.Equal(t, "COMPLETE", job.State)
 	assert.Len(t, job.Warnings, 1)
 	assert.Equal(t, "Deprecated property detected: buildpack. App manifests must use buildpacks.", job.Warnings[0].Detail)
@@ -66,22 +69,22 @@ func TestJobsClient_Get_Processing(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/jobs/job-guid", request.URL.Path)
+		assert.Equal(t, testJobPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID:      "job-guid",
+				GUID:      testJobGUID,
 				CreatedAt: time.Now().Add(-time.Minute),
 				UpdatedAt: time.Now(),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/jobs/job-guid",
+					testSelfKey: capi.Link{
+						Href: testJobPath,
 					},
 				},
 			},
 			Operation: "service_instance.create",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -92,12 +95,12 @@ func TestJobsClient_Get_Processing(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	jobs := NewJobsClient(httpClient)
 
-	job, err := jobs.Get(context.Background(), "job-guid")
+	job, err := jobs.Get(context.Background(), testJobGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_instance.create", job.Operation)
-	assert.Equal(t, "PROCESSING", job.State)
+	assert.Equal(t, testStateProcessing, job.State)
 	assert.Empty(t, job.Errors)
 	assert.Empty(t, job.Warnings)
 }
@@ -106,22 +109,22 @@ func TestJobsClient_Get_Failed(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/jobs/job-guid", request.URL.Path)
+		assert.Equal(t, testJobPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID:      "job-guid",
+				GUID:      testJobGUID,
 				CreatedAt: time.Now().Add(-time.Minute),
 				UpdatedAt: time.Now(),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/jobs/job-guid",
+					testSelfKey: capi.Link{
+						Href: testJobPath,
 					},
 				},
 			},
 			Operation: "service_broker.delete",
-			State:     "FAILED",
+			State:     testStateFailed,
 			Errors: []capi.APIError{
 				{
 					Detail: "Service broker deletion failed: broker has service instances",
@@ -139,12 +142,12 @@ func TestJobsClient_Get_Failed(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	jobs := NewJobsClient(httpClient)
 
-	job, err := jobs.Get(context.Background(), "job-guid")
+	job, err := jobs.Get(context.Background(), testJobGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_broker.delete", job.Operation)
-	assert.Equal(t, "FAILED", job.State)
+	assert.Equal(t, testStateFailed, job.State)
 	assert.Len(t, job.Errors, 1)
 	assert.Equal(t, "Service broker deletion failed: broker has service instances", job.Errors[0].Detail)
 	assert.Equal(t, "CF-ServiceBrokerNotRemovable", job.Errors[0].Title)
@@ -158,7 +161,7 @@ func TestJobsClient_PollUntilComplete_Success(t *testing.T) {
 	attempts := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/jobs/job-guid", request.URL.Path)
+		assert.Equal(t, testJobPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		attempts++
@@ -169,31 +172,31 @@ func TestJobsClient_PollUntilComplete_Success(t *testing.T) {
 		if attempts <= 2 {
 			job = capi.Job{
 				Resource: capi.Resource{
-					GUID:      "job-guid",
+					GUID:      testJobGUID,
 					CreatedAt: time.Now().Add(-time.Minute),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
-							Href: "/v3/jobs/job-guid",
+						testSelfKey: capi.Link{
+							Href: testJobPath,
 						},
 					},
 				},
-				Operation: "app.apply_manifest",
-				State:     "PROCESSING",
+				Operation: testApplyManifestOperation,
+				State:     testStateProcessing,
 			}
 		} else {
 			job = capi.Job{
 				Resource: capi.Resource{
-					GUID:      "job-guid",
+					GUID:      testJobGUID,
 					CreatedAt: time.Now().Add(-time.Minute),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
-							Href: "/v3/jobs/job-guid",
+						testSelfKey: capi.Link{
+							Href: testJobPath,
 						},
 					},
 				},
-				Operation: "app.apply_manifest",
+				Operation: testApplyManifestOperation,
 				State:     "COMPLETE",
 				Warnings: []capi.Warning{
 					{
@@ -213,11 +216,11 @@ func TestJobsClient_PollUntilComplete_Success(t *testing.T) {
 
 	// Test polling functionality
 
-	job, err := jobs.PollUntilComplete(context.Background(), "job-guid")
+	job, err := jobs.PollUntilComplete(context.Background(), testJobGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
-	assert.Equal(t, "app.apply_manifest", job.Operation)
+	assert.Equal(t, testJobGUID, job.GUID)
+	assert.Equal(t, testApplyManifestOperation, job.Operation)
 	assert.Equal(t, "COMPLETE", job.State)
 	assert.Equal(t, 3, attempts)
 }
@@ -229,7 +232,7 @@ func TestJobsClient_PollUntilComplete_Failed(t *testing.T) {
 	attempts := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/jobs/job-guid", request.URL.Path)
+		assert.Equal(t, testJobPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		attempts++
@@ -240,32 +243,32 @@ func TestJobsClient_PollUntilComplete_Failed(t *testing.T) {
 		if attempts <= 1 {
 			job = capi.Job{
 				Resource: capi.Resource{
-					GUID:      "job-guid",
+					GUID:      testJobGUID,
 					CreatedAt: time.Now().Add(-time.Minute),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
-							Href: "/v3/jobs/job-guid",
+						testSelfKey: capi.Link{
+							Href: testJobPath,
 						},
 					},
 				},
 				Operation: "service_instance.delete",
-				State:     "PROCESSING",
+				State:     testStateProcessing,
 			}
 		} else {
 			job = capi.Job{
 				Resource: capi.Resource{
-					GUID:      "job-guid",
+					GUID:      testJobGUID,
 					CreatedAt: time.Now().Add(-time.Minute),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
-							Href: "/v3/jobs/job-guid",
+						testSelfKey: capi.Link{
+							Href: testJobPath,
 						},
 					},
 				},
 				Operation: "service_instance.delete",
-				State:     "FAILED",
+				State:     testStateFailed,
 				Errors: []capi.APIError{
 					{
 						Detail: "Service instance deletion failed",
@@ -286,13 +289,13 @@ func TestJobsClient_PollUntilComplete_Failed(t *testing.T) {
 
 	// Test polling functionality
 
-	job, err := jobs.PollUntilComplete(context.Background(), "job-guid")
+	job, err := jobs.PollUntilComplete(context.Background(), testJobGUID)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrJobFailed)
 	assert.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_instance.delete", job.Operation)
-	assert.Equal(t, "FAILED", job.State)
+	assert.Equal(t, testStateFailed, job.State)
 	assert.Len(t, job.Errors, 1)
 }
 
@@ -300,23 +303,23 @@ func TestJobsClient_PollUntilComplete_Timeout(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/jobs/job-guid", request.URL.Path)
+		assert.Equal(t, testJobPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		// Always return PROCESSING
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID:      "job-guid",
+				GUID:      testJobGUID,
 				CreatedAt: time.Now().Add(-time.Minute),
 				UpdatedAt: time.Now(),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/jobs/job-guid",
+					testSelfKey: capi.Link{
+						Href: testJobPath,
 					},
 				},
 			},
-			Operation: "app.apply_manifest",
-			State:     "PROCESSING",
+			Operation: testApplyManifestOperation,
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -332,13 +335,13 @@ func TestJobsClient_PollUntilComplete_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	job, err := jobs.PollUntilComplete(ctx, "job-guid")
+	job, err := jobs.PollUntilComplete(ctx, testJobGUID)
 	require.Error(t, err)
 	assert.True(t, err.Error() == "timeout waiting for job to complete: context deadline exceeded" ||
 		strings.Contains(err.Error(), "context deadline exceeded"),
 		"Expected timeout error, got: %v", err)
 
 	if job != nil {
-		assert.Equal(t, "PROCESSING", job.State)
+		assert.Equal(t, testStateProcessing, job.State)
 	}
 }

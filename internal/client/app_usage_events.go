@@ -12,11 +12,6 @@ type AppUsageEventsClient struct {
 	*UsageEventsClient[capi.AppUsageEvent]
 }
 
-// List implements capi.AppUsageEventsClient.List with typed filter options.
-func (c *AppUsageEventsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.AppUsageEventListOption) (*capi.ListResponse[capi.AppUsageEvent], error) {
-	return c.listWithOptions(ctx, params, widenUsageEventOptions(opts))
-}
-
 // NewAppUsageEventsClient creates a new app usage events client.
 func NewAppUsageEventsClient(httpClient *http.Client) *AppUsageEventsClient {
 	return &AppUsageEventsClient{
@@ -26,4 +21,9 @@ func NewAppUsageEventsClient(httpClient *http.Client) *AppUsageEventsClient {
 			"app",
 		),
 	}
+}
+
+// List implements capi.AppUsageEventsClient.List with typed filter options.
+func (c *AppUsageEventsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.AppUsageEventListOption) (*capi.ListResponse[capi.AppUsageEvent], error) {
+	return c.listWithOptions(ctx, params, widenUsageEventOptions(opts))
 }

@@ -16,6 +16,9 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// testBuildGUID is the fixture GUID for build tests.
+const testBuildGUID = "test-build-guid"
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestBuildsClient_Create(t *testing.T) {
 	t.Parallel()
@@ -27,13 +30,13 @@ func TestBuildsClient_Create(t *testing.T) {
 			StatusCode:   http.StatusCreated,
 			Request: &capi.BuildCreateRequest{
 				Package: &capi.BuildPackageRef{
-					GUID: "package-guid",
+					GUID: testPackageGUID,
 				},
 				StagingMemoryInMB: intPtr(1024),
 				StagingDiskInMB:   intPtr(1024),
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"env": "staging",
+						testEnvLabelKey: testStagingLabel,
 					},
 				},
 			},
@@ -43,43 +46,43 @@ func TestBuildsClient_Create(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/builds/build-guid",
 						},
-						"app": capi.Link{
-							Href: "https://api.example.org/v3/apps/app-guid",
+						testAppKey: capi.Link{
+							Href: testHrefAppLink,
 						},
 					},
 				},
-				State:             "STAGING",
+				State:             testStateStaging,
 				StagingMemoryInMB: 1024,
 				StagingDiskInMB:   1024,
 				Package: &capi.BuildPackageRef{
-					GUID: "package-guid",
+					GUID: testPackageGUID,
 				},
 				Droplet: nil,
 				CreatedBy: &capi.UserRef{
-					GUID:  "user-guid",
+					GUID:  testUserGUID,
 					Name:  "bill",
 					Email: "bill@example.com",
 				},
 				Lifecycle: &capi.Lifecycle{
-					Type: "buildpack",
-					Data: map[string]interface{}{
-						"buildpacks": []string{"ruby_buildpack"},
-						"stack":      "cflinuxfs4",
+					Type: testBuildpackLifecycle,
+					Data: map[string]any{
+						"buildpacks": []string{testRubyBuildpackName},
+						"stack":      testCFLinuxFS4Stack,
 					},
 				},
 				Relationships: &capi.BuildRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"env": "staging",
+						testEnvLabelKey: testStagingLabel,
 					},
 				},
 			},
@@ -90,17 +93,17 @@ func TestBuildsClient_Create(t *testing.T) {
 			ExpectedPath: "/v3/builds",
 			StatusCode:   http.StatusUnprocessableEntity,
 			Request:      &capi.BuildCreateRequest{},
-			Response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			Response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "The request is semantically invalid: Missing required field 'package'",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: "The request is semantically invalid: Missing required field 'package'",
 					},
 				},
 			},
 			WantErr:    true,
-			ErrMessage: "CF-UnprocessableEntity",
+			ErrMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -126,49 +129,49 @@ func TestBuildsClient_Get(t *testing.T) {
 
 	tests := []TestGetOperation[capi.Build]{
 		{
-			Name:         "successful get",
-			GUID:         "test-build-guid",
+			Name:         testSuccessfulGetCase,
+			GUID:         testBuildGUID,
 			ExpectedPath: "/v3/builds/test-build-guid",
 			StatusCode:   http.StatusOK,
 			Response: &capi.Build{
 				Resource: capi.Resource{
-					GUID:      "test-build-guid",
+					GUID:      testBuildGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				State:             "STAGED",
+				State:             testStateStaged,
 				StagingMemoryInMB: 1024,
 				StagingDiskInMB:   1024,
 				Package: &capi.BuildPackageRef{
-					GUID: "package-guid",
+					GUID: testPackageGUID,
 				},
 				Droplet: &capi.BuildDropletRef{
-					GUID: "droplet-guid",
+					GUID: testDropletGUID,
 				},
 				Lifecycle: &capi.Lifecycle{
-					Type: "buildpack",
-					Data: map[string]interface{}{},
+					Type: testBuildpackLifecycle,
+					Data: map[string]any{},
 				},
 			},
 			WantErr: false,
 		},
 		{
 			Name:         "build not found",
-			GUID:         "non-existent-guid",
+			GUID:         testNonExistentGUID,
 			ExpectedPath: "/v3/builds/non-existent-guid",
 			StatusCode:   http.StatusNotFound,
 			Response: &capi.Build{
 				Resource: capi.Resource{
-					GUID:      "test-build-guid",
+					GUID:      testBuildGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				State:             "STAGED",
+				State:             testStateStaged,
 				StagingMemoryInMB: 1024,
 				StagingDiskInMB:   1024,
 			},
 			WantErr:    true,
-			ErrMessage: "CF-ResourceNotFound",
+			ErrMessage: testNotFoundTitle,
 		},
 	}
 
@@ -183,11 +186,11 @@ func TestBuildsClient_List(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/builds", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if states := query.Get("states"); states != "" {
+		if states := query.Get(testStatesParam); states != "" {
 			assert.Equal(t, "STAGING,STAGED", states)
 		}
 
@@ -211,10 +214,10 @@ func TestBuildsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					State:             "STAGING",
+					State:             testStateStaging,
 					StagingMemoryInMB: 1024,
 					Package: &capi.BuildPackageRef{
-						GUID: "package-1",
+						GUID: testPackageName1,
 					},
 				},
 				{
@@ -223,13 +226,13 @@ func TestBuildsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					State:             "STAGED",
+					State:             testStateStaged,
 					StagingMemoryInMB: 2048,
 					Package: &capi.BuildPackageRef{
-						GUID: "package-2",
+						GUID: testPackageName2,
 					},
 					Droplet: &capi.BuildDropletRef{
-						GUID: "droplet-2",
+						GUID: testDropletName2,
 					},
 				},
 			},
@@ -251,13 +254,13 @@ func TestBuildsClient_List(t *testing.T) {
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "build-1", result.Resources[0].GUID)
-	assert.Equal(t, "STAGING", result.Resources[0].State)
+	assert.Equal(t, testStateStaging, result.Resources[0].State)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"states":        {"STAGING", "STAGED"},
-			"package_guids": {"package-1", "package-2"},
+			testStatesParam: {testStateStaging, testStateStaged},
+			"package_guids": {testPackageName1, testPackageName2},
 		},
 	}
 	result, err = client.Builds().List(context.Background(), params)
@@ -270,7 +273,7 @@ func TestBuildsClient_ListForApp(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/apps/app-guid/builds", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		response := capi.ListResponse[capi.Build]{
 			Pagination: capi.Pagination{
@@ -282,12 +285,12 @@ func TestBuildsClient_ListForApp(t *testing.T) {
 					Resource: capi.Resource{
 						GUID: "build-for-app",
 					},
-					State:             "STAGED",
+					State:             testStateStaged,
 					StagingMemoryInMB: 1024,
 					Relationships: &capi.BuildRelationships{
 						App: &capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "app-guid",
+								GUID: testAppGUID,
 							},
 						},
 					},
@@ -304,7 +307,7 @@ func TestBuildsClient_ListForApp(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	result, err := client.Builds().ListForApp(context.Background(), "app-guid", nil)
+	result, err := client.Builds().ListForApp(context.Background(), testAppGUID, nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, 1, result.Pagination.TotalResults)
@@ -318,32 +321,32 @@ func TestBuildsClient_Update(t *testing.T) {
 	request := &capi.BuildUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
-				"version": "1.0.0",
+				testVersionAnnotationKey: testVersion100,
 			},
 		},
 	}
 
 	response := &capi.Build{
 		Resource: capi.Resource{
-			GUID:      "test-build-guid",
+			GUID:      testBuildGUID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		State: "STAGED",
+		State: testStateStaged,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
-				"version": "1.0.0",
+				testVersionAnnotationKey: testVersion100,
 			},
 		},
 	}
 
-	RunStandardUpdateTest(t, "build", "test-build-guid", "/v3/builds/test-build-guid", request, response,
+	RunStandardUpdateTest(t, "build", testBuildGUID, "/v3/builds/test-build-guid", request, response,
 		func(c *Client) func(context.Context, string, *capi.BuildUpdateRequest) (*capi.Build, error) {
 			return c.Builds().Update
 		})

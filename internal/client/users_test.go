@@ -15,33 +15,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testUsersUserPath is the path for the "user-guid" fixture user.
+const testUsersUserPath = "/v3/users/user-guid"
+
 func TestUsersClient_Create_WithGUID(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/users", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.UserCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.Equal(t, "user-guid", req.GUID)
+		assert.Equal(t, testUserGUID, req.GUID)
 
 		user := capi.User{
 			Resource: capi.Resource{
-				GUID:      "user-guid",
+				GUID:      testUserGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/users/user-guid",
+					testSelfKey: capi.Link{
+						Href: testUsersUserPath,
 					},
 				},
 			},
-			Username:         "test-user",
-			PresentationName: "test-user",
-			Origin:           "uaa",
+			Username:         testUserNameFixture,
+			PresentationName: testUserNameFixture,
+			Origin:           testUAAOrigin,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -54,15 +57,15 @@ func TestUsersClient_Create_WithGUID(t *testing.T) {
 	users := NewUsersClient(httpClient)
 
 	req := &capi.UserCreateRequest{
-		GUID: "user-guid",
+		GUID: testUserGUID,
 	}
 
 	user, err := users.Create(context.Background(), req)
 	require.NoError(t, err)
 	assert.NotNil(t, user)
-	assert.Equal(t, "user-guid", user.GUID)
-	assert.Equal(t, "test-user", user.Username)
-	assert.Equal(t, "uaa", user.Origin)
+	assert.Equal(t, testUserGUID, user.GUID)
+	assert.Equal(t, testUserNameFixture, user.Username)
+	assert.Equal(t, testUAAOrigin, user.Origin)
 }
 
 func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
@@ -70,13 +73,13 @@ func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/users", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.UserCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.Equal(t, "test-user", req.Username)
+		assert.Equal(t, testUserNameFixture, req.Username)
 		assert.Equal(t, "ldap", req.Origin)
 
 		user := capi.User{
@@ -85,13 +88,13 @@ func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 				Links: capi.Links{
-					"self": capi.Link{
+					testSelfKey: capi.Link{
 						Href: "/v3/users/generated-guid",
 					},
 				},
 			},
-			Username:         "test-user",
-			PresentationName: "test-user",
+			Username:         testUserNameFixture,
+			PresentationName: testUserNameFixture,
 			Origin:           "ldap",
 			Metadata: &capi.Metadata{
 				Labels:      map[string]string{},
@@ -109,7 +112,7 @@ func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
 	users := NewUsersClient(httpClient)
 
 	req := &capi.UserCreateRequest{
-		Username: "test-user",
+		Username: testUserNameFixture,
 		Origin:   "ldap",
 		Metadata: &capi.Metadata{
 			Labels:      map[string]string{},
@@ -121,7 +124,7 @@ func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, "generated-guid", user.GUID)
-	assert.Equal(t, "test-user", user.Username)
+	assert.Equal(t, testUserNameFixture, user.Username)
 	assert.Equal(t, "ldap", user.Origin)
 }
 
@@ -129,29 +132,29 @@ func TestUsersClient_Get(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/users/user-guid", request.URL.Path)
+		assert.Equal(t, testUsersUserPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		user := capi.User{
 			Resource: capi.Resource{
-				GUID:      "user-guid",
+				GUID:      testUserGUID,
 				CreatedAt: time.Now().Add(-time.Hour),
 				UpdatedAt: time.Now().Add(-30 * time.Minute),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/users/user-guid",
+					testSelfKey: capi.Link{
+						Href: testUsersUserPath,
 					},
 				},
 			},
-			Username:         "test-user",
-			PresentationName: "test-user",
-			Origin:           "uaa",
+			Username:         testUserNameFixture,
+			PresentationName: testUserNameFixture,
+			Origin:           testUAAOrigin,
 			Metadata: &capi.Metadata{
 				Labels: map[string]string{
-					"environment": "production",
+					testEnvironmentLabelKey: testProductionLabel,
 				},
 				Annotations: map[string]string{
-					"note": "admin user",
+					testNoteAnnotationKey: "admin user",
 				},
 			},
 		}
@@ -164,13 +167,13 @@ func TestUsersClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	users := NewUsersClient(httpClient)
 
-	user, err := users.Get(context.Background(), "user-guid")
+	user, err := users.Get(context.Background(), testUserGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, user)
-	assert.Equal(t, "user-guid", user.GUID)
-	assert.Equal(t, "test-user", user.Username)
-	assert.Equal(t, "uaa", user.Origin)
-	assert.Equal(t, "production", user.Metadata.Labels["environment"])
+	assert.Equal(t, testUserGUID, user.GUID)
+	assert.Equal(t, testUserNameFixture, user.Username)
+	assert.Equal(t, testUAAOrigin, user.Origin)
+	assert.Equal(t, testProductionLabel, user.Metadata.Labels[testEnvironmentLabelKey])
 }
 
 func TestUsersClient_List(t *testing.T) {
@@ -179,7 +182,7 @@ func TestUsersClient_List(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/users", request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
-		assert.Equal(t, "test-user", request.URL.Query().Get("usernames"))
+		assert.Equal(t, testUserNameFixture, request.URL.Query().Get("usernames"))
 		assert.Equal(t, "2", request.URL.Query().Get("per_page"))
 
 		response := capi.ListResponse[capi.User]{
@@ -200,28 +203,28 @@ func TestUsersClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 						Links: capi.Links{
-							"self": capi.Link{
+							testSelfKey: capi.Link{
 								Href: "/v3/users/user-guid-1",
 							},
 						},
 					},
-					Username:         "test-user",
-					PresentationName: "test-user",
-					Origin:           "uaa",
+					Username:         testUserNameFixture,
+					PresentationName: testUserNameFixture,
+					Origin:           testUAAOrigin,
 				},
 				{
 					Resource: capi.Resource{
-						GUID:      "client-id",
+						GUID:      testClientIDFixture,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 						Links: capi.Links{
-							"self": capi.Link{
+							testSelfKey: capi.Link{
 								Href: "/v3/users/client-id",
 							},
 						},
 					},
 					Username:         "",
-					PresentationName: "client-id",
+					PresentationName: testClientIDFixture,
 					Origin:           "",
 				},
 			},
@@ -238,7 +241,7 @@ func TestUsersClient_List(t *testing.T) {
 	params := &capi.QueryParams{
 		PerPage: 2,
 		Filters: map[string][]string{
-			"usernames": {"test-user"},
+			"usernames": {testUserNameFixture},
 		},
 	}
 
@@ -247,45 +250,45 @@ func TestUsersClient_List(t *testing.T) {
 	assert.NotNil(t, list)
 	assert.Equal(t, 2, list.Pagination.TotalResults)
 	assert.Len(t, list.Resources, 2)
-	assert.Equal(t, "test-user", list.Resources[0].Username)
+	assert.Equal(t, testUserNameFixture, list.Resources[0].Username)
 	assert.Empty(t, list.Resources[1].Username) // UAA client
-	assert.Equal(t, "client-id", list.Resources[1].PresentationName)
+	assert.Equal(t, testClientIDFixture, list.Resources[1].PresentationName)
 }
 
 func TestUsersClient_Update(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/users/user-guid", request.URL.Path)
+		assert.Equal(t, testUsersUserPath, request.URL.Path)
 		assert.Equal(t, "PATCH", request.Method)
 
 		var req capi.UserUpdateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.Equal(t, "staging", req.Metadata.Labels["environment"])
-		assert.Equal(t, "updated note", req.Metadata.Annotations["note"])
+		assert.Equal(t, testStagingLabel, req.Metadata.Labels[testEnvironmentLabelKey])
+		assert.Equal(t, "updated note", req.Metadata.Annotations[testNoteAnnotationKey])
 
 		user := capi.User{
 			Resource: capi.Resource{
-				GUID:      "user-guid",
+				GUID:      testUserGUID,
 				CreatedAt: time.Now().Add(-time.Hour),
 				UpdatedAt: time.Now(),
 				Links: capi.Links{
-					"self": capi.Link{
-						Href: "/v3/users/user-guid",
+					testSelfKey: capi.Link{
+						Href: testUsersUserPath,
 					},
 				},
 			},
-			Username:         "test-user",
-			PresentationName: "test-user",
-			Origin:           "uaa",
+			Username:         testUserNameFixture,
+			PresentationName: testUserNameFixture,
+			Origin:           testUAAOrigin,
 			Metadata: &capi.Metadata{
 				Labels: map[string]string{
-					"environment": "staging",
+					testEnvironmentLabelKey: testStagingLabel,
 				},
 				Annotations: map[string]string{
-					"note": "updated note",
+					testNoteAnnotationKey: "updated note",
 				},
 			},
 		}
@@ -301,20 +304,20 @@ func TestUsersClient_Update(t *testing.T) {
 	req := &capi.UserUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"environment": "staging",
+				testEnvironmentLabelKey: testStagingLabel,
 			},
 			Annotations: map[string]string{
-				"note": "updated note",
+				testNoteAnnotationKey: "updated note",
 			},
 		},
 	}
 
-	user, err := users.Update(context.Background(), "user-guid", req)
+	user, err := users.Update(context.Background(), testUserGUID, req)
 	require.NoError(t, err)
 	assert.NotNil(t, user)
-	assert.Equal(t, "user-guid", user.GUID)
-	assert.Equal(t, "staging", user.Metadata.Labels["environment"])
-	assert.Equal(t, "updated note", user.Metadata.Annotations["note"])
+	assert.Equal(t, testUserGUID, user.GUID)
+	assert.Equal(t, testStagingLabel, user.Metadata.Labels[testEnvironmentLabelKey])
+	assert.Equal(t, "updated note", user.Metadata.Annotations[testNoteAnnotationKey])
 }
 
 func TestUsersClient_Delete(t *testing.T) {
@@ -323,7 +326,7 @@ func TestUsersClient_Delete(t *testing.T) {
 	// CF v3 DELETE /v3/users/{guid} is async: 202 Accepted, empty body,
 	// Location header pointing at /v3/jobs/{jobGuid}.
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/users/user-guid", request.URL.Path)
+		assert.Equal(t, testUsersUserPath, request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
 		writer.Header().Set("Location", "https://api.example.org/v3/jobs/job-guid")
@@ -334,8 +337,8 @@ func TestUsersClient_Delete(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	users := NewUsersClient(httpClient)
 
-	job, err := users.Delete(context.Background(), "user-guid")
+	job, err := users.Delete(context.Background(), testUserGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }

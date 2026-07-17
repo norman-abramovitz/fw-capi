@@ -16,6 +16,12 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// Test constants for service offering tests.
+const (
+	testServiceOfferingGUIDPath        = "/v3/service_offerings/test-offering-guid"
+	testServiceOfferingNonExistentPath = "/v3/service_offerings/non-existent-guid"
+)
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestServiceOfferingsClient_Get(t *testing.T) {
 	t.Parallel()
@@ -23,24 +29,24 @@ func TestServiceOfferingsClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-offering-guid",
-			expectedPath: "/v3/service_offerings/test-offering-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testOfferingGUIDFixture,
+			expectedPath: testServiceOfferingGUIDPath,
 			statusCode:   http.StatusOK,
 			response: capi.ServiceOffering{
 				Resource: capi.Resource{
-					GUID:      "test-offering-guid",
+					GUID:      testOfferingGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/service_offerings/test-offering-guid",
 						},
 						"service_plans": capi.Link{
@@ -60,7 +66,7 @@ func TestServiceOfferingsClient_Get(t *testing.T) {
 				DocumentationURL: StringPtr("https://some-documentation-link.io"),
 				BrokerCatalog: capi.ServiceOfferingCatalog{
 					ID: "db730a8c-11e5-11ea-838a-0f4fff3b1cfb",
-					Metadata: map[string]interface{}{
+					Metadata: map[string]any{
 						"shareable": true,
 					},
 					Features: capi.ServiceOfferingCatalogFeatures{
@@ -74,34 +80,34 @@ func TestServiceOfferingsClient_Get(t *testing.T) {
 				Relationships: capi.ServiceOfferingRelationships{
 					ServiceBroker: capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "broker-guid",
+							GUID: testBrokerGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"type": "database",
+						testTypeKey: testDatabaseFixture,
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:         "offering not found",
-			guid:         "non-existent-guid",
-			expectedPath: "/v3/service_offerings/non-existent-guid",
+			name:         testOfferingNotFoundCase,
+			guid:         testNonExistentGUID,
+			expectedPath: testServiceOfferingNonExistentPath,
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Service offering not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: testOfferingNotFoundDetail,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -147,7 +153,7 @@ func TestServiceOfferingsClient_List(t *testing.T) {
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if names := query.Get("names"); names != "" {
+		if names := query.Get(testNamesParam); names != "" {
 			assert.Equal(t, "offering1,offering2", names)
 		}
 
@@ -156,7 +162,7 @@ func TestServiceOfferingsClient_List(t *testing.T) {
 		}
 
 		if available := query.Get("available"); available != "" {
-			assert.Equal(t, "true", available)
+			assert.Equal(t, testTrueString, available)
 		}
 
 		response := capi.ListResponse[capi.ServiceOffering]{
@@ -171,14 +177,14 @@ func TestServiceOfferingsClient_List(t *testing.T) {
 			Resources: []capi.ServiceOffering{
 				{
 					Resource: capi.Resource{
-						GUID:      "offering-1",
+						GUID:      testOfferingName1,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
 					Name:        "database-service",
 					Description: "A database service",
 					Available:   true,
-					Tags:        []string{"database", "sql"},
+					Tags:        []string{testDatabaseFixture, "sql"},
 					Requires:    []string{},
 					Shareable:   true,
 					BrokerCatalog: capi.ServiceOfferingCatalog{
@@ -190,14 +196,14 @@ func TestServiceOfferingsClient_List(t *testing.T) {
 					Relationships: capi.ServiceOfferingRelationships{
 						ServiceBroker: capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "broker-1",
+								GUID: testBrokerName1,
 							},
 						},
 					},
 				},
 				{
 					Resource: capi.Resource{
-						GUID:      "offering-2",
+						GUID:      testOfferingName2,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
@@ -217,7 +223,7 @@ func TestServiceOfferingsClient_List(t *testing.T) {
 					Relationships: capi.ServiceOfferingRelationships{
 						ServiceBroker: capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "broker-2",
+								GUID: testBrokerName2,
 							},
 						},
 					},
@@ -240,19 +246,19 @@ func TestServiceOfferingsClient_List(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
-	assert.Equal(t, "offering-1", result.Resources[0].GUID)
+	assert.Equal(t, testOfferingName1, result.Resources[0].GUID)
 	assert.Equal(t, "database-service", result.Resources[0].Name)
 	assert.True(t, result.Resources[0].Available)
-	assert.Equal(t, "offering-2", result.Resources[1].GUID)
+	assert.Equal(t, testOfferingName2, result.Resources[1].GUID)
 	assert.Equal(t, "cache-service", result.Resources[1].Name)
 	assert.False(t, result.Resources[1].Available)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"names":                {"offering1", "offering2"},
-			"service_broker_guids": {"broker-1", "broker-2"},
-			"available":            {"true"},
+			testNamesParam:         {"offering1", "offering2"},
+			"service_broker_guids": {testBrokerName1, testBrokerName2},
+			"available":            {testTrueString},
 		},
 	}
 	result, err = client.ServiceOfferings().List(context.Background(), params)
@@ -268,7 +274,7 @@ func TestServiceOfferingsClient_Update(t *testing.T) {
 		name         string
 		guid         string
 		request      *capi.ServiceOfferingUpdateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -276,22 +282,22 @@ func TestServiceOfferingsClient_Update(t *testing.T) {
 	}{
 		{
 			name:         "successful update",
-			guid:         "test-offering-guid",
-			expectedPath: "/v3/service_offerings/test-offering-guid",
+			guid:         testOfferingGUIDFixture,
+			expectedPath: testServiceOfferingGUIDPath,
 			statusCode:   http.StatusOK,
 			request: &capi.ServiceOfferingUpdateRequest{
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 					Annotations: map[string]string{
-						"note": "Updated offering",
+						testNoteAnnotationKey: "Updated offering",
 					},
 				},
 			},
 			response: capi.ServiceOffering{
 				Resource: capi.Resource{
-					GUID:      "test-offering-guid",
+					GUID:      testOfferingGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
@@ -310,25 +316,25 @@ func TestServiceOfferingsClient_Update(t *testing.T) {
 				Relationships: capi.ServiceOfferingRelationships{
 					ServiceBroker: capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "broker-guid",
+							GUID: testBrokerGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 					Annotations: map[string]string{
-						"note": "Updated offering",
+						testNoteAnnotationKey: "Updated offering",
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:         "offering not found",
-			guid:         "non-existent-guid",
-			expectedPath: "/v3/service_offerings/non-existent-guid",
+			name:         testOfferingNotFoundCase,
+			guid:         testNonExistentGUID,
+			expectedPath: testServiceOfferingNonExistentPath,
 			statusCode:   http.StatusNotFound,
 			request: &capi.ServiceOfferingUpdateRequest{
 				Metadata: &capi.Metadata{
@@ -337,17 +343,17 @@ func TestServiceOfferingsClient_Update(t *testing.T) {
 					},
 				},
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Service offering not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: testOfferingNotFoundDetail,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -399,48 +405,48 @@ func TestServiceOfferingsClient_Delete(t *testing.T) {
 		expectedPath string
 		wantErr      bool
 		errMessage   string
-		response     interface{}
+		response     any
 	}{
 		{
 			name:         "successful delete",
-			guid:         "test-offering-guid",
-			expectedPath: "/v3/service_offerings/test-offering-guid",
+			guid:         testOfferingGUIDFixture,
+			expectedPath: testServiceOfferingGUIDPath,
 			statusCode:   http.StatusNoContent,
 			wantErr:      false,
 		},
 		{
-			name:         "offering not found",
-			guid:         "non-existent-guid",
-			expectedPath: "/v3/service_offerings/non-existent-guid",
+			name:         testOfferingNotFoundCase,
+			guid:         testNonExistentGUID,
+			expectedPath: testServiceOfferingNonExistentPath,
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Service offering not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: testOfferingNotFoundDetail,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 		{
 			name:         "offering has service instances",
 			guid:         "offering-with-instances",
 			expectedPath: "/v3/service_offerings/offering-with-instances",
 			statusCode:   http.StatusUnprocessableEntity,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "Service offering has service instances",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: "Service offering has service instances",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -483,7 +489,7 @@ func TestServiceOfferingsClient_DeleteWithPurge(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "DELETE", request.Method)
-		assert.Equal(t, "true", request.URL.Query().Get("purge"))
+		assert.Equal(t, testTrueString, request.URL.Query().Get("purge"))
 		writer.WriteHeader(http.StatusNoContent)
 	}))
 	defer server.Close()
@@ -491,6 +497,6 @@ func TestServiceOfferingsClient_DeleteWithPurge(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	offerings := NewServiceOfferingsClient(httpClient)
 
-	err := offerings.Delete(context.Background(), "offering-guid", capi.PurgeServiceOffering)
+	err := offerings.Delete(context.Background(), testOfferingGUID, capi.PurgeServiceOffering)
 	require.NoError(t, err)
 }

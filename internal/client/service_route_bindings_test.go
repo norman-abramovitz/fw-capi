@@ -21,27 +21,27 @@ func TestServiceRouteBindingsClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_route_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceRouteBindingCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "instance-guid", requestBody.Relationships.ServiceInstance.Data.GUID)
-		assert.Equal(t, "route-guid", requestBody.Relationships.Route.Data.GUID)
+		assert.Equal(t, testInstanceGUID, requestBody.Relationships.ServiceInstance.Data.GUID)
+		assert.Equal(t, testRoutePolicyRoute, requestBody.Relationships.Route.Data.GUID)
 
 		// Service route bindings may return a job for async operations
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID: "job-guid",
+				GUID: testJobGUID,
 			},
 			Operation: "service_route_binding.create",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(writer).Encode(job)
 	}))
@@ -51,18 +51,18 @@ func TestServiceRouteBindingsClient_Create(t *testing.T) {
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
 	request := &capi.ServiceRouteBindingCreateRequest{
-		Parameters: map[string]interface{}{
+		Parameters: map[string]any{
 			"rate_limit": 100,
 		},
 		Relationships: capi.ServiceRouteBindingRelationships{
 			ServiceInstance: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "instance-guid",
+					GUID: testInstanceGUID,
 				},
 			},
 			Route: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "route-guid",
+					GUID: testRoutePolicyRoute,
 				},
 			},
 		},
@@ -73,7 +73,7 @@ func TestServiceRouteBindingsClient_Create(t *testing.T) {
 
 	job, ok := result.(*capi.Job)
 	require.True(t, ok, "Expected *capi.Job for service route binding")
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_route_binding.create", job.Operation)
 }
 
@@ -82,7 +82,7 @@ func TestServiceRouteBindingsClient_CreateSync(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_route_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceRouteBindingCreateRequest
 
@@ -93,26 +93,26 @@ func TestServiceRouteBindingsClient_CreateSync(t *testing.T) {
 		now := time.Now()
 		binding := capi.ServiceRouteBinding{
 			Resource: capi.Resource{
-				GUID:      "binding-guid",
+				GUID:      testBindingGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			RouteServiceURL: StringPtr("https://route-service.example.com"),
 			LastOperation: &capi.ServiceRouteBindingLastOperation{
-				Type:      "create",
-				State:     "succeeded",
+				Type:      testCreateOperation,
+				State:     testSucceededOperation,
 				CreatedAt: &now,
 				UpdatedAt: &now,
 			},
 			Relationships: capi.ServiceRouteBindingRelationships{
 				ServiceInstance: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "instance-guid",
+						GUID: testInstanceGUID,
 					},
 				},
 				Route: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "route-guid",
+						GUID: testRoutePolicyRoute,
 					},
 				},
 			},
@@ -131,12 +131,12 @@ func TestServiceRouteBindingsClient_CreateSync(t *testing.T) {
 		Relationships: capi.ServiceRouteBindingRelationships{
 			ServiceInstance: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "instance-guid",
+					GUID: testInstanceGUID,
 				},
 			},
 			Route: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "route-guid",
+					GUID: testRoutePolicyRoute,
 				},
 			},
 		},
@@ -147,7 +147,7 @@ func TestServiceRouteBindingsClient_CreateSync(t *testing.T) {
 
 	binding, ok := result.(*capi.ServiceRouteBinding)
 	require.True(t, ok, "Expected *capi.ServiceRouteBinding for synchronous creation")
-	assert.Equal(t, "binding-guid", binding.GUID)
+	assert.Equal(t, testBindingGUID, binding.GUID)
 	assert.NotNil(t, binding.RouteServiceURL)
 	assert.Equal(t, "https://route-service.example.com", *binding.RouteServiceURL)
 }
@@ -162,26 +162,26 @@ func TestServiceRouteBindingsClient_Get(t *testing.T) {
 		now := time.Now()
 		binding := capi.ServiceRouteBinding{
 			Resource: capi.Resource{
-				GUID:      "binding-guid",
+				GUID:      testBindingGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			RouteServiceURL: StringPtr("https://route-service.example.com"),
 			LastOperation: &capi.ServiceRouteBindingLastOperation{
-				Type:      "create",
-				State:     "succeeded",
+				Type:      testCreateOperation,
+				State:     testSucceededOperation,
 				CreatedAt: &now,
 				UpdatedAt: &now,
 			},
 			Relationships: capi.ServiceRouteBindingRelationships{
 				ServiceInstance: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "instance-guid",
+						GUID: testInstanceGUID,
 					},
 				},
 				Route: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "route-guid",
+						GUID: testRoutePolicyRoute,
 					},
 				},
 			},
@@ -195,10 +195,10 @@ func TestServiceRouteBindingsClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
-	binding, err := serviceRouteBindings.Get(context.Background(), "binding-guid")
+	binding, err := serviceRouteBindings.Get(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, binding)
-	assert.Equal(t, "binding-guid", binding.GUID)
+	assert.Equal(t, testBindingGUID, binding.GUID)
 	assert.NotNil(t, binding.RouteServiceURL)
 	assert.Equal(t, "https://route-service.example.com", *binding.RouteServiceURL)
 }
@@ -209,8 +209,8 @@ func TestServiceRouteBindingsClient_List(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_route_bindings", request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
-		assert.Equal(t, "instance-guid", request.URL.Query().Get("service_instance_guids"))
-		assert.Equal(t, "route-guid", request.URL.Query().Get("route_guids"))
+		assert.Equal(t, testInstanceGUID, request.URL.Query().Get("service_instance_guids"))
+		assert.Equal(t, testRoutePolicyRoute, request.URL.Query().Get("route_guids"))
 
 		now := time.Now()
 		response := capi.ListResponse[capi.ServiceRouteBinding]{
@@ -250,8 +250,8 @@ func TestServiceRouteBindingsClient_List(t *testing.T) {
 
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"service_instance_guids": {"instance-guid"},
-			"route_guids":            {"route-guid"},
+			"service_instance_guids": {testInstanceGUID},
+			"route_guids":            {testRoutePolicyRoute},
 		},
 	}
 
@@ -279,7 +279,7 @@ func TestServiceRouteBindingsClient_Update(t *testing.T) {
 		now := time.Now()
 		binding := capi.ServiceRouteBinding{
 			Resource: capi.Resource{
-				GUID:      "binding-guid",
+				GUID:      testBindingGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
@@ -298,7 +298,7 @@ func TestServiceRouteBindingsClient_Update(t *testing.T) {
 	request := &capi.ServiceRouteBindingUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
 				"owner": "team-a",
@@ -306,25 +306,25 @@ func TestServiceRouteBindingsClient_Update(t *testing.T) {
 		},
 	}
 
-	binding, err := serviceRouteBindings.Update(context.Background(), "binding-guid", request)
+	binding, err := serviceRouteBindings.Update(context.Background(), testBindingGUID, request)
 	require.NoError(t, err)
 	assert.NotNil(t, binding)
-	assert.Equal(t, "binding-guid", binding.GUID)
+	assert.Equal(t, testBindingGUID, binding.GUID)
 }
 
 func TestServiceRouteBindingsClient_Delete(t *testing.T) {
 	t.Parallel()
 	RunJobDeleteTest(t, "service route binding delete", "/v3/service_route_bindings/binding-guid", "service_route_binding.delete",
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewServiceRouteBindingsClient(httpClient)
 		},
-		func(client interface{}) (*capi.Job, error) {
+		func(client any) (*capi.Job, error) {
 			serviceRouteBindingsClient, ok := client.(*ServiceRouteBindingsClient)
 			if !ok {
 				return nil, constants.ErrInvalidClientType
 			}
 
-			return serviceRouteBindingsClient.Delete(context.Background(), "binding-guid")
+			return serviceRouteBindingsClient.Delete(context.Background(), testBindingGUID)
 		},
 	)
 }
@@ -343,7 +343,7 @@ func TestServiceRouteBindingsClient_Delete_UserProvidedSync(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
-	job, err := serviceRouteBindings.Delete(context.Background(), "binding-guid")
+	job, err := serviceRouteBindings.Delete(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.Nil(t, job)
 }
@@ -357,7 +357,7 @@ func TestServiceRouteBindingsClient_Delete_ManagedAsync(t *testing.T) {
 		assert.Equal(t, "/v3/service_route_bindings/binding-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -365,10 +365,10 @@ func TestServiceRouteBindingsClient_Delete_ManagedAsync(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
-	job, err := serviceRouteBindings.Delete(context.Background(), "binding-guid")
+	job, err := serviceRouteBindings.Delete(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestServiceRouteBindingsClient_Delete_MissingLocationOn202(t *testing.T) {
@@ -384,7 +384,7 @@ func TestServiceRouteBindingsClient_Delete_MissingLocationOn202(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
-	job, err := serviceRouteBindings.Delete(context.Background(), "binding-guid")
+	job, err := serviceRouteBindings.Delete(context.Background(), testBindingGUID)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -397,7 +397,7 @@ func TestServiceRouteBindingsClient_GetParameters(t *testing.T) {
 		assert.Equal(t, "GET", request.Method)
 
 		params := capi.ServiceRouteBindingParameters{
-			Parameters: map[string]interface{}{
+			Parameters: map[string]any{
 				"rate_limit": 100,
 				"enabled":    true,
 			},
@@ -411,7 +411,7 @@ func TestServiceRouteBindingsClient_GetParameters(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
-	params, err := serviceRouteBindings.GetParameters(context.Background(), "binding-guid")
+	params, err := serviceRouteBindings.GetParameters(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, params)
 	assert.InDelta(t, float64(100), params.Parameters["rate_limit"], 0.0001)
@@ -432,7 +432,7 @@ func TestServiceRouteBindingsClient_GetNotFound(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceRouteBindings := NewServiceRouteBindingsClient(httpClient)
 
-	binding, err := serviceRouteBindings.Get(context.Background(), "binding-guid")
+	binding, err := serviceRouteBindings.Get(context.Background(), testBindingGUID)
 	require.Error(t, err)
 	assert.Nil(t, binding)
 }
@@ -442,7 +442,7 @@ func TestServiceRouteBindingsClient_CreateForbidden(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_route_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		writer.WriteHeader(http.StatusForbidden)
 	}))
@@ -455,12 +455,12 @@ func TestServiceRouteBindingsClient_CreateForbidden(t *testing.T) {
 		Relationships: capi.ServiceRouteBindingRelationships{
 			ServiceInstance: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "instance-guid",
+					GUID: testInstanceGUID,
 				},
 			},
 			Route: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "route-guid",
+					GUID: testRoutePolicyRoute,
 				},
 			},
 		},
@@ -490,7 +490,7 @@ func TestServiceRouteBindingsClient_GetWithIncludes(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	bindings := NewServiceRouteBindingsClient(httpClient)
 
-	binding, err := bindings.Get(context.Background(), "binding-guid",
+	binding, err := bindings.Get(context.Background(), testBindingGUID,
 		capi.ServiceRouteBindingIncludeRoute, capi.ServiceRouteBindingIncludeServiceInstance)
 	require.NoError(t, err)
 	require.NotNil(t, binding.Included)

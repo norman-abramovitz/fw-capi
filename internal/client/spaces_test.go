@@ -21,16 +21,16 @@ func TestSpacesClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/spaces", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.SpaceCreateRequest
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
-		assert.Equal(t, "test-space", req.Name)
+		assert.Equal(t, testSpaceNameFixture, req.Name)
 
 		space := capi.Space{
 			Resource: capi.Resource{
-				GUID:      "space-guid",
+				GUID:      testSpaceGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -47,17 +47,17 @@ func TestSpacesClient_Create(t *testing.T) {
 	require.NoError(t, err)
 
 	space, err := c.Spaces().Create(context.Background(), &capi.SpaceCreateRequest{
-		Name: "test-space",
+		Name: testSpaceNameFixture,
 		Relationships: capi.SpaceRelationships{
 			Organization: capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "org-guid"},
+				Data: &capi.RelationshipData{GUID: testOrgGUID},
 			},
 		},
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "space-guid", space.GUID)
-	assert.Equal(t, "test-space", space.Name)
+	assert.Equal(t, testSpaceGUID, space.GUID)
+	assert.Equal(t, testSpaceNameFixture, space.Name)
 }
 
 func TestSpacesClient_Get(t *testing.T) {
@@ -69,9 +69,9 @@ func TestSpacesClient_Get(t *testing.T) {
 
 		space := capi.Space{
 			Resource: capi.Resource{
-				GUID: "space-guid",
+				GUID: testSpaceGUID,
 			},
-			Name: "test-space",
+			Name: testSpaceNameFixture,
 		}
 
 		_ = json.NewEncoder(writer).Encode(space)
@@ -81,10 +81,10 @@ func TestSpacesClient_Get(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	space, err := c.Spaces().Get(context.Background(), "space-guid")
+	space, err := c.Spaces().Get(context.Background(), testSpaceGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "space-guid", space.GUID)
-	assert.Equal(t, "test-space", space.Name)
+	assert.Equal(t, testSpaceGUID, space.GUID)
+	assert.Equal(t, testSpaceNameFixture, space.Name)
 }
 
 func TestSpacesClient_List(t *testing.T) {
@@ -105,12 +105,12 @@ func TestSpacesClient_List(t *testing.T) {
 			},
 			Resources: []capi.Space{
 				{
-					Resource: capi.Resource{GUID: "space-1"},
-					Name:     "space-1",
+					Resource: capi.Resource{GUID: testSpaceName1},
+					Name:     testSpaceName1,
 				},
 				{
-					Resource: capi.Resource{GUID: "space-2"},
-					Name:     "space-2",
+					Resource: capi.Resource{GUID: testSpaceName2},
+					Name:     testSpaceName2,
 				},
 			},
 		}
@@ -127,8 +127,8 @@ func TestSpacesClient_List(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Len(t, result.Resources, 2)
-	assert.Equal(t, "space-1", result.Resources[0].Name)
-	assert.Equal(t, "space-2", result.Resources[1].Name)
+	assert.Equal(t, testSpaceName1, result.Resources[0].Name)
+	assert.Equal(t, testSpaceName2, result.Resources[1].Name)
 }
 
 //nolint:dupl // Acceptable duplication - each test validates different resource types
@@ -136,7 +136,7 @@ func TestSpacesClient_Update(t *testing.T) {
 	t.Parallel()
 	RunNameUpdateTest(t, NameUpdateTestCase[capi.SpaceUpdateRequest, capi.Space]{
 		ResourceType: "space",
-		ResourceGUID: "space-guid",
+		ResourceGUID: testSpaceGUID,
 		ResourcePath: "/v3/spaces/space-guid",
 		NewName:      "updated-space",
 		CreateRequest: func(name string) *capi.SpaceUpdateRequest {
@@ -165,7 +165,7 @@ func TestSpacesClient_Delete(t *testing.T) {
 		assert.Equal(t, "/v3/spaces/space-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -173,10 +173,10 @@ func TestSpacesClient_Delete(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := c.Spaces().Delete(context.Background(), "space-guid")
+	job, err := c.Spaces().Delete(context.Background(), testSpaceGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestSpacesClient_GetIsolationSegment(t *testing.T) {
@@ -197,7 +197,7 @@ func TestSpacesClient_GetIsolationSegment(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	relationship, err := c.Spaces().GetIsolationSegment(context.Background(), "space-guid")
+	relationship, err := c.Spaces().GetIsolationSegment(context.Background(), testSpaceGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, relationship.Data)
 	assert.Equal(t, "iso-seg-guid", relationship.Data.GUID)
@@ -209,7 +209,7 @@ func TestSpacesClient_SetIsolationSegment(t *testing.T) {
 	tests := []TestRelationshipOperation{
 		{
 			Name:         "set isolation segment",
-			ResourceGUID: "space-guid",
+			ResourceGUID: testSpaceGUID,
 			TargetGUID:   "new-iso-seg-guid",
 			ExpectedPath: "/v3/spaces/space-guid/relationships/isolation_segment",
 			RelationshipFunc: func(c *Client) func(context.Context, string, string) (*capi.Relationship, error) {
@@ -246,7 +246,7 @@ func TestSpacesClient_SetIsolationSegment_Unassign(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	rel, err := client.Spaces().SetIsolationSegment(context.Background(), "space-guid", "")
+	rel, err := client.Spaces().SetIsolationSegment(context.Background(), testSpaceGUID, "")
 	require.NoError(t, err)
 	assert.Nil(t, rel.Data)
 	assert.JSONEq(t, `{"data":null}`, rawBody)
@@ -266,7 +266,7 @@ func TestSpacesClient_ListUsers(t *testing.T) {
 			},
 			Resources: []capi.User{
 				{
-					Resource:         capi.Resource{GUID: "user-1"},
+					Resource:         capi.Resource{GUID: testUserName1},
 					Username:         "user1",
 					PresentationName: "User One",
 				},
@@ -285,7 +285,7 @@ func TestSpacesClient_ListUsers(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	result, err := c.Spaces().ListUsers(context.Background(), "space-guid", nil)
+	result, err := c.Spaces().ListUsers(context.Background(), testSpaceGUID, nil)
 	require.NoError(t, err)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "user1", result.Resources[0].Username)
@@ -330,7 +330,7 @@ func TestSpacesClient_GetFeature(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	feature, err := c.Spaces().GetFeature(context.Background(), "space-guid", "ssh")
+	feature, err := c.Spaces().GetFeature(context.Background(), testSpaceGUID, "ssh")
 	require.NoError(t, err)
 	assert.Equal(t, "ssh", feature.Name)
 	assert.True(t, feature.Enabled)
@@ -361,7 +361,7 @@ func TestSpacesClient_UpdateFeature(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	feature, err := c.Spaces().UpdateFeature(context.Background(), "space-guid", "ssh", false)
+	feature, err := c.Spaces().UpdateFeature(context.Background(), testSpaceGUID, "ssh", false)
 	require.NoError(t, err)
 	assert.Equal(t, "ssh", feature.Name)
 	assert.False(t, feature.Enabled)
@@ -377,7 +377,7 @@ func TestSpacesClient_GetQuota(t *testing.T) {
 		totalMem := 1024
 		totalInstances := 10
 		quota := capi.SpaceQuota{
-			Resource: capi.Resource{GUID: "quota-guid"},
+			Resource: capi.Resource{GUID: testQuotaGUID},
 			Name:     "test-quota",
 			Apps: &capi.AppsQuota{
 				TotalMemoryInMB: &totalMem,
@@ -392,9 +392,9 @@ func TestSpacesClient_GetQuota(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	quota, err := c.Spaces().GetQuota(context.Background(), "space-guid")
+	quota, err := c.Spaces().GetQuota(context.Background(), testSpaceGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "quota-guid", quota.GUID)
+	assert.Equal(t, testQuotaGUID, quota.GUID)
 	assert.Equal(t, "test-quota", quota.Name)
 	assert.Equal(t, 1024, *quota.Apps.TotalMemoryInMB)
 }
@@ -405,8 +405,8 @@ func TestSpacesClient_ApplyQuota(t *testing.T) {
 	tests := []TestRelationshipOperation{
 		{
 			Name:         "apply quota",
-			ResourceGUID: "space-guid",
-			TargetGUID:   "quota-guid",
+			ResourceGUID: testSpaceGUID,
+			TargetGUID:   testQuotaGUID,
 			ExpectedPath: "/v3/spaces/space-guid/relationships/quota",
 			RelationshipFunc: func(c *Client) func(context.Context, string, string) (*capi.Relationship, error) {
 				return c.Spaces().ApplyQuota
@@ -440,7 +440,7 @@ func TestSpacesClient_RemoveQuota(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = c.Spaces().RemoveQuota(context.Background(), "space-guid")
+	err = c.Spaces().RemoveQuota(context.Background(), testSpaceGUID)
 	require.NoError(t, err)
 }
 
@@ -449,7 +449,7 @@ func TestSpacesClient_GetWithInclude(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/spaces/space-guid", request.URL.Path)
-		assert.Equal(t, "organization", request.URL.Query().Get("include"))
+		assert.Equal(t, testOrganizationType, request.URL.Query().Get("include"))
 
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(`{
@@ -462,10 +462,10 @@ func TestSpacesClient_GetWithInclude(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	spaces := NewSpacesClient(httpClient)
 
-	space, err := spaces.Get(context.Background(), "space-guid", capi.SpaceIncludeOrganization)
+	space, err := spaces.Get(context.Background(), testSpaceGUID, capi.SpaceIncludeOrganization)
 	require.NoError(t, err)
 	require.NotNil(t, space.Included)
-	assert.Equal(t, "org-1", space.Included.Organizations[0].GUID)
+	assert.Equal(t, testOrgName1, space.Included.Organizations[0].GUID)
 }
 
 func TestSpacesClient_SuspendedField(t *testing.T) {
@@ -478,7 +478,7 @@ func TestSpacesClient_SuspendedField(t *testing.T) {
 		case http.MethodPost:
 			assert.Equal(t, "/v3/spaces", request.URL.Path)
 
-			var requestBody map[string]interface{}
+			var requestBody map[string]any
 
 			err := json.NewDecoder(request.Body).Decode(&requestBody)
 			assert.NoError(t, err)
@@ -492,7 +492,7 @@ func TestSpacesClient_SuspendedField(t *testing.T) {
 		case http.MethodPatch:
 			assert.Equal(t, "/v3/spaces/space-guid", request.URL.Path)
 
-			var requestBody map[string]interface{}
+			var requestBody map[string]any
 
 			err := json.NewDecoder(request.Body).Decode(&requestBody)
 			assert.NoError(t, err)
@@ -512,14 +512,14 @@ func TestSpacesClient_SuspendedField(t *testing.T) {
 	space, err := client.Spaces().Create(context.Background(), &capi.SpaceCreateRequest{
 		Name: "dev",
 		Relationships: capi.SpaceRelationships{
-			Organization: capi.Relationship{Data: &capi.RelationshipData{GUID: "org-guid"}},
+			Organization: capi.Relationship{Data: &capi.RelationshipData{GUID: testOrgGUID}},
 		},
 		Suspended: boolPtr(true),
 	})
 	require.NoError(t, err)
 	assert.True(t, space.Suspended)
 
-	space, err = client.Spaces().Update(context.Background(), "space-guid", &capi.SpaceUpdateRequest{
+	space, err = client.Spaces().Update(context.Background(), testSpaceGUID, &capi.SpaceUpdateRequest{
 		Suspended: boolPtr(false),
 	})
 	require.NoError(t, err)

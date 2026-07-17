@@ -17,6 +17,9 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// testPackagesPath is the base packages collection path.
+const testPackagesPath = "/v3/packages"
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestPackagesClient_Create(t *testing.T) {
 	t.Parallel()
@@ -24,7 +27,7 @@ func TestPackagesClient_Create(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *capi.PackageCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -32,45 +35,45 @@ func TestPackagesClient_Create(t *testing.T) {
 	}{
 		{
 			name:         "create bits package",
-			expectedPath: "/v3/packages",
+			expectedPath: testPackagesPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.PackageCreateRequest{
-				Type: "bits",
+				Type: testBitsType,
 				Relationships: capi.PackageRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
 			},
 			response: capi.Package{
 				Resource: capi.Resource{
-					GUID:      "package-guid",
+					GUID:      testPackageGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/packages/package-guid",
 						},
 						"upload": capi.Link{
 							Href:   "https://api.example.org/v3/packages/package-guid/upload",
-							Method: "POST",
+							Method: http.MethodPost,
 						},
 						"download": capi.Link{
 							Href:   "https://api.example.org/v3/packages/package-guid/download",
 							Method: "GET",
 						},
-						"app": capi.Link{
-							Href: "https://api.example.org/v3/apps/app-guid",
+						testAppKey: capi.Link{
+							Href: testHrefAppLink,
 						},
 					},
 				},
-				Type:  "bits",
-				State: "AWAITING_UPLOAD",
+				Type:  testBitsType,
+				State: testBuildpackStateAwaitingUpload,
 				Data: &capi.PackageData{
 					Checksum: &capi.PackageChecksum{
-						Type:  "sha256",
+						Type:  testSHA256Type,
 						Value: nil,
 					},
 					Error: nil,
@@ -82,7 +85,7 @@ func TestPackagesClient_Create(t *testing.T) {
 				Relationships: &capi.PackageRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
@@ -91,14 +94,14 @@ func TestPackagesClient_Create(t *testing.T) {
 		},
 		{
 			name:         "create docker package",
-			expectedPath: "/v3/packages",
+			expectedPath: testPackagesPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.PackageCreateRequest{
-				Type: "docker",
+				Type: testDockerType,
 				Relationships: capi.PackageRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
@@ -114,8 +117,8 @@ func TestPackagesClient_Create(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				Type:  "docker",
-				State: "READY",
+				Type:  testDockerType,
+				State: testStateReady,
 				Data: &capi.PackageData{
 					Image:    StringPtr("nginx:latest"),
 					Username: StringPtr("dockeruser"),
@@ -125,24 +128,24 @@ func TestPackagesClient_Create(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:         "missing app relationship",
-			expectedPath: "/v3/packages",
+			name:         testMissingAppRelationshipCase,
+			expectedPath: testPackagesPath,
 			statusCode:   http.StatusUnprocessableEntity,
 			request: &capi.PackageCreateRequest{
-				Type:          "bits",
+				Type:          testBitsType,
 				Relationships: capi.PackageRelationships{},
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "App relationship is required",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: testAppRelationshipRequired,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -152,7 +155,7 @@ func TestPackagesClient_Create(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				assert.Equal(t, testCase.expectedPath, request.URL.Path)
-				assert.Equal(t, "POST", request.Method)
+				assert.Equal(t, http.MethodPost, request.Method)
 
 				var requestBody capi.PackageCreateRequest
 
@@ -191,28 +194,28 @@ func TestPackagesClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-package-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testPackageGUIDFixture,
 			expectedPath: "/v3/packages/test-package-guid",
 			statusCode:   http.StatusOK,
 			response: capi.Package{
 				Resource: capi.Resource{
-					GUID:      "test-package-guid",
+					GUID:      testPackageGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				Type:  "bits",
-				State: "READY",
+				Type:  testBitsType,
+				State: testStateReady,
 				Data: &capi.PackageData{
 					Checksum: &capi.PackageChecksum{
-						Type:  "sha256",
+						Type:  testSHA256Type,
 						Value: StringPtr("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
 					},
 				},
@@ -221,20 +224,20 @@ func TestPackagesClient_Get(t *testing.T) {
 		},
 		{
 			name:         "package not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			expectedPath: "/v3/packages/non-existent-guid",
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Package not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "Package not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -264,7 +267,7 @@ func TestPackagesClient_Get(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, pkg)
 				assert.Equal(t, testCase.guid, pkg.GUID)
-				assert.Equal(t, "READY", pkg.State)
+				assert.Equal(t, testStateReady, pkg.State)
 			}
 		})
 	}
@@ -275,16 +278,16 @@ func TestPackagesClient_List(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/packages", request.URL.Path)
+		assert.Equal(t, testPackagesPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if appGuids := query.Get("app_guids"); appGuids != "" {
+		if appGuids := query.Get(testAppGUIDsParam); appGuids != "" {
 			assert.Equal(t, "app-1,app-2", appGuids)
 		}
 
-		if states := query.Get("states"); states != "" {
+		if states := query.Get(testStatesParam); states != "" {
 			assert.Equal(t, "READY,FAILED", states)
 		}
 
@@ -300,21 +303,21 @@ func TestPackagesClient_List(t *testing.T) {
 			Resources: []capi.Package{
 				{
 					Resource: capi.Resource{
-						GUID:      "package-1",
+						GUID:      testPackageName1,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Type:  "bits",
-					State: "READY",
+					Type:  testBitsType,
+					State: testStateReady,
 				},
 				{
 					Resource: capi.Resource{
-						GUID:      "package-2",
+						GUID:      testPackageName2,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Type:  "docker",
-					State: "READY",
+					Type:  testDockerType,
+					State: testStateReady,
 				},
 			},
 		}
@@ -334,14 +337,14 @@ func TestPackagesClient_List(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
-	assert.Equal(t, "package-1", result.Resources[0].GUID)
-	assert.Equal(t, "bits", result.Resources[0].Type)
+	assert.Equal(t, testPackageName1, result.Resources[0].GUID)
+	assert.Equal(t, testBitsType, result.Resources[0].Type)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"app_guids": {"app-1", "app-2"},
-			"states":    {"READY", "FAILED"},
+			testAppGUIDsParam: {testAppGUID1, testAppGUID2},
+			testStatesParam:   {testStateReady, testStateFailed},
 		},
 	}
 	result, err = client.Packages().List(context.Background(), params)
@@ -363,12 +366,12 @@ func TestPackagesClient_Update(t *testing.T) {
 
 		response := capi.Package{
 			Resource: capi.Resource{
-				GUID:      "test-package-guid",
+				GUID:      testPackageGUIDFixture,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			Type:     "bits",
-			State:    "READY",
+			Type:     testBitsType,
+			State:    testStateReady,
 			Metadata: requestBody.Metadata,
 		}
 
@@ -384,20 +387,20 @@ func TestPackagesClient_Update(t *testing.T) {
 	request := &capi.PackageUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
-				"version": "1.0.0",
+				testVersionAnnotationKey: testVersion100,
 			},
 		},
 	}
 
-	pkg, err := client.Packages().Update(context.Background(), "test-package-guid", request)
+	pkg, err := client.Packages().Update(context.Background(), testPackageGUIDFixture, request)
 	require.NoError(t, err)
 	require.NotNil(t, pkg)
-	assert.Equal(t, "test-package-guid", pkg.GUID)
-	assert.Equal(t, "production", pkg.Metadata.Labels["env"])
-	assert.Equal(t, "1.0.0", pkg.Metadata.Annotations["version"])
+	assert.Equal(t, testPackageGUIDFixture, pkg.GUID)
+	assert.Equal(t, testProductionLabel, pkg.Metadata.Labels[testEnvLabelKey])
+	assert.Equal(t, testVersion100, pkg.Metadata.Annotations[testVersionAnnotationKey])
 }
 
 // TestPackagesClient_Delete verifies that DELETE /v3/packages/{guid} returns a
@@ -406,11 +409,11 @@ func TestPackagesClient_Delete(t *testing.T) {
 	t.Parallel()
 
 	RunJobDeleteTest(t, "package delete", "/v3/packages/test-package-guid", "package.delete",
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewPackagesClient(httpClient)
 		},
-		func(client interface{}) (*capi.Job, error) {
-			return client.(*PackagesClient).Delete(context.Background(), "test-package-guid") //nolint:forcetypeassert // test factory supplies concrete client type
+		func(client any) (*capi.Job, error) {
+			return client.(*PackagesClient).Delete(context.Background(), testPackageGUIDFixture) //nolint:forcetypeassert // test factory supplies concrete client type
 		},
 	)
 }
@@ -431,7 +434,7 @@ func TestPackagesClient_DeleteMissingLocation(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	client := NewPackagesClient(httpClient)
 
-	job, err := client.Delete(context.Background(), "test-package-guid")
+	job, err := client.Delete(context.Background(), testPackageGUIDFixture)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -441,11 +444,11 @@ func TestPackagesClient_Upload(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/packages/test-package-guid/upload", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 		assert.Contains(t, request.Header.Get("Content-Type"), "multipart/form-data")
 
 		// Read the uploaded file
-		file, _, err := request.FormFile("bits")
+		file, _, err := request.FormFile(testBitsType)
 		assert.NoError(t, err)
 
 		defer func() {
@@ -461,11 +464,11 @@ func TestPackagesClient_Upload(t *testing.T) {
 
 		response := capi.Package{
 			Resource: capi.Resource{
-				GUID:      "test-package-guid",
+				GUID:      testPackageGUIDFixture,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			Type:  "bits",
+			Type:  testBitsType,
 			State: "PROCESSING_UPLOAD",
 		}
 
@@ -479,10 +482,10 @@ func TestPackagesClient_Upload(t *testing.T) {
 	require.NoError(t, err)
 
 	zipContent := []byte("test zip content")
-	pkg, err := client.Packages().Upload(context.Background(), "test-package-guid", zipContent)
+	pkg, err := client.Packages().Upload(context.Background(), testPackageGUIDFixture, zipContent)
 	require.NoError(t, err)
 	require.NotNil(t, pkg)
-	assert.Equal(t, "test-package-guid", pkg.GUID)
+	assert.Equal(t, testPackageGUIDFixture, pkg.GUID)
 	assert.Equal(t, "PROCESSING_UPLOAD", pkg.State)
 }
 
@@ -491,7 +494,7 @@ func TestPackagesClient_Download(t *testing.T) {
 
 	expectedContent := []byte("test package content")
 
-	RunDownloadTest(t, "package", "test-package-guid", "/v3/packages/test-package-guid/download", expectedContent,
+	RunDownloadTest(t, "package", testPackageGUIDFixture, "/v3/packages/test-package-guid/download", expectedContent,
 		func(client *Client) func(context.Context, string) ([]byte, error) {
 			return client.Packages().Download
 		})
@@ -501,19 +504,19 @@ func TestPackagesClient_Copy(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		expectedPath := "/v3/packages"
+		expectedPath := testPackagesPath
 		if request.URL.RawQuery != "" {
 			expectedPath = expectedPath + "?" + request.URL.RawQuery
 		}
 
 		assert.Equal(t, "/v3/packages?source_guid=source-package-guid", expectedPath)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.PackageCopyRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
-		assert.Equal(t, "target-app-guid", requestBody.Relationships.App.Data.GUID)
+		assert.Equal(t, testTargetAppGUID, requestBody.Relationships.App.Data.GUID)
 
 		response := capi.Package{
 			Resource: capi.Resource{
@@ -521,12 +524,12 @@ func TestPackagesClient_Copy(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			Type:  "bits",
+			Type:  testBitsType,
 			State: "COPYING",
 			Relationships: &capi.PackageRelationships{
 				App: &capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "target-app-guid",
+						GUID: testTargetAppGUID,
 					},
 				},
 			},
@@ -545,7 +548,7 @@ func TestPackagesClient_Copy(t *testing.T) {
 		Relationships: capi.PackageRelationships{
 			App: &capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "target-app-guid",
+					GUID: testTargetAppGUID,
 				},
 			},
 		},
@@ -556,5 +559,5 @@ func TestPackagesClient_Copy(t *testing.T) {
 	require.NotNil(t, pkg)
 	assert.Equal(t, "new-package-guid", pkg.GUID)
 	assert.Equal(t, "COPYING", pkg.State)
-	assert.Equal(t, "target-app-guid", pkg.Relationships.App.Data.GUID)
+	assert.Equal(t, testTargetAppGUID, pkg.Relationships.App.Data.GUID)
 }

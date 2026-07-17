@@ -32,6 +32,8 @@ func captureQueryServer[T any](t *testing.T, captured *url.Values) *httptest.Ser
 // TestTypedListOptions_ReachQuery proves typed List options are applied to the
 // outgoing request query for both the standard impl path (builds) and the
 // generic usage-events override path.
+//
+//nolint:funlen // Test functions can be longer for comprehensive testing
 func TestTypedListOptions_ReachQuery(t *testing.T) {
 	t.Parallel()
 
@@ -48,11 +50,11 @@ func TestTypedListOptions_ReachQuery(t *testing.T) {
 
 		_, err = client.Builds().List(context.Background(), nil,
 			capi.WithBuildStates(capi.BuildStateStaging, capi.BuildStateStaged),
-			capi.WithBuildAppGUIDs("app-1"),
+			capi.WithBuildAppGUIDs(testAppGUID1),
 		)
 		require.NoError(t, err)
-		assert.Equal(t, "STAGING,STAGED", got.Get("states"))
-		assert.Equal(t, "app-1", got.Get("app_guids"))
+		assert.Equal(t, "STAGING,STAGED", got.Get(testStatesParam))
+		assert.Equal(t, testAppGUID1, got.Get(testAppGUIDsParam))
 	})
 
 	t.Run("builds options merge with params", func(t *testing.T) {
@@ -73,7 +75,7 @@ func TestTypedListOptions_ReachQuery(t *testing.T) {
 		)
 		require.NoError(t, err)
 		assert.Equal(t, "10", got.Get("per_page"))
-		assert.Equal(t, "FAILED", got.Get("states"))
+		assert.Equal(t, testStateFailed, got.Get(testStatesParam))
 	})
 
 	t.Run("app usage events after_guid override path", func(t *testing.T) {
@@ -109,13 +111,13 @@ func TestTypedListOptions_ReachQuery(t *testing.T) {
 
 		_, err = client.ServiceInstances().List(context.Background(), params,
 			capi.WithServiceInstanceType(capi.ServiceInstanceFilterTypeManaged),
-			capi.WithServiceInstanceSpaceGUIDs("space-1"),
+			capi.WithServiceInstanceSpaceGUIDs(testSpaceName1),
 			capi.ServiceInstanceIncludeSpace,
 		)
 		require.NoError(t, err)
 		assert.Equal(t, "25", got.Get("per_page"))
-		assert.Equal(t, "managed", got.Get("type"))
-		assert.Equal(t, "space-1", got.Get("space_guids"))
+		assert.Equal(t, testManagedType, got.Get(testTypeKey))
+		assert.Equal(t, testSpaceName1, got.Get(testSpaceGUIDsParam))
 		assert.Equal(t, "space", got.Get("include"))
 	})
 

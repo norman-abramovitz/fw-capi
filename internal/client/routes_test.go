@@ -16,6 +16,10 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// testRoutesPath is the base routes collection path. testV1Path is defined
+// in domains_test.go and shared here since both exercise route path values.
+const testRoutesPath = "/v3/routes"
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestRoutesClient_Create(t *testing.T) {
 	t.Parallel()
@@ -23,7 +27,7 @@ func TestRoutesClient_Create(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *capi.RouteCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -31,28 +35,28 @@ func TestRoutesClient_Create(t *testing.T) {
 	}{
 		{
 			name:         "create route with host",
-			expectedPath: "/v3/routes",
+			expectedPath: testRoutesPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.RouteCreateRequest{
-				Host: StringPtr("api"),
-				Path: StringPtr("/v1"),
+				Host: StringPtr(testAPIHost),
+				Path: StringPtr(testV1Path),
 				Relationships: capi.RouteRelationships{
-					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: "space-guid"}},
-					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: "domain-guid"}},
+					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: testSpaceGUID}},
+					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"type": "api",
+						testTypeKey: testAPIHost,
 					},
 				},
 			},
 			response: capi.Route{
 				Resource: capi.Resource{
-					GUID:      "route-guid",
+					GUID:      testRoutePolicyRoute,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/routes/route-guid",
 						},
 						"space": capi.Link{
@@ -66,17 +70,17 @@ func TestRoutesClient_Create(t *testing.T) {
 						},
 					},
 				},
-				Protocol: "http",
-				Host:     "api",
-				Path:     "/v1",
-				URL:      "api.example.com/v1",
+				Protocol: testHTTPProtocol,
+				Host:     testAPIHost,
+				Path:     testV1Path,
+				URL:      testAPIExampleV1URL,
 				Relationships: capi.RouteRelationships{
-					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: "space-guid"}},
-					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: "domain-guid"}},
+					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: testSpaceGUID}},
+					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"type": "api",
+						testTypeKey: testAPIHost,
 					},
 				},
 			},
@@ -84,53 +88,53 @@ func TestRoutesClient_Create(t *testing.T) {
 		},
 		{
 			name:         "create route with port",
-			expectedPath: "/v3/routes",
+			expectedPath: testRoutesPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.RouteCreateRequest{
 				Port: intPtr(8080),
 				Relationships: capi.RouteRelationships{
-					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: "space-guid"}},
-					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: "domain-guid"}},
+					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: testSpaceGUID}},
+					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 			},
 			response: capi.Route{
 				Resource: capi.Resource{
-					GUID:      "route-guid",
+					GUID:      testRoutePolicyRoute,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				Protocol: "tcp",
+				Protocol: testTCPProtocol,
 				Port:     intPtr(8080),
 				URL:      "example.com:8080",
 				Relationships: capi.RouteRelationships{
-					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: "space-guid"}},
-					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: "domain-guid"}},
+					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: testSpaceGUID}},
+					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name:         "route already exists",
-			expectedPath: "/v3/routes",
+			expectedPath: testRoutesPath,
 			statusCode:   http.StatusUnprocessableEntity,
 			request: &capi.RouteCreateRequest{
 				Host: StringPtr("existing"),
 				Relationships: capi.RouteRelationships{
-					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: "space-guid"}},
-					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: "domain-guid"}},
+					Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: testSpaceGUID}},
+					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "Route already exists",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: "Route already exists",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -140,7 +144,7 @@ func TestRoutesClient_Create(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				assert.Equal(t, testCase.expectedPath, request.URL.Path)
-				assert.Equal(t, "POST", request.Method)
+				assert.Equal(t, http.MethodPost, request.Method)
 
 				var requestBody capi.RouteCreateRequest
 
@@ -177,46 +181,46 @@ func TestRoutesClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-route-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testRouteGUIDFixture,
 			expectedPath: "/v3/routes/test-route-guid",
 			statusCode:   http.StatusOK,
 			response: capi.Route{
 				Resource: capi.Resource{
-					GUID:      "test-route-guid",
+					GUID:      testRouteGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				Protocol: "http",
-				Host:     "api",
-				Path:     "/v1",
-				URL:      "api.example.com/v1",
+				Protocol: testHTTPProtocol,
+				Host:     testAPIHost,
+				Path:     testV1Path,
+				URL:      testAPIExampleV1URL,
 			},
 			wantErr: false,
 		},
 		{
 			name:         "route not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			expectedPath: "/v3/routes/non-existent-guid",
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Route not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "Route not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -255,7 +259,7 @@ func TestRoutesClient_List(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/routes", request.URL.Path)
+		assert.Equal(t, testRoutesPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		// Check query parameters if present
@@ -264,7 +268,7 @@ func TestRoutesClient_List(t *testing.T) {
 			assert.Equal(t, "api,www", hosts)
 		}
 
-		if spaceGuids := query.Get("space_guids"); spaceGuids != "" {
+		if spaceGuids := query.Get(testSpaceGUIDsParam); spaceGuids != "" {
 			assert.Equal(t, "space-1,space-2", spaceGuids)
 		}
 
@@ -284,10 +288,10 @@ func TestRoutesClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Protocol: "http",
-					Host:     "api",
-					Path:     "/v1",
-					URL:      "api.example.com/v1",
+					Protocol: testHTTPProtocol,
+					Host:     testAPIHost,
+					Path:     testV1Path,
+					URL:      testAPIExampleV1URL,
 				},
 				{
 					Resource: capi.Resource{
@@ -295,7 +299,7 @@ func TestRoutesClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Protocol: "tcp",
+					Protocol: testTCPProtocol,
 					Port:     intPtr(8080),
 					URL:      "example.com:8080",
 				},
@@ -322,8 +326,8 @@ func TestRoutesClient_List(t *testing.T) {
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"hosts":       {"api", "www"},
-			"space_guids": {"space-1", "space-2"},
+			"hosts":             {testAPIHost, "www"},
+			testSpaceGUIDsParam: {testSpaceName1, testSpaceName2},
 		},
 	}
 	result, err = client.Routes().List(context.Background(), params)
@@ -345,14 +349,14 @@ func TestRoutesClient_Update(t *testing.T) {
 
 		response := capi.Route{
 			Resource: capi.Resource{
-				GUID:      "test-route-guid",
+				GUID:      testRouteGUIDFixture,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			Protocol: "http",
-			Host:     "api",
-			Path:     "/v1",
-			URL:      "api.example.com/v1",
+			Protocol: testHTTPProtocol,
+			Host:     testAPIHost,
+			Path:     testV1Path,
+			URL:      testAPIExampleV1URL,
 			Metadata: requestBody.Metadata,
 		}
 
@@ -368,19 +372,19 @@ func TestRoutesClient_Update(t *testing.T) {
 	request := &capi.RouteUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"environment": "staging",
+				testEnvironmentLabelKey: testStagingLabel,
 			},
 			Annotations: map[string]string{
-				"note": "Updated route",
+				testNoteAnnotationKey: "Updated route",
 			},
 		},
 	}
 
-	route, err := client.Routes().Update(context.Background(), "test-route-guid", request)
+	route, err := client.Routes().Update(context.Background(), testRouteGUIDFixture, request)
 	require.NoError(t, err)
 	require.NotNil(t, route)
-	assert.Equal(t, "test-route-guid", route.GUID)
-	assert.Equal(t, "staging", route.Metadata.Labels["environment"])
+	assert.Equal(t, testRouteGUIDFixture, route.GUID)
+	assert.Equal(t, testStagingLabel, route.Metadata.Labels[testEnvironmentLabelKey])
 }
 
 func TestRoutesClient_Delete(t *testing.T) {
@@ -394,7 +398,7 @@ func TestRoutesClient_Delete(t *testing.T) {
 		assert.Equal(t, "/v3/routes/test-route-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -402,10 +406,10 @@ func TestRoutesClient_Delete(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := client.Routes().Delete(context.Background(), "test-route-guid")
+	job, err := client.Routes().Delete(context.Background(), testRouteGUIDFixture)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestRoutesClient_DeleteMissingLocation(t *testing.T) {
@@ -422,7 +426,7 @@ func TestRoutesClient_DeleteMissingLocation(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := client.Routes().Delete(context.Background(), "test-route-guid")
+	job, err := client.Routes().Delete(context.Background(), testRouteGUIDFixture)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -439,10 +443,10 @@ func TestRoutesClient_ListDestinations(t *testing.T) {
 				{
 					GUID: "dest-1",
 					App: capi.RouteDestinationApp{
-						GUID: "app-1",
+						GUID: testAppGUID1,
 						Process: &capi.Process{
 							Resource: capi.Resource{GUID: "process-1"},
-							Type:     "web",
+							Type:     testWebProcessType,
 						},
 					},
 					Port:     intPtr(8080),
@@ -452,12 +456,12 @@ func TestRoutesClient_ListDestinations(t *testing.T) {
 				{
 					GUID: "dest-2",
 					App: capi.RouteDestinationApp{
-						GUID: "app-2",
+						GUID: testAppGUID2,
 					},
 				},
 			},
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: "https://api.example.org/v3/routes/test-route-guid/destinations",
 				},
 				"route": capi.Link{
@@ -475,12 +479,12 @@ func TestRoutesClient_ListDestinations(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	destinations, err := client.Routes().ListDestinations(context.Background(), "test-route-guid")
+	destinations, err := client.Routes().ListDestinations(context.Background(), testRouteGUIDFixture)
 	require.NoError(t, err)
 	require.NotNil(t, destinations)
 	assert.Len(t, destinations.Destinations, 2)
 	assert.Equal(t, "dest-1", destinations.Destinations[0].GUID)
-	assert.Equal(t, "app-1", destinations.Destinations[0].App.GUID)
+	assert.Equal(t, testAppGUID1, destinations.Destinations[0].App.GUID)
 }
 
 func TestRoutesClient_InsertDestinations(t *testing.T) {
@@ -488,7 +492,7 @@ func TestRoutesClient_InsertDestinations(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/routes/test-route-guid/destinations", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody struct {
 			Destinations []capi.RouteDestination `json:"destinations"`
@@ -503,13 +507,13 @@ func TestRoutesClient_InsertDestinations(t *testing.T) {
 				{
 					GUID: "dest-1",
 					App: capi.RouteDestinationApp{
-						GUID: "app-1",
+						GUID: testAppGUID1,
 					},
 				},
 				{
 					GUID: "dest-2",
 					App: capi.RouteDestinationApp{
-						GUID: "app-2",
+						GUID: testAppGUID2,
 					},
 				},
 			},
@@ -527,12 +531,12 @@ func TestRoutesClient_InsertDestinations(t *testing.T) {
 	newDestinations := []capi.RouteDestination{
 		{
 			App: capi.RouteDestinationApp{
-				GUID: "app-2",
+				GUID: testAppGUID2,
 			},
 		},
 	}
 
-	destinations, err := client.Routes().InsertDestinations(context.Background(), "test-route-guid", newDestinations)
+	destinations, err := client.Routes().InsertDestinations(context.Background(), testRouteGUIDFixture, newDestinations)
 	require.NoError(t, err)
 	require.NotNil(t, destinations)
 	assert.Len(t, destinations.Destinations, 2)
@@ -574,7 +578,7 @@ func TestRoutesClient_ReplaceDestinations(t *testing.T) {
 		},
 	}
 
-	destinations, err := client.Routes().ReplaceDestinations(context.Background(), "test-route-guid", newDestinations)
+	destinations, err := client.Routes().ReplaceDestinations(context.Background(), testRouteGUIDFixture, newDestinations)
 	require.NoError(t, err)
 	require.NotNil(t, destinations)
 	assert.Len(t, destinations.Destinations, 1)
@@ -598,7 +602,7 @@ func TestRoutesClient_UpdateDestination(t *testing.T) {
 		response := capi.RouteDestination{
 			GUID: "dest-guid",
 			App: capi.RouteDestinationApp{
-				GUID: "app-1",
+				GUID: testAppGUID1,
 			},
 			Protocol: StringPtr("http2"),
 		}
@@ -612,7 +616,7 @@ func TestRoutesClient_UpdateDestination(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	destination, err := client.Routes().UpdateDestination(context.Background(), "test-route-guid", "dest-guid", "http2")
+	destination, err := client.Routes().UpdateDestination(context.Background(), testRouteGUIDFixture, "dest-guid", "http2")
 	require.NoError(t, err)
 	require.NotNil(t, destination)
 	assert.Equal(t, "dest-guid", destination.GUID)
@@ -632,7 +636,7 @@ func TestRoutesClient_RemoveDestination(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = client.Routes().RemoveDestination(context.Background(), "test-route-guid", "dest-guid")
+	err = client.Routes().RemoveDestination(context.Background(), testRouteGUIDFixture, "dest-guid")
 	require.NoError(t, err)
 }
 
@@ -641,7 +645,7 @@ func TestRoutesClient_ShareWithSpace(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/routes/test-route-guid/relationships/shared_spaces", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody struct {
 			Data []capi.RelationshipData `json:"data"`
@@ -653,8 +657,8 @@ func TestRoutesClient_ShareWithSpace(t *testing.T) {
 
 		response := capi.ToManyRelationship{
 			Data: []capi.RelationshipData{
-				{GUID: "space-1"},
-				{GUID: "space-2"},
+				{GUID: testSpaceName1},
+				{GUID: testSpaceName2},
 				{GUID: "space-3"},
 			},
 		}
@@ -668,7 +672,7 @@ func TestRoutesClient_ShareWithSpace(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	relationship, err := client.Routes().ShareWithSpace(context.Background(), "test-route-guid", []string{"space-1", "space-2"})
+	relationship, err := client.Routes().ShareWithSpace(context.Background(), testRouteGUIDFixture, []string{testSpaceName1, testSpaceName2})
 	require.NoError(t, err)
 	require.NotNil(t, relationship)
 	assert.Len(t, relationship.Data, 3)
@@ -687,7 +691,7 @@ func TestRoutesClient_UnshareFromSpace(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = client.Routes().UnshareFromSpace(context.Background(), "test-route-guid", "space-guid")
+	err = client.Routes().UnshareFromSpace(context.Background(), testRouteGUIDFixture, testSpaceGUID)
 	require.NoError(t, err)
 }
 
@@ -708,17 +712,17 @@ func TestRoutesClient_TransferOwnership(t *testing.T) {
 
 		response := capi.Route{
 			Resource: capi.Resource{
-				GUID:      "test-route-guid",
+				GUID:      testRouteGUIDFixture,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			Protocol: "http",
-			Host:     "api",
-			Path:     "/v1",
-			URL:      "api.example.com/v1",
+			Protocol: testHTTPProtocol,
+			Host:     testAPIHost,
+			Path:     testV1Path,
+			URL:      testAPIExampleV1URL,
 			Relationships: capi.RouteRelationships{
 				Space:  capi.Relationship{Data: &capi.RelationshipData{GUID: "new-space-guid"}},
-				Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: "domain-guid"}},
+				Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 			},
 		}
 
@@ -731,10 +735,10 @@ func TestRoutesClient_TransferOwnership(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	route, err := client.Routes().TransferOwnership(context.Background(), "test-route-guid", "new-space-guid")
+	route, err := client.Routes().TransferOwnership(context.Background(), testRouteGUIDFixture, "new-space-guid")
 	require.NoError(t, err)
 	require.NotNil(t, route)
-	assert.Equal(t, "test-route-guid", route.GUID)
+	assert.Equal(t, testRouteGUIDFixture, route.GUID)
 	assert.Equal(t, "new-space-guid", route.Relationships.Space.Data.GUID)
 }
 
@@ -760,7 +764,7 @@ func TestRoutesClient_GetWithIncludes(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	routes := NewRoutesClient(httpClient)
 
-	route, err := routes.Get(context.Background(), "route-guid",
+	route, err := routes.Get(context.Background(), testRoutePolicyRoute,
 		capi.RouteIncludeDomain, capi.RouteIncludeSpaceOrganization)
 	require.NoError(t, err)
 	require.NotNil(t, route.Included)
@@ -773,7 +777,7 @@ func TestRoutesClient_ListDestinationsWithFilters(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/routes/route-guid/destinations", request.URL.Path)
 		assert.Equal(t, "d1,d2", request.URL.Query().Get("guids"))
-		assert.Equal(t, "a1", request.URL.Query().Get("app_guids"))
+		assert.Equal(t, "a1", request.URL.Query().Get(testAppGUIDsParam))
 
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(`{"destinations": []}`))
@@ -783,7 +787,7 @@ func TestRoutesClient_ListDestinationsWithFilters(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	routes := NewRoutesClient(httpClient)
 
-	_, err := routes.ListDestinations(context.Background(), "route-guid",
+	_, err := routes.ListDestinations(context.Background(), testRoutePolicyRoute,
 		capi.WithDestinationGUIDs("d1", "d2"), capi.WithDestinationAppGUIDs("a1"))
 	require.NoError(t, err)
 }

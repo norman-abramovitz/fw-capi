@@ -17,13 +17,13 @@ import (
 
 func TestRolesClient_Create(t *testing.T) {
 	t.Parallel()
-	RunRoleCreateTest(t, "organization role create", "organization_auditor", "user-guid", "org-guid", "", "organization_auditor",
+	RunRoleCreateTest(t, "organization role create", "organization_auditor", testUserGUID, testOrgGUID, "", "organization_auditor",
 		capi.RoleRelationships{
 			User: capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "user-guid"},
+				Data: &capi.RelationshipData{GUID: testUserGUID},
 			},
 			Organization: &capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "org-guid"},
+				Data: &capi.RelationshipData{GUID: testOrgGUID},
 			},
 		},
 	)
@@ -31,13 +31,13 @@ func TestRolesClient_Create(t *testing.T) {
 
 func TestRolesClient_CreateSpaceRole(t *testing.T) {
 	t.Parallel()
-	RunRoleCreateTest(t, "space role create", "space_developer", "user-guid", "", "space-guid", "space_developer",
+	RunRoleCreateTest(t, "space role create", "space_developer", testUserGUID, "", testSpaceGUID, "space_developer",
 		capi.RoleRelationships{
 			User: capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "user-guid"},
+				Data: &capi.RelationshipData{GUID: testUserGUID},
 			},
 			Space: &capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "space-guid"},
+				Data: &capi.RelationshipData{GUID: testSpaceGUID},
 			},
 		},
 	)
@@ -57,16 +57,16 @@ func TestRolesClient_Get(t *testing.T) {
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Type: "organization_manager",
+			Type: testOrgManagerRoleType,
 			Relationships: capi.RoleRelationships{
 				User: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "user-guid",
+						GUID: testUserGUID,
 					},
 				},
 				Organization: &capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "org-guid",
+						GUID: testOrgGUID,
 					},
 				},
 			},
@@ -84,7 +84,7 @@ func TestRolesClient_Get(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, role)
 	assert.Equal(t, "role-guid", role.GUID)
-	assert.Equal(t, "organization_manager", role.Type)
+	assert.Equal(t, testOrgManagerRoleType, role.Type)
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing
@@ -95,7 +95,7 @@ func TestRolesClient_List(t *testing.T) {
 		assert.Equal(t, "/v3/roles", request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 		assert.Equal(t, "organization_auditor,organization_manager", request.URL.Query().Get("types"))
-		assert.Equal(t, "org-guid", request.URL.Query().Get("organization_guids"))
+		assert.Equal(t, testOrgGUID, request.URL.Query().Get(testOrgGUIDsParam))
 
 		now := time.Now()
 		response := capi.ListResponse[capi.Role]{
@@ -121,7 +121,7 @@ func TestRolesClient_List(t *testing.T) {
 						},
 						Organization: &capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "org-guid",
+								GUID: testOrgGUID,
 							},
 						},
 					},
@@ -132,7 +132,7 @@ func TestRolesClient_List(t *testing.T) {
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
-					Type: "organization_manager",
+					Type: testOrgManagerRoleType,
 					Relationships: capi.RoleRelationships{
 						User: capi.Relationship{
 							Data: &capi.RelationshipData{
@@ -141,7 +141,7 @@ func TestRolesClient_List(t *testing.T) {
 						},
 						Organization: &capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "org-guid",
+								GUID: testOrgGUID,
 							},
 						},
 					},
@@ -159,8 +159,8 @@ func TestRolesClient_List(t *testing.T) {
 
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"types":              {"organization_auditor", "organization_manager"},
-			"organization_guids": {"org-guid"},
+			"types":           {"organization_auditor", testOrgManagerRoleType},
+			testOrgGUIDsParam: {testOrgGUID},
 		},
 	}
 
@@ -172,7 +172,7 @@ func TestRolesClient_List(t *testing.T) {
 	assert.Equal(t, "role-guid-1", list.Resources[0].GUID)
 	assert.Equal(t, "organization_auditor", list.Resources[0].Type)
 	assert.Equal(t, "role-guid-2", list.Resources[1].GUID)
-	assert.Equal(t, "organization_manager", list.Resources[1].Type)
+	assert.Equal(t, testOrgManagerRoleType, list.Resources[1].Type)
 }
 
 func TestRolesClient_Delete(t *testing.T) {
@@ -264,8 +264,8 @@ func TestRolesClient_GetWithIncludes(t *testing.T) {
 		capi.RoleIncludeSpace, capi.RoleIncludeOrganization)
 	require.NoError(t, err)
 	require.NotNil(t, role.Included)
-	assert.Equal(t, "space-1", role.Included.Spaces[0].GUID)
-	assert.Equal(t, "org-1", role.Included.Organizations[0].GUID)
+	assert.Equal(t, testSpaceName1, role.Included.Spaces[0].GUID)
+	assert.Equal(t, testOrgName1, role.Included.Organizations[0].GUID)
 }
 
 func TestRolesClient_ListWithIncludes(t *testing.T) {
@@ -274,7 +274,7 @@ func TestRolesClient_ListWithIncludes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/roles", request.URL.Path)
 		assert.Equal(t, "space,organization", request.URL.Query().Get("include"))
-		assert.Equal(t, "user-1", request.URL.Query().Get("user_guids"))
+		assert.Equal(t, testUserName1, request.URL.Query().Get("user_guids"))
 
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(`{
@@ -293,7 +293,7 @@ func TestRolesClient_ListWithIncludes(t *testing.T) {
 	roles := NewRolesClient(httpClient)
 
 	params := capi.NewQueryParams()
-	params.Filters["user_guids"] = []string{"user-1"}
+	params.Filters["user_guids"] = []string{testUserName1}
 
 	list, err := roles.List(context.Background(), params,
 		capi.RoleIncludeSpace, capi.RoleIncludeOrganization)
@@ -302,5 +302,5 @@ func TestRolesClient_ListWithIncludes(t *testing.T) {
 	incl, err := capi.RoleIncludedFrom(list)
 	require.NoError(t, err)
 	require.NotNil(t, incl.Spaces[0].Relationships.Organization.Data)
-	assert.Equal(t, "org-1", incl.Spaces[0].Relationships.Organization.Data.GUID)
+	assert.Equal(t, testOrgName1, incl.Spaces[0].Relationships.Organization.Data.GUID)
 }

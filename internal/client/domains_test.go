@@ -16,6 +16,16 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// Test constants for domain and route path tests. testV1Path is shared with
+// routes_test.go since both exercise route path filtering.
+const (
+	testDomainsPath        = "/v3/domains"
+	testV1Path             = "/v1"
+	testExampleComDomain   = "example.com"
+	testAppsInternalDomain = "apps.internal"
+	testDomainFixtureGUID  = "test-domain-guid"
+)
+
 func boolPtr(b bool) *bool {
 	return &b
 }
@@ -27,7 +37,7 @@ func TestDomainsClient_Create(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *capi.DomainCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -35,24 +45,24 @@ func TestDomainsClient_Create(t *testing.T) {
 	}{
 		{
 			name:         "create shared domain",
-			expectedPath: "/v3/domains",
+			expectedPath: testDomainsPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.DomainCreateRequest{
-				Name:     "example.com",
+				Name:     testExampleComDomain,
 				Internal: boolPtr(false),
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 				},
 			},
 			response: capi.Domain{
 				Resource: capi.Resource{
-					GUID:      "domain-guid",
+					GUID:      testDomainGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/domains/domain-guid",
 						},
 						"route_reservations": capi.Link{
@@ -63,13 +73,13 @@ func TestDomainsClient_Create(t *testing.T) {
 						},
 					},
 				},
-				Name:               "example.com",
+				Name:               testExampleComDomain,
 				Internal:           false,
-				SupportedProtocols: []string{"http", "tcp"},
+				SupportedProtocols: []string{testHTTPProtocol, testTCPProtocol},
 				Relationships:      capi.DomainRelationships{},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 				},
 			},
@@ -77,31 +87,31 @@ func TestDomainsClient_Create(t *testing.T) {
 		},
 		{
 			name:         "create private domain for organization",
-			expectedPath: "/v3/domains",
+			expectedPath: testDomainsPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.DomainCreateRequest{
 				Name: "apps.example.com",
 				Relationships: &capi.DomainRelationships{
 					Organization: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "org-guid",
+							GUID: testOrgGUID,
 						},
 					},
 				},
 			},
 			response: capi.Domain{
 				Resource: capi.Resource{
-					GUID:      "domain-guid",
+					GUID:      testDomainGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
 				Name:               "apps.example.com",
 				Internal:           false,
-				SupportedProtocols: []string{"http"},
+				SupportedProtocols: []string{testHTTPProtocol},
 				Relationships: capi.DomainRelationships{
 					Organization: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "org-guid",
+							GUID: testOrgGUID,
 						},
 					},
 				},
@@ -110,43 +120,43 @@ func TestDomainsClient_Create(t *testing.T) {
 		},
 		{
 			name:         "create internal domain",
-			expectedPath: "/v3/domains",
+			expectedPath: testDomainsPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.DomainCreateRequest{
-				Name:     "apps.internal",
+				Name:     testAppsInternalDomain,
 				Internal: boolPtr(true),
 			},
 			response: capi.Domain{
 				Resource: capi.Resource{
-					GUID:      "domain-guid",
+					GUID:      testDomainGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				Name:               "apps.internal",
+				Name:               testAppsInternalDomain,
 				Internal:           true,
-				SupportedProtocols: []string{"http"},
+				SupportedProtocols: []string{testHTTPProtocol},
 				Relationships:      capi.DomainRelationships{},
 			},
 			wantErr: false,
 		},
 		{
 			name:         "domain already exists",
-			expectedPath: "/v3/domains",
+			expectedPath: testDomainsPath,
 			statusCode:   http.StatusUnprocessableEntity,
 			request: &capi.DomainCreateRequest{
 				Name: "existing.com",
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "Domain name existing.com is already in use",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: "Domain name existing.com is already in use",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -156,7 +166,7 @@ func TestDomainsClient_Create(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				assert.Equal(t, testCase.expectedPath, request.URL.Path)
-				assert.Equal(t, "POST", request.Method)
+				assert.Equal(t, http.MethodPost, request.Method)
 
 				var requestBody capi.DomainCreateRequest
 
@@ -193,46 +203,46 @@ func TestDomainsClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-domain-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testDomainFixtureGUID,
 			expectedPath: "/v3/domains/test-domain-guid",
 			statusCode:   http.StatusOK,
 			response: capi.Domain{
 				Resource: capi.Resource{
-					GUID:      "test-domain-guid",
+					GUID:      testDomainFixtureGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				Name:               "example.com",
+				Name:               testExampleComDomain,
 				Internal:           false,
-				SupportedProtocols: []string{"http", "tcp"},
+				SupportedProtocols: []string{testHTTPProtocol, testTCPProtocol},
 				Relationships:      capi.DomainRelationships{},
 			},
 			wantErr: false,
 		},
 		{
 			name:         "domain not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			expectedPath: "/v3/domains/non-existent-guid",
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Domain not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "Domain not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -244,16 +254,16 @@ func TestDomainsClient_List(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/domains", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, testDomainsPath, request.URL.Path)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if names := query.Get("names"); names != "" {
+		if names := query.Get(testNamesParam); names != "" {
 			assert.Equal(t, "example.com,test.com", names)
 		}
 
-		if orgGuids := query.Get("organization_guids"); orgGuids != "" {
+		if orgGuids := query.Get(testOrgGUIDsParam); orgGuids != "" {
 			assert.Equal(t, "org-1,org-2", orgGuids)
 		}
 
@@ -273,9 +283,9 @@ func TestDomainsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Name:               "example.com",
+					Name:               testExampleComDomain,
 					Internal:           false,
-					SupportedProtocols: []string{"http"},
+					SupportedProtocols: []string{testHTTPProtocol},
 				},
 				{
 					Resource: capi.Resource{
@@ -283,9 +293,9 @@ func TestDomainsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Name:               "apps.internal",
+					Name:               testAppsInternalDomain,
 					Internal:           true,
-					SupportedProtocols: []string{"http"},
+					SupportedProtocols: []string{testHTTPProtocol},
 				},
 			},
 		}
@@ -306,13 +316,13 @@ func TestDomainsClient_List(t *testing.T) {
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "domain-1", result.Resources[0].GUID)
-	assert.Equal(t, "example.com", result.Resources[0].Name)
+	assert.Equal(t, testExampleComDomain, result.Resources[0].Name)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"names":              {"example.com", "test.com"},
-			"organization_guids": {"org-1", "org-2"},
+			testNamesParam:    {testExampleComDomain, "test.com"},
+			testOrgGUIDsParam: {testOrgName1, testOrgName2},
 		},
 	}
 	result, err = client.Domains().List(context.Background(), params)
@@ -327,32 +337,32 @@ func TestDomainsClient_Update(t *testing.T) {
 	request := &capi.DomainUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"environment": "staging",
+				testEnvironmentLabelKey: testStagingLabel,
 			},
 			Annotations: map[string]string{
-				"note": "Updated domain",
+				testNoteAnnotationKey: "Updated domain",
 			},
 		},
 	}
 
 	response := &capi.Domain{
 		Resource: capi.Resource{
-			GUID:      "test-domain-guid",
+			GUID:      testDomainFixtureGUID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		Name: "example.com",
+		Name: testExampleComDomain,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"environment": "staging",
+				testEnvironmentLabelKey: testStagingLabel,
 			},
 			Annotations: map[string]string{
-				"note": "Updated domain",
+				testNoteAnnotationKey: "Updated domain",
 			},
 		},
 	}
 
-	RunStandardUpdateTest(t, "domain", "test-domain-guid", "/v3/domains/test-domain-guid", request, response,
+	RunStandardUpdateTest(t, "domain", testDomainFixtureGUID, "/v3/domains/test-domain-guid", request, response,
 		func(c *Client) func(context.Context, string, *capi.DomainUpdateRequest) (*capi.Domain, error) {
 			return c.Domains().Update
 		})
@@ -365,9 +375,9 @@ func TestDomainsClient_Delete(t *testing.T) {
 	// Location header pointing at /v3/jobs/{jobGuid}.
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/domains/test-domain-guid", request.URL.Path)
-		assert.Equal(t, "DELETE", request.Method)
+		assert.Equal(t, http.MethodDelete, request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -375,10 +385,10 @@ func TestDomainsClient_Delete(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := c.Domains().Delete(context.Background(), "test-domain-guid")
+	job, err := c.Domains().Delete(context.Background(), testDomainFixtureGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestDomainsClient_ShareWithOrganization(t *testing.T) {
@@ -386,7 +396,7 @@ func TestDomainsClient_ShareWithOrganization(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/domains/test-domain-guid/relationships/shared_organizations", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody struct {
 			Data []capi.RelationshipData `json:"data"`
@@ -398,8 +408,8 @@ func TestDomainsClient_ShareWithOrganization(t *testing.T) {
 
 		response := capi.ToManyRelationship{
 			Data: []capi.RelationshipData{
-				{GUID: "org-1"},
-				{GUID: "org-2"},
+				{GUID: testOrgName1},
+				{GUID: testOrgName2},
 				{GUID: "org-3"},
 			},
 		}
@@ -413,7 +423,7 @@ func TestDomainsClient_ShareWithOrganization(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	relationship, err := c.Domains().ShareWithOrganization(context.Background(), "test-domain-guid", []string{"org-1", "org-2"})
+	relationship, err := c.Domains().ShareWithOrganization(context.Background(), testDomainFixtureGUID, []string{testOrgName1, testOrgName2})
 	require.NoError(t, err)
 	require.NotNil(t, relationship)
 	assert.Len(t, relationship.Data, 3)
@@ -424,7 +434,7 @@ func TestDomainsClient_UnshareFromOrganization(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/domains/test-domain-guid/relationships/shared_organizations/org-guid", request.URL.Path)
-		assert.Equal(t, "DELETE", request.Method)
+		assert.Equal(t, http.MethodDelete, request.Method)
 		writer.WriteHeader(http.StatusNoContent)
 	}))
 	defer server.Close()
@@ -432,7 +442,7 @@ func TestDomainsClient_UnshareFromOrganization(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = c.Domains().UnshareFromOrganization(context.Background(), "test-domain-guid", "org-guid")
+	err = c.Domains().UnshareFromOrganization(context.Background(), testDomainFixtureGUID, testOrgGUID)
 	require.NoError(t, err)
 }
 
@@ -441,21 +451,21 @@ func TestDomainsClient_CheckRouteReservations(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/domains/test-domain-guid/route_reservations", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		// Check query parameters
 		query := request.URL.Query()
-		assert.Equal(t, "api", query.Get("host"))
-		assert.Equal(t, "/v1", query.Get("path"))
+		assert.Equal(t, testAPIHost, query.Get("host"))
+		assert.Equal(t, testV1Path, query.Get("path"))
 
 		response := capi.RouteReservation{
 			MatchingRoute: &capi.Route{
 				Resource: capi.Resource{
-					GUID: "route-guid",
+					GUID: testRoutePolicyRoute,
 				},
-				Host: "api",
-				Path: "/v1",
-				URL:  "api.example.com/v1",
+				Host: testAPIHost,
+				Path: testV1Path,
+				URL:  testAPIExampleV1URL,
 			},
 		}
 
@@ -469,23 +479,23 @@ func TestDomainsClient_CheckRouteReservations(t *testing.T) {
 	require.NoError(t, err)
 
 	request := &capi.RouteReservationRequest{
-		Host: "api",
-		Path: "/v1",
+		Host: testAPIHost,
+		Path: testV1Path,
 	}
 
-	reservation, err := client.Domains().CheckRouteReservations(context.Background(), "test-domain-guid", request)
+	reservation, err := client.Domains().CheckRouteReservations(context.Background(), testDomainFixtureGUID, request)
 	require.NoError(t, err)
 	require.NotNil(t, reservation)
 	assert.NotNil(t, reservation.MatchingRoute)
-	assert.Equal(t, "route-guid", reservation.MatchingRoute.GUID)
-	assert.Equal(t, "api", reservation.MatchingRoute.Host)
+	assert.Equal(t, testRoutePolicyRoute, reservation.MatchingRoute.GUID)
+	assert.Equal(t, testAPIHost, reservation.MatchingRoute.Host)
 }
 
 // runGetTestsForDomains runs domain get tests.
 func runGetTestsForDomains(t *testing.T, tests []struct {
 	name         string
 	guid         string
-	response     interface{}
+	response     any
 	statusCode   int
 	expectedPath string
 	wantErr      bool
@@ -498,7 +508,7 @@ func runGetTestsForDomains(t *testing.T, tests []struct {
 			domain, err := c.Domains().Get(context.Background(), guid)
 			if err == nil {
 				assert.Equal(t, guid, domain.GUID)
-				assert.Equal(t, "example.com", domain.Name)
+				assert.Equal(t, testExampleComDomain, domain.Name)
 			}
 
 			if err != nil {
@@ -516,10 +526,10 @@ func TestDomainsClient_Create_IdentityAware(t *testing.T) {
 	scope := capi.RoutePoliciesScopeOrg
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/domains", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, testDomainsPath, request.URL.Path)
+		assert.Equal(t, http.MethodPost, request.Method)
 
-		var requestBody map[string]interface{}
+		var requestBody map[string]any
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
@@ -570,7 +580,7 @@ func TestDomainsClient_Get_OmitsRoutePolicyFieldsByDefault(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	domain, err := client.Domains().Get(context.Background(), "domain-guid")
+	domain, err := client.Domains().Get(context.Background(), testDomainGUID)
 	require.NoError(t, err)
 	assert.False(t, domain.EnforceRoutePolicies)
 	assert.Empty(t, domain.RoutePoliciesScope)

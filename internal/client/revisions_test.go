@@ -24,7 +24,7 @@ func TestRevisionsClient_Get(t *testing.T) {
 		description := "Test revision"
 		revision := capi.Revision{
 			Resource: capi.Resource{
-				GUID:      "revision-guid",
+				GUID:      testRevisionGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -32,14 +32,14 @@ func TestRevisionsClient_Get(t *testing.T) {
 			Deployable:  true,
 			Description: &description,
 			Droplet: capi.RevisionDropletRef{
-				GUID: "droplet-guid",
+				GUID: testDropletGUID,
 			},
 			Processes: map[string]capi.Process{
-				"web": {
+				testWebProcessType: {
 					Resource: capi.Resource{
-						GUID: "process-guid",
+						GUID: testProcessGUID,
 					},
-					Type:       "web",
+					Type:       testWebProcessType,
 					Instances:  2,
 					MemoryInMB: 512,
 					DiskInMB:   1024,
@@ -54,13 +54,13 @@ func TestRevisionsClient_Get(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	revision, err := client.Revisions().Get(context.Background(), "revision-guid")
+	revision, err := client.Revisions().Get(context.Background(), testRevisionGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "revision-guid", revision.GUID)
+	assert.Equal(t, testRevisionGUID, revision.GUID)
 	assert.Equal(t, 1, revision.Version)
 	assert.True(t, revision.Deployable)
 	assert.Equal(t, "Test revision", *revision.Description)
-	assert.Equal(t, "droplet-guid", revision.Droplet.GUID)
+	assert.Equal(t, testDropletGUID, revision.Droplet.GUID)
 }
 
 func TestRevisionsClient_Update(t *testing.T) {
@@ -74,10 +74,10 @@ func TestRevisionsClient_Update(t *testing.T) {
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
 		assert.NotNil(t, req.Metadata)
-		assert.Equal(t, "value1", req.Metadata.Labels["key1"])
+		assert.Equal(t, testValue1, req.Metadata.Labels["key1"])
 
 		revision := capi.Revision{
-			Resource: capi.Resource{GUID: "revision-guid"},
+			Resource: capi.Resource{GUID: testRevisionGUID},
 			Version:  1,
 			Metadata: req.Metadata,
 		}
@@ -89,17 +89,17 @@ func TestRevisionsClient_Update(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	revision, err := client.Revisions().Update(context.Background(), "revision-guid", &capi.RevisionUpdateRequest{
+	revision, err := client.Revisions().Update(context.Background(), testRevisionGUID, &capi.RevisionUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"key1": "value1",
+				"key1": testValue1,
 			},
 		},
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "revision-guid", revision.GUID)
-	assert.Equal(t, "value1", revision.Metadata.Labels["key1"])
+	assert.Equal(t, testRevisionGUID, revision.GUID)
+	assert.Equal(t, testValue1, revision.Metadata.Labels["key1"])
 }
 
 func TestRevisionsClient_GetEnvironmentVariables(t *testing.T) {
@@ -109,14 +109,14 @@ func TestRevisionsClient_GetEnvironmentVariables(t *testing.T) {
 		assert.Equal(t, "/v3/revisions/revision-guid/environment_variables", request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
-		envVars := map[string]interface{}{
+		envVars := map[string]any{
 			"DATABASE_URL": "postgres://localhost/myapp",
 			"API_KEY":      "secret-key",
 			"DEBUG":        true,
 		}
 
-		response := map[string]interface{}{
-			"var": envVars,
+		response := map[string]any{
+			testVarEnvKey: envVars,
 		}
 
 		_ = json.NewEncoder(writer).Encode(response)
@@ -126,7 +126,7 @@ func TestRevisionsClient_GetEnvironmentVariables(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	envVars, err := client.Revisions().GetEnvironmentVariables(context.Background(), "revision-guid")
+	envVars, err := client.Revisions().GetEnvironmentVariables(context.Background(), testRevisionGUID)
 	require.NoError(t, err)
 	assert.Equal(t, "postgres://localhost/myapp", envVars["DATABASE_URL"])
 	assert.Equal(t, "secret-key", envVars["API_KEY"])
@@ -156,11 +156,11 @@ func TestRevisionsClient_ListForApp(t *testing.T) {
 						GUID: "droplet-guid-1",
 					},
 					Processes: map[string]capi.Process{
-						"web": {
+						testWebProcessType: {
 							Resource: capi.Resource{
 								GUID: "process-guid-1",
 							},
-							Type:       "web",
+							Type:       testWebProcessType,
 							Instances:  2,
 							MemoryInMB: 512,
 							DiskInMB:   1024,
@@ -177,7 +177,7 @@ func TestRevisionsClient_ListForApp(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	result, err := client.Revisions().ListForApp(context.Background(), "app-guid", nil)
+	result, err := client.Revisions().ListForApp(context.Background(), testAppGUID, nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Len(t, result.Resources, 1)
@@ -209,11 +209,11 @@ func TestRevisionsClient_GetDeployedForApp(t *testing.T) {
 						GUID: "deployed-droplet-guid",
 					},
 					Processes: map[string]capi.Process{
-						"web": {
+						testWebProcessType: {
 							Resource: capi.Resource{
 								GUID: "deployed-process-guid",
 							},
-							Type:       "web",
+							Type:       testWebProcessType,
 							Instances:  3,
 							MemoryInMB: 512,
 							DiskInMB:   1024,
@@ -230,7 +230,7 @@ func TestRevisionsClient_GetDeployedForApp(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	result, err := client.Revisions().GetDeployedForApp(context.Background(), "app-guid")
+	result, err := client.Revisions().GetDeployedForApp(context.Background(), testAppGUID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Len(t, result.Resources, 1)

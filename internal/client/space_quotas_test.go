@@ -29,7 +29,7 @@ func TestSpaceQuotasClient_Create(t *testing.T) {
 				},
 				Relationships: capi.SpaceQuotaRelationships{
 					Organization: capi.Relationship{
-						Data: &capi.RelationshipData{GUID: "org-guid"},
+						Data: &capi.RelationshipData{GUID: testOrgGUID},
 					},
 				},
 			}
@@ -51,7 +51,7 @@ func TestSpaceQuotasClient_Create(t *testing.T) {
 			return c.SpaceQuotas().Create
 		},
 		func(quota *capi.SpaceQuotaV3) {
-			assert.Equal(t, "quota-guid", quota.GUID)
+			assert.Equal(t, testQuotaGUID, quota.GUID)
 			assert.Equal(t, "test-space-quota", quota.Name)
 			assert.Equal(t, 512, *quota.Apps.TotalMemoryInMB)
 		},
@@ -69,7 +69,7 @@ func TestSpaceQuotaRelationships_SpacesOmittedWhenEmpty(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/space_quotas", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var err error
 
@@ -77,7 +77,7 @@ func TestSpaceQuotaRelationships_SpacesOmittedWhenEmpty(t *testing.T) {
 		assert.NoError(t, err)
 
 		quota := capi.SpaceQuotaV3{
-			Resource: capi.Resource{GUID: "quota-guid"},
+			Resource: capi.Resource{GUID: testQuotaGUID},
 			Name:     "no-spaces-quota",
 		}
 
@@ -94,7 +94,7 @@ func TestSpaceQuotaRelationships_SpacesOmittedWhenEmpty(t *testing.T) {
 		Name: "no-spaces-quota",
 		Relationships: capi.SpaceQuotaRelationships{
 			Organization: capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "org-guid"},
+				Data: &capi.RelationshipData{GUID: testOrgGUID},
 			},
 			// Spaces intentionally omitted
 		},
@@ -107,7 +107,7 @@ func TestSpaceQuotaRelationships_SpacesOmittedWhenEmpty(t *testing.T) {
 	var rels map[string]json.RawMessage
 	require.NoError(t, json.Unmarshal(body["relationships"], &rels))
 
-	assert.Contains(t, rels, "organization", "organization must be present in relationships")
+	assert.Contains(t, rels, testOrganizationType, "organization must be present in relationships")
 	assert.NotContains(t, rels, "spaces", "spaces must be absent from relationships when not provided")
 }
 
@@ -125,7 +125,7 @@ func TestSpaceQuotaRelationships_SpacesPresentWhenProvided(t *testing.T) {
 		assert.NoError(t, err)
 
 		quota := capi.SpaceQuotaV3{
-			Resource: capi.Resource{GUID: "quota-guid"},
+			Resource: capi.Resource{GUID: testQuotaGUID},
 			Name:     "with-spaces-quota",
 		}
 
@@ -142,10 +142,10 @@ func TestSpaceQuotaRelationships_SpacesPresentWhenProvided(t *testing.T) {
 		Name: "with-spaces-quota",
 		Relationships: capi.SpaceQuotaRelationships{
 			Organization: capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "org-guid"},
+				Data: &capi.RelationshipData{GUID: testOrgGUID},
 			},
 			Spaces: &capi.ToManyRelationship{
-				Data: []capi.RelationshipData{{GUID: "space-1"}},
+				Data: []capi.RelationshipData{{GUID: testSpaceName1}},
 			},
 		},
 	})
@@ -312,10 +312,10 @@ func TestSpaceQuotasClient_Delete(t *testing.T) {
 	t.Parallel()
 
 	RunJobDeleteTest(t, "space quota delete", "/v3/space_quotas/space-quota-guid", "space_quota.delete",
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewSpaceQuotasClient(httpClient)
 		},
-		func(client interface{}) (*capi.Job, error) {
+		func(client any) (*capi.Job, error) {
 			return client.(*SpaceQuotasClient).Delete(context.Background(), "space-quota-guid") //nolint:forcetypeassert // test factory supplies concrete client type
 		},
 	)
@@ -348,14 +348,14 @@ func TestSpaceQuotasClient_ApplyToSpaces(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/space_quotas/space-quota-guid/relationships/spaces", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var req capi.ToManyRelationship
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
 		assert.Len(t, req.Data, 2)
-		assert.Equal(t, "space-1", req.Data[0].GUID)
-		assert.Equal(t, "space-2", req.Data[1].GUID)
+		assert.Equal(t, testSpaceName1, req.Data[0].GUID)
+		assert.Equal(t, testSpaceName2, req.Data[1].GUID)
 
 		response := capi.ToManyRelationship{
 			Data: req.Data,
@@ -368,11 +368,11 @@ func TestSpaceQuotasClient_ApplyToSpaces(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	rel, err := c.SpaceQuotas().ApplyToSpaces(context.Background(), "space-quota-guid", []string{"space-1", "space-2"})
+	rel, err := c.SpaceQuotas().ApplyToSpaces(context.Background(), "space-quota-guid", []string{testSpaceName1, testSpaceName2})
 	require.NoError(t, err)
 	assert.Len(t, rel.Data, 2)
-	assert.Equal(t, "space-1", rel.Data[0].GUID)
-	assert.Equal(t, "space-2", rel.Data[1].GUID)
+	assert.Equal(t, testSpaceName1, rel.Data[0].GUID)
+	assert.Equal(t, testSpaceName2, rel.Data[1].GUID)
 }
 
 func TestSpaceQuotasClient_RemoveFromSpace(t *testing.T) {
@@ -389,6 +389,6 @@ func TestSpaceQuotasClient_RemoveFromSpace(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = c.SpaceQuotas().RemoveFromSpace(context.Background(), "space-quota-guid", "space-guid")
+	err = c.SpaceQuotas().RemoveFromSpace(context.Background(), "space-quota-guid", testSpaceGUID)
 	require.NoError(t, err)
 }

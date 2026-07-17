@@ -45,7 +45,7 @@ func TestOrganizationQuotasClient_Create(t *testing.T) {
 			return c.OrganizationQuotas().Create
 		},
 		func(quota *capi.OrganizationQuota) {
-			assert.Equal(t, "quota-guid", quota.GUID)
+			assert.Equal(t, testQuotaGUID, quota.GUID)
 			assert.Equal(t, "test-quota", quota.Name)
 			assert.Equal(t, 1024, *quota.Apps.TotalMemoryInMB)
 		},
@@ -62,7 +62,7 @@ func TestOrganizationQuotasClient_Get(t *testing.T) {
 		totalMemory := 2048
 		quota := capi.OrganizationQuota{
 			Resource: capi.Resource{
-				GUID: "quota-guid",
+				GUID: testQuotaGUID,
 			},
 			Name: "test-quota",
 			Apps: &capi.OrganizationQuotaApps{
@@ -77,9 +77,9 @@ func TestOrganizationQuotasClient_Get(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	quota, err := c.OrganizationQuotas().Get(context.Background(), "quota-guid")
+	quota, err := c.OrganizationQuotas().Get(context.Background(), testQuotaGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "quota-guid", quota.GUID)
+	assert.Equal(t, testQuotaGUID, quota.GUID)
 	assert.Equal(t, "test-quota", quota.Name)
 	assert.Equal(t, 2048, *quota.Apps.TotalMemoryInMB)
 }
@@ -115,7 +115,7 @@ func TestOrganizationQuotasClient_Get_AppFields(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	quota, err := c.OrganizationQuotas().Get(context.Background(), "quota-guid")
+	quota, err := c.OrganizationQuotas().Get(context.Background(), testQuotaGUID)
 	require.NoError(t, err)
 	require.NotNil(t, quota.Apps)
 	assert.Equal(t, 2048, *quota.Apps.TotalMemoryInMB)
@@ -178,7 +178,7 @@ func TestOrganizationQuotasClient_Update(t *testing.T) {
 	t.Parallel()
 	RunNameUpdateTest(t, NameUpdateTestCase[capi.OrganizationQuotaUpdateRequest, capi.OrganizationQuota]{
 		ResourceType: "organization quota",
-		ResourceGUID: "quota-guid",
+		ResourceGUID: testQuotaGUID,
 		ResourcePath: "/v3/organization_quotas/quota-guid",
 		NewName:      "updated-quota",
 		CreateRequest: func(name string) *capi.OrganizationQuotaUpdateRequest {
@@ -204,11 +204,11 @@ func TestOrganizationQuotasClient_Delete(t *testing.T) {
 	t.Parallel()
 
 	RunJobDeleteTest(t, "organization quota delete", "/v3/organization_quotas/quota-guid", "organization_quota.delete",
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewOrganizationQuotasClient(httpClient)
 		},
-		func(client interface{}) (*capi.Job, error) {
-			return client.(*OrganizationQuotasClient).Delete(context.Background(), "quota-guid") //nolint:forcetypeassert // test factory supplies concrete client type
+		func(client any) (*capi.Job, error) {
+			return client.(*OrganizationQuotasClient).Delete(context.Background(), testQuotaGUID) //nolint:forcetypeassert // test factory supplies concrete client type
 		},
 	)
 }
@@ -229,7 +229,7 @@ func TestOrganizationQuotasClient_DeleteMissingLocation(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	client := NewOrganizationQuotasClient(httpClient)
 
-	job, err := client.Delete(context.Background(), "quota-guid")
+	job, err := client.Delete(context.Background(), testQuotaGUID)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -240,14 +240,14 @@ func TestOrganizationQuotasClient_ApplyToOrganizations(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/organization_quotas/quota-guid/relationships/organizations", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ToManyRelationship
 
 		_ = json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.Len(t, requestBody.Data, 2)
-		assert.Equal(t, "org-1", requestBody.Data[0].GUID)
-		assert.Equal(t, "org-2", requestBody.Data[1].GUID)
+		assert.Equal(t, testOrgName1, requestBody.Data[0].GUID)
+		assert.Equal(t, testOrgName2, requestBody.Data[1].GUID)
 
 		response := capi.ToManyRelationship{
 			Data: requestBody.Data,
@@ -260,9 +260,9 @@ func TestOrganizationQuotasClient_ApplyToOrganizations(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	rel, err := client.OrganizationQuotas().ApplyToOrganizations(context.Background(), "quota-guid", []string{"org-1", "org-2"})
+	rel, err := client.OrganizationQuotas().ApplyToOrganizations(context.Background(), testQuotaGUID, []string{testOrgName1, testOrgName2})
 	require.NoError(t, err)
 	assert.Len(t, rel.Data, 2)
-	assert.Equal(t, "org-1", rel.Data[0].GUID)
-	assert.Equal(t, "org-2", rel.Data[1].GUID)
+	assert.Equal(t, testOrgName1, rel.Data[0].GUID)
+	assert.Equal(t, testOrgName2, rel.Data[1].GUID)
 }

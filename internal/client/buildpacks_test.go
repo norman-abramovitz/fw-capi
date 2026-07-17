@@ -18,8 +18,9 @@ import (
 
 // Test constants for buildpack tests.
 const (
-	testCFLinuxFS4Stack       = "cflinuxfs4"
-	testRubyBuildpackFilename = "ruby_buildpack-v1.0.0.zip"
+	testCFLinuxFS4Stack              = "cflinuxfs4"
+	testRubyBuildpackFilename        = "ruby_buildpack-v1.0.0.zip"
+	testBuildpackStateAwaitingUpload = "AWAITING_UPLOAD"
 )
 
 //nolint:funlen // Test functions can be longer for comprehensive testing
@@ -28,14 +29,14 @@ func TestBuildpacksClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.BuildpackCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "ruby_buildpack", requestBody.Name)
+		assert.Equal(t, testRubyBuildpackName, requestBody.Name)
 		assert.NotNil(t, requestBody.Stack)
 		assert.Equal(t, testCFLinuxFS4Stack, *requestBody.Stack)
 		assert.NotNil(t, requestBody.Position)
@@ -44,25 +45,25 @@ func TestBuildpacksClient_Create(t *testing.T) {
 		now := time.Now()
 		buildpack := capi.Buildpack{
 			Resource: capi.Resource{
-				GUID:      "buildpack-guid",
+				GUID:      testBuildpackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			Name:      requestBody.Name,
-			State:     "AWAITING_UPLOAD",
+			State:     testBuildpackStateAwaitingUpload,
 			Stack:     requestBody.Stack,
 			Position:  *requestBody.Position,
-			Lifecycle: "buildpack",
+			Lifecycle: testBuildpackLifecycle,
 			Enabled:   true,
 			Locked:    false,
 			Metadata:  requestBody.Metadata,
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: "https://api.example.org/v3/buildpacks/buildpack-guid",
 				},
 				"upload": capi.Link{
 					Href:   "https://api.example.org/v3/buildpacks/buildpack-guid/upload",
-					Method: "POST",
+					Method: http.MethodPost,
 				},
 			},
 		}
@@ -81,12 +82,12 @@ func TestBuildpacksClient_Create(t *testing.T) {
 	position := 42
 	stack := testCFLinuxFS4Stack
 	request := &capi.BuildpackCreateRequest{
-		Name:     "ruby_buildpack",
+		Name:     testRubyBuildpackName,
 		Stack:    &stack,
 		Position: &position,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 		},
 	}
@@ -94,9 +95,9 @@ func TestBuildpacksClient_Create(t *testing.T) {
 	buildpack, err := buildpacks.Create(context.Background(), request)
 	require.NoError(t, err)
 	assert.NotNil(t, buildpack)
-	assert.Equal(t, "buildpack-guid", buildpack.GUID)
-	assert.Equal(t, "ruby_buildpack", buildpack.Name)
-	assert.Equal(t, "AWAITING_UPLOAD", buildpack.State)
+	assert.Equal(t, testBuildpackGUID, buildpack.GUID)
+	assert.Equal(t, testRubyBuildpackName, buildpack.Name)
+	assert.Equal(t, testBuildpackStateAwaitingUpload, buildpack.State)
 	assert.Equal(t, 42, buildpack.Position)
 }
 
@@ -105,23 +106,23 @@ func TestBuildpacksClient_Get(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks/buildpack-guid", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		now := time.Now()
 		filename := testRubyBuildpackFilename
 		stack := testCFLinuxFS4Stack
 		buildpack := capi.Buildpack{
 			Resource: capi.Resource{
-				GUID:      "buildpack-guid",
+				GUID:      testBuildpackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name:      "ruby_buildpack",
-			State:     "READY",
+			Name:      testRubyBuildpackName,
+			State:     testStateReady,
 			Filename:  &filename,
 			Stack:     &stack,
 			Position:  1,
-			Lifecycle: "buildpack",
+			Lifecycle: testBuildpackLifecycle,
 			Enabled:   true,
 			Locked:    false,
 		}
@@ -136,12 +137,12 @@ func TestBuildpacksClient_Get(t *testing.T) {
 
 	buildpacks := c.Buildpacks()
 
-	buildpack, err := buildpacks.Get(context.Background(), "buildpack-guid")
+	buildpack, err := buildpacks.Get(context.Background(), testBuildpackGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, buildpack)
-	assert.Equal(t, "buildpack-guid", buildpack.GUID)
-	assert.Equal(t, "ruby_buildpack", buildpack.Name)
-	assert.Equal(t, "READY", buildpack.State)
+	assert.Equal(t, testBuildpackGUID, buildpack.GUID)
+	assert.Equal(t, testRubyBuildpackName, buildpack.Name)
+	assert.Equal(t, testStateReady, buildpack.State)
 	assert.NotNil(t, buildpack.Filename)
 	assert.Equal(t, testRubyBuildpackFilename, *buildpack.Filename)
 }
@@ -152,9 +153,9 @@ func TestBuildpacksClient_List(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 		assert.Equal(t, testCFLinuxFS4Stack, request.URL.Query().Get("stacks"))
-		assert.Equal(t, "ruby_buildpack,node_buildpack", request.URL.Query().Get("names"))
+		assert.Equal(t, "ruby_buildpack,node_buildpack", request.URL.Query().Get(testNamesParam))
 
 		now := time.Now()
 		stack1 := testCFLinuxFS4Stack
@@ -176,12 +177,12 @@ func TestBuildpacksClient_List(t *testing.T) {
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
-					Name:      "ruby_buildpack",
-					State:     "READY",
+					Name:      testRubyBuildpackName,
+					State:     testStateReady,
 					Filename:  &filename1,
 					Stack:     &stack1,
 					Position:  1,
-					Lifecycle: "buildpack",
+					Lifecycle: testBuildpackLifecycle,
 					Enabled:   true,
 					Locked:    false,
 				},
@@ -192,11 +193,11 @@ func TestBuildpacksClient_List(t *testing.T) {
 						UpdatedAt: now,
 					},
 					Name:      "node_buildpack",
-					State:     "READY",
+					State:     testStateReady,
 					Filename:  &filename2,
 					Stack:     &stack2,
 					Position:  2,
-					Lifecycle: "buildpack",
+					Lifecycle: testBuildpackLifecycle,
 					Enabled:   true,
 					Locked:    false,
 				},
@@ -215,8 +216,8 @@ func TestBuildpacksClient_List(t *testing.T) {
 
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"stacks": {testCFLinuxFS4Stack},
-			"names":  {"ruby_buildpack", "node_buildpack"},
+			"stacks":       {testCFLinuxFS4Stack},
+			testNamesParam: {testRubyBuildpackName, "node_buildpack"},
 		},
 	}
 
@@ -226,7 +227,7 @@ func TestBuildpacksClient_List(t *testing.T) {
 	assert.Equal(t, 2, list.Pagination.TotalResults)
 	assert.Len(t, list.Resources, 2)
 	assert.Equal(t, "buildpack-guid-1", list.Resources[0].GUID)
-	assert.Equal(t, "ruby_buildpack", list.Resources[0].Name)
+	assert.Equal(t, testRubyBuildpackName, list.Resources[0].Name)
 	assert.Equal(t, "buildpack-guid-2", list.Resources[1].GUID)
 	assert.Equal(t, "node_buildpack", list.Resources[1].Name)
 }
@@ -237,7 +238,7 @@ func TestBuildpacksClient_Update(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks/buildpack-guid", request.URL.Path)
-		assert.Equal(t, "PATCH", request.Method)
+		assert.Equal(t, http.MethodPatch, request.Method)
 
 		var updateRequest capi.BuildpackUpdateRequest
 
@@ -253,15 +254,15 @@ func TestBuildpacksClient_Update(t *testing.T) {
 		stack := testCFLinuxFS4Stack
 		buildpack := capi.Buildpack{
 			Resource: capi.Resource{
-				GUID:      "buildpack-guid",
+				GUID:      testBuildpackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name:      "ruby_buildpack",
-			State:     "READY",
+			Name:      testRubyBuildpackName,
+			State:     testStateReady,
 			Stack:     &stack,
 			Position:  *updateRequest.Position,
-			Lifecycle: "buildpack",
+			Lifecycle: testBuildpackLifecycle,
 			Enabled:   *updateRequest.Enabled,
 			Locked:    false,
 			Metadata:  updateRequest.Metadata,
@@ -284,15 +285,15 @@ func TestBuildpacksClient_Update(t *testing.T) {
 		Enabled:  &enabled,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"updated": "true",
+				testUpdatedValue: testTrueString,
 			},
 		},
 	}
 
-	buildpack, err := buildpacks.Update(context.Background(), "buildpack-guid", request)
+	buildpack, err := buildpacks.Update(context.Background(), testBuildpackGUID, request)
 	require.NoError(t, err)
 	assert.NotNil(t, buildpack)
-	assert.Equal(t, "buildpack-guid", buildpack.GUID)
+	assert.Equal(t, testBuildpackGUID, buildpack.GUID)
 	assert.Equal(t, 5, buildpack.Position)
 	assert.False(t, buildpack.Enabled)
 }
@@ -304,9 +305,9 @@ func TestBuildpacksClient_Delete(t *testing.T) {
 	// Location header pointing at /v3/jobs/{jobGuid}.
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks/buildpack-guid", request.URL.Path)
-		assert.Equal(t, "DELETE", request.Method)
+		assert.Equal(t, http.MethodDelete, request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -316,10 +317,10 @@ func TestBuildpacksClient_Delete(t *testing.T) {
 
 	buildpacks := c.Buildpacks()
 
-	job, err := buildpacks.Delete(context.Background(), "buildpack-guid")
+	job, err := buildpacks.Delete(context.Background(), testBuildpackGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing
@@ -328,7 +329,7 @@ func TestBuildpacksClient_Upload(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks/buildpack-guid/upload", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 		assert.Contains(t, request.Header.Get("Content-Type"), "multipart/form-data")
 
 		// Parse multipart form
@@ -336,7 +337,7 @@ func TestBuildpacksClient_Upload(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Check that bits file is present
-		file, header, err := request.FormFile("bits")
+		file, header, err := request.FormFile(testBitsType)
 		assert.NoError(t, err)
 
 		defer func() {
@@ -358,16 +359,16 @@ func TestBuildpacksClient_Upload(t *testing.T) {
 		stack := testCFLinuxFS4Stack
 		buildpack := capi.Buildpack{
 			Resource: capi.Resource{
-				GUID:      "buildpack-guid",
+				GUID:      testBuildpackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name:      "ruby_buildpack",
-			State:     "READY",
+			Name:      testRubyBuildpackName,
+			State:     testStateReady,
 			Filename:  &filename,
 			Stack:     &stack,
 			Position:  1,
-			Lifecycle: "buildpack",
+			Lifecycle: testBuildpackLifecycle,
 			Enabled:   true,
 			Locked:    false,
 		}
@@ -386,11 +387,11 @@ func TestBuildpacksClient_Upload(t *testing.T) {
 	// Create a reader with test content
 	content := bytes.NewReader([]byte("buildpack content"))
 
-	buildpack, err := buildpacks.Upload(context.Background(), "buildpack-guid", content)
+	buildpack, err := buildpacks.Upload(context.Background(), testBuildpackGUID, content)
 	require.NoError(t, err)
 	assert.NotNil(t, buildpack)
-	assert.Equal(t, "buildpack-guid", buildpack.GUID)
-	assert.Equal(t, "READY", buildpack.State)
+	assert.Equal(t, testBuildpackGUID, buildpack.GUID)
+	assert.Equal(t, testStateReady, buildpack.State)
 	assert.NotNil(t, buildpack.Filename)
 	assert.Equal(t, testRubyBuildpackFilename, *buildpack.Filename)
 }
@@ -400,7 +401,7 @@ func TestBuildpacksClient_GetNotFound(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks/buildpack-guid", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		writer.WriteHeader(http.StatusNotFound)
 	}))
@@ -411,7 +412,7 @@ func TestBuildpacksClient_GetNotFound(t *testing.T) {
 
 	buildpacks := c.Buildpacks()
 
-	buildpack, err := buildpacks.Get(context.Background(), "buildpack-guid")
+	buildpack, err := buildpacks.Get(context.Background(), testBuildpackGUID)
 	require.Error(t, err)
 	assert.Nil(t, buildpack)
 }
@@ -421,7 +422,7 @@ func TestBuildpacksClient_CreateWithCNBLifecycle(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/buildpacks", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var createRequest capi.BuildpackCreateRequest
 
@@ -435,12 +436,12 @@ func TestBuildpacksClient_CreateWithCNBLifecycle(t *testing.T) {
 		now := time.Now()
 		buildpack := capi.Buildpack{
 			Resource: capi.Resource{
-				GUID:      "buildpack-guid",
+				GUID:      testBuildpackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			Name:      createRequest.Name,
-			State:     "AWAITING_UPLOAD",
+			State:     testBuildpackStateAwaitingUpload,
 			Position:  1,
 			Lifecycle: *createRequest.Lifecycle,
 			Enabled:   true,
@@ -467,7 +468,7 @@ func TestBuildpacksClient_CreateWithCNBLifecycle(t *testing.T) {
 	buildpack, err := buildpacks.Create(context.Background(), request)
 	require.NoError(t, err)
 	assert.NotNil(t, buildpack)
-	assert.Equal(t, "buildpack-guid", buildpack.GUID)
+	assert.Equal(t, testBuildpackGUID, buildpack.GUID)
 	assert.Equal(t, "paketo_buildpack", buildpack.Name)
 	assert.Equal(t, "cnb", buildpack.Lifecycle)
 }

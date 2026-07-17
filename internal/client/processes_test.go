@@ -23,44 +23,44 @@ func TestProcessesClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-process-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testProcessGUIDFixture,
 			expectedPath: "/v3/processes/test-process-guid",
 			statusCode:   http.StatusOK,
 			response: capi.Process{
 				Resource: capi.Resource{
-					GUID:      "test-process-guid",
+					GUID:      testProcessGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/processes/test-process-guid",
 						},
 						"scale": capi.Link{
 							Href:   "https://api.example.org/v3/processes/test-process-guid/actions/scale",
-							Method: "POST",
+							Method: http.MethodPost,
 						},
-						"app": capi.Link{
-							Href: "https://api.example.org/v3/apps/app-guid",
+						testAppKey: capi.Link{
+							Href: testHrefAppLink,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 					Annotations: map[string]string{
-						"note": "web process",
+						testNoteAnnotationKey: "web process",
 					},
 				},
-				Type:                         "web",
+				Type:                         testWebProcessType,
 				Command:                      StringPtr("bundle exec rackup"),
 				Instances:                    5,
 				MemoryInMB:                   256,
@@ -81,7 +81,7 @@ func TestProcessesClient_Get(t *testing.T) {
 				Relationships: &capi.ProcessRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
@@ -90,20 +90,20 @@ func TestProcessesClient_Get(t *testing.T) {
 		},
 		{
 			name:         "not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			expectedPath: "/v3/processes/non-existent-guid",
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Process not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "Process not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -133,7 +133,7 @@ func TestProcessesClient_Get(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, process)
 				assert.Equal(t, testCase.guid, process.GUID)
-				assert.Equal(t, "web", process.Type)
+				assert.Equal(t, testWebProcessType, process.Type)
 				assert.Equal(t, "bundle exec rackup", *process.Command)
 				assert.Equal(t, 5, process.Instances)
 				assert.Equal(t, 256, process.MemoryInMB)
@@ -143,7 +143,7 @@ func TestProcessesClient_Get(t *testing.T) {
 				assert.NotNil(t, process.ReadinessHealthCheck)
 				assert.Equal(t, "process", process.ReadinessHealthCheck.Type)
 				assert.NotNil(t, process.Relationships)
-				assert.Equal(t, "app-guid", process.Relationships.App.Data.GUID)
+				assert.Equal(t, testAppGUID, process.Relationships.App.Data.GUID)
 			}
 		})
 	}
@@ -159,7 +159,7 @@ func TestProcessesClient_List(t *testing.T) {
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if appGuids := query.Get("app_guids"); appGuids != "" {
+		if appGuids := query.Get(testAppGUIDsParam); appGuids != "" {
 			assert.Equal(t, "app-1,app-2", appGuids)
 		}
 
@@ -179,7 +179,7 @@ func TestProcessesClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Type:       "web",
+					Type:       testWebProcessType,
 					Command:    StringPtr("bundle exec rackup"),
 					Instances:  3,
 					MemoryInMB: 256,
@@ -191,7 +191,7 @@ func TestProcessesClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					Type:       "worker",
+					Type:       testWorkerProcessType,
 					Command:    StringPtr("bundle exec sidekiq"),
 					Instances:  1,
 					MemoryInMB: 512,
@@ -216,15 +216,15 @@ func TestProcessesClient_List(t *testing.T) {
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "process-1", result.Resources[0].GUID)
-	assert.Equal(t, "web", result.Resources[0].Type)
+	assert.Equal(t, testWebProcessType, result.Resources[0].Type)
 	assert.Equal(t, "process-2", result.Resources[1].GUID)
-	assert.Equal(t, "worker", result.Resources[1].Type)
+	assert.Equal(t, testWorkerProcessType, result.Resources[1].Type)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"app_guids": {"app-1", "app-2"},
-			"types":     {"web"},
+			testAppGUIDsParam: {testAppGUID1, testAppGUID2},
+			"types":           {testWebProcessType},
 		},
 	}
 	result, err = client.Processes().List(context.Background(), params)
@@ -246,11 +246,11 @@ func TestProcessesClient_Update(t *testing.T) {
 
 		response := capi.Process{
 			Resource: capi.Resource{
-				GUID:      "test-process-guid",
+				GUID:      testProcessGUIDFixture,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			Type:       "web",
+			Type:       testWebProcessType,
 			Command:    requestBody.Command,
 			Instances:  3,
 			MemoryInMB: 256,
@@ -271,17 +271,17 @@ func TestProcessesClient_Update(t *testing.T) {
 		Command: StringPtr("new command"),
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "staging",
+				testEnvLabelKey: testStagingLabel,
 			},
 		},
 	}
 
-	process, err := client.Processes().Update(context.Background(), "test-process-guid", request)
+	process, err := client.Processes().Update(context.Background(), testProcessGUIDFixture, request)
 	require.NoError(t, err)
 	require.NotNil(t, process)
-	assert.Equal(t, "test-process-guid", process.GUID)
+	assert.Equal(t, testProcessGUIDFixture, process.GUID)
 	assert.Equal(t, "new command", *process.Command)
-	assert.Equal(t, "staging", process.Metadata.Labels["env"])
+	assert.Equal(t, testStagingLabel, process.Metadata.Labels[testEnvLabelKey])
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing
@@ -296,7 +296,7 @@ func TestProcessesClient_Scale(t *testing.T) {
 	}{
 		{
 			name:         "scale instances and resources",
-			guid:         "test-process-guid",
+			guid:         testProcessGUIDFixture,
 			expectedPath: "/v3/processes/test-process-guid/actions/scale",
 			request: &capi.ProcessScaleRequest{
 				Instances:  intPtr(10),
@@ -306,7 +306,7 @@ func TestProcessesClient_Scale(t *testing.T) {
 		},
 		{
 			name:         "scale with log rate limit",
-			guid:         "test-process-guid",
+			guid:         testProcessGUIDFixture,
 			expectedPath: "/v3/processes/test-process-guid/actions/scale",
 			request: &capi.ProcessScaleRequest{
 				Instances:                    intPtr(5),
@@ -321,7 +321,7 @@ func TestProcessesClient_Scale(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				assert.Equal(t, testCase.expectedPath, request.URL.Path)
-				assert.Equal(t, "POST", request.Method)
+				assert.Equal(t, http.MethodPost, request.Method)
 
 				var requestBody capi.ProcessScaleRequest
 
@@ -361,9 +361,9 @@ func TestProcessesClient_GetStats(t *testing.T) {
 			},
 			Resources: []capi.ProcessStatsDetail{
 				{
-					Type:  "web",
+					Type:  testWebProcessType,
 					Index: 0,
-					State: "RUNNING",
+					State: testStateRunning,
 					Usage: &capi.ProcessUsage{
 						Time:           time.Now().Format(time.RFC3339Nano),
 						CPU:            0.15,
@@ -388,9 +388,9 @@ func TestProcessesClient_GetStats(t *testing.T) {
 					IsolationSegment: &isolationSegment,
 				},
 				{
-					Type:  "web",
+					Type:  testWebProcessType,
 					Index: 1,
-					State: "RUNNING",
+					State: testStateRunning,
 					Usage: &capi.ProcessUsage{
 						Time:    time.Now().Format(time.RFC3339Nano),
 						CPU:     0.12,
@@ -416,7 +416,7 @@ func TestProcessesClient_GetStats(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	stats, err := client.Processes().GetStats(context.Background(), "test-process-guid")
+	stats, err := client.Processes().GetStats(context.Background(), testProcessGUIDFixture)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 	assert.Equal(t, 2, stats.Pagination.TotalResults)
@@ -424,9 +424,9 @@ func TestProcessesClient_GetStats(t *testing.T) {
 
 	// Check first instance
 	instance0 := stats.Resources[0]
-	assert.Equal(t, "web", instance0.Type)
+	assert.Equal(t, testWebProcessType, instance0.Type)
 	assert.Equal(t, 0, instance0.Index)
-	assert.Equal(t, "RUNNING", instance0.State)
+	assert.Equal(t, testStateRunning, instance0.State)
 	assert.NotNil(t, instance0.Usage)
 	assert.InDelta(t, 0.15, instance0.Usage.CPU, 1e-6)
 	assert.Equal(t, int64(134217728), instance0.Usage.Mem)
@@ -439,7 +439,7 @@ func TestProcessesClient_GetStats(t *testing.T) {
 	// Check second instance
 	instance1 := stats.Resources[1]
 	assert.Equal(t, 1, instance1.Index)
-	assert.Equal(t, "RUNNING", instance1.State)
+	assert.Equal(t, testStateRunning, instance1.State)
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing
@@ -456,7 +456,7 @@ func TestProcessesClient_TerminateInstance(t *testing.T) {
 	}{
 		{
 			name:         "successful terminate",
-			guid:         "test-process-guid",
+			guid:         testProcessGUIDFixture,
 			index:        0,
 			expectedPath: "/v3/processes/test-process-guid/instances/0",
 			statusCode:   http.StatusNoContent,
@@ -464,7 +464,7 @@ func TestProcessesClient_TerminateInstance(t *testing.T) {
 		},
 		{
 			name:         "terminate another instance",
-			guid:         "test-process-guid",
+			guid:         testProcessGUIDFixture,
 			index:        3,
 			expectedPath: "/v3/processes/test-process-guid/instances/3",
 			statusCode:   http.StatusNoContent,
@@ -472,7 +472,7 @@ func TestProcessesClient_TerminateInstance(t *testing.T) {
 		},
 		{
 			name:         "process not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			index:        0,
 			expectedPath: "/v3/processes/non-existent-guid/instances/0",
 			statusCode:   http.StatusNotFound,
@@ -491,12 +491,12 @@ func TestProcessesClient_TerminateInstance(t *testing.T) {
 				writer.WriteHeader(testCase.statusCode)
 
 				if testCase.wantErr {
-					response := map[string]interface{}{
-						"errors": []map[string]interface{}{
+					response := map[string]any{
+						testErrorsKey: []map[string]any{
 							{
-								"code":   10010,
-								"title":  "CF-ResourceNotFound",
-								"detail": "Resource not found",
+								testCodeKey:   10010,
+								testTitleKey:  testNotFoundTitle,
+								testDetailKey: "Resource not found",
 							},
 						},
 					}
@@ -511,7 +511,7 @@ func TestProcessesClient_TerminateInstance(t *testing.T) {
 			err = client.Processes().TerminateInstance(context.Background(), testCase.guid, testCase.index)
 
 			if testCase.wantErr {
-				require.ErrorContains(t, err, "CF-ResourceNotFound")
+				require.ErrorContains(t, err, testNotFoundTitle)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -532,9 +532,9 @@ func TestProcessesClient_GetWithEmbed(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	processes := NewProcessesClient(httpClient)
 
-	process, err := processes.Get(context.Background(), "process-guid", capi.ProcessEmbedInstances)
+	process, err := processes.Get(context.Background(), testProcessGUID, capi.ProcessEmbedInstances)
 	require.NoError(t, err)
-	assert.Equal(t, "process-guid", process.GUID)
+	assert.Equal(t, testProcessGUID, process.GUID)
 }
 
 // Helper functions.

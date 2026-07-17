@@ -23,7 +23,7 @@ func TestEnvironmentVariableGroupsClient_GetRunning(t *testing.T) {
 
 		envVarGroup := capi.EnvironmentVariableGroup{
 			Name: "running",
-			Var: map[string]interface{}{
+			Var: map[string]any{
 				"LOG_LEVEL": "info",
 				"TIMEOUT":   30,
 			},
@@ -52,9 +52,9 @@ func TestEnvironmentVariableGroupsClient_GetStaging(t *testing.T) {
 		assert.Equal(t, "GET", request.Method)
 
 		envVarGroup := capi.EnvironmentVariableGroup{
-			Name: "staging",
-			Var: map[string]interface{}{
-				"BUILD_ENV": "production",
+			Name: testStagingLabel,
+			Var: map[string]any{
+				"BUILD_ENV": testProductionLabel,
 				"CACHE":     true,
 			},
 			UpdatedAt: &time.Time{},
@@ -67,10 +67,10 @@ func TestEnvironmentVariableGroupsClient_GetStaging(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	envVarGroup, err := client.EnvironmentVariableGroups().Get(context.Background(), "staging")
+	envVarGroup, err := client.EnvironmentVariableGroups().Get(context.Background(), testStagingLabel)
 	require.NoError(t, err)
-	assert.Equal(t, "staging", envVarGroup.Name)
-	assert.Equal(t, "production", envVarGroup.Var["BUILD_ENV"])
+	assert.Equal(t, testStagingLabel, envVarGroup.Name)
+	assert.Equal(t, testProductionLabel, envVarGroup.Var["BUILD_ENV"])
 	assert.Equal(t, true, envVarGroup.Var["CACHE"])
 }
 
@@ -81,13 +81,13 @@ func TestEnvironmentVariableGroupsClient_UpdateRunning(t *testing.T) {
 		assert.Equal(t, "/v3/environment_variable_groups/running", request.URL.Path)
 		assert.Equal(t, "PATCH", request.Method)
 
-		var req map[string]interface{}
+		var req map[string]any
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
 
-		varMap, ok := req["var"].(map[string]interface{})
+		varMap, ok := req[testVarEnvKey].(map[string]any)
 		if !ok {
-			t.Errorf("req[\"var\"] is not a map[string]interface{}")
+			t.Errorf("req[\"var\"] is not a map[string]any")
 
 			return
 		}
@@ -107,7 +107,7 @@ func TestEnvironmentVariableGroupsClient_UpdateRunning(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	envVarGroup, err := client.EnvironmentVariableGroups().Update(context.Background(), "running", map[string]interface{}{
+	envVarGroup, err := client.EnvironmentVariableGroups().Update(context.Background(), "running", map[string]any{
 		"LOG_LEVEL": "debug",
 		"TIMEOUT":   60,
 	})
@@ -125,22 +125,22 @@ func TestEnvironmentVariableGroupsClient_UpdateStaging(t *testing.T) {
 		assert.Equal(t, "/v3/environment_variable_groups/staging", request.URL.Path)
 		assert.Equal(t, "PATCH", request.Method)
 
-		var req map[string]interface{}
+		var req map[string]any
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
 
-		varMap, ok := req["var"].(map[string]interface{})
+		varMap, ok := req[testVarEnvKey].(map[string]any)
 		if !ok {
-			t.Errorf("req[\"var\"] is not a map[string]interface{}")
+			t.Errorf("req[\"var\"] is not a map[string]any")
 
 			return
 		}
 
-		assert.Equal(t, "development", varMap["BUILD_ENV"])
+		assert.Equal(t, testDevelopmentLabel, varMap["BUILD_ENV"])
 		assert.Equal(t, false, varMap["CACHE"])
 
 		envVarGroup := capi.EnvironmentVariableGroup{
-			Name: "staging",
+			Name: testStagingLabel,
 			Var:  varMap,
 		}
 
@@ -151,13 +151,13 @@ func TestEnvironmentVariableGroupsClient_UpdateStaging(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	envVarGroup, err := client.EnvironmentVariableGroups().Update(context.Background(), "staging", map[string]interface{}{
-		"BUILD_ENV": "development",
+	envVarGroup, err := client.EnvironmentVariableGroups().Update(context.Background(), testStagingLabel, map[string]any{
+		"BUILD_ENV": testDevelopmentLabel,
 		"CACHE":     false,
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "staging", envVarGroup.Name)
-	assert.Equal(t, "development", envVarGroup.Var["BUILD_ENV"])
+	assert.Equal(t, testStagingLabel, envVarGroup.Name)
+	assert.Equal(t, testDevelopmentLabel, envVarGroup.Var["BUILD_ENV"])
 	assert.Equal(t, false, envVarGroup.Var["CACHE"])
 }

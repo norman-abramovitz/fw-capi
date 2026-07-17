@@ -22,29 +22,29 @@ func TestServiceInstancesClient_Create_Managed(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_instances", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceInstanceCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "managed", requestBody.Type)
-		assert.Equal(t, "my-instance", requestBody.Name)
-		assert.Equal(t, "space-guid", requestBody.Relationships.Space.Data.GUID)
-		assert.Equal(t, "plan-guid", requestBody.Relationships.ServicePlan.Data.GUID)
+		assert.Equal(t, testManagedType, requestBody.Type)
+		assert.Equal(t, testMyInstanceName, requestBody.Name)
+		assert.Equal(t, testSpaceGUID, requestBody.Relationships.Space.Data.GUID)
+		assert.Equal(t, testPlanGUID, requestBody.Relationships.ServicePlan.Data.GUID)
 
 		// Managed instances return a job
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID: "job-guid",
+				GUID: testJobGUID,
 			},
 			Operation: "service_instance.create",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(writer).Encode(job)
 	}))
@@ -54,21 +54,21 @@ func TestServiceInstancesClient_Create_Managed(t *testing.T) {
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
 	request := &capi.ServiceInstanceCreateRequest{
-		Type: "managed",
-		Name: "my-instance",
-		Parameters: map[string]interface{}{
-			"foo": "bar",
+		Type: testManagedType,
+		Name: testMyInstanceName,
+		Parameters: map[string]any{
+			testFooKey: testBarValue,
 		},
-		Tags: []string{"tag1", "tag2"},
+		Tags: []string{testTag1Value, "tag2"},
 		Relationships: capi.ServiceInstanceRelationships{
 			Space: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "space-guid",
+					GUID: testSpaceGUID,
 				},
 			},
 			ServicePlan: &capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "plan-guid",
+					GUID: testPlanGUID,
 				},
 			},
 		},
@@ -79,7 +79,7 @@ func TestServiceInstancesClient_Create_Managed(t *testing.T) {
 
 	job, ok := result.(*capi.Job)
 	require.True(t, ok, "Expected *capi.Job for managed instance")
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_instance.create", job.Operation)
 }
 
@@ -89,31 +89,31 @@ func TestServiceInstancesClient_Create_UserProvided(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_instances", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceInstanceCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "user-provided", requestBody.Type)
+		assert.Equal(t, testUserProvidedType, requestBody.Type)
 		assert.Equal(t, "my-ups", requestBody.Name)
-		assert.Equal(t, "space-guid", requestBody.Relationships.Space.Data.GUID)
+		assert.Equal(t, testSpaceGUID, requestBody.Relationships.Space.Data.GUID)
 
 		// User-provided instances return the instance directly
 		now := time.Now()
 		instance := capi.ServiceInstance{
 			Resource: capi.Resource{
-				GUID:      "instance-guid",
+				GUID:      testInstanceGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			Name: "my-ups",
-			Type: "user-provided",
-			Tags: []string{"tag1"},
+			Type: testUserProvidedType,
+			Tags: []string{testTag1Value},
 			LastOperation: &capi.ServiceInstanceLastOperation{
-				Type:        "create",
-				State:       "succeeded",
+				Type:        testCreateOperation,
+				State:       testSucceededOperation,
 				Description: "Operation succeeded",
 				CreatedAt:   &now,
 				UpdatedAt:   &now,
@@ -123,7 +123,7 @@ func TestServiceInstancesClient_Create_UserProvided(t *testing.T) {
 			Relationships: capi.ServiceInstanceRelationships{
 				Space: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "space-guid",
+						GUID: testSpaceGUID,
 					},
 				},
 			},
@@ -141,19 +141,19 @@ func TestServiceInstancesClient_Create_UserProvided(t *testing.T) {
 	syslogURL := "https://syslog.example.com"
 	routeURL := "https://route.example.com"
 	request := &capi.ServiceInstanceCreateRequest{
-		Type: "user-provided",
+		Type: testUserProvidedType,
 		Name: "my-ups",
-		Credentials: map[string]interface{}{
-			"username": "admin",
-			"password": "secret",
+		Credentials: map[string]any{
+			testUsernameKey: testAdminUsername,
+			"password":      "secret",
 		},
-		Tags:            []string{"tag1"},
+		Tags:            []string{testTag1Value},
 		SyslogDrainURL:  &syslogURL,
 		RouteServiceURL: &routeURL,
 		Relationships: capi.ServiceInstanceRelationships{
 			Space: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "space-guid",
+					GUID: testSpaceGUID,
 				},
 			},
 		},
@@ -164,9 +164,9 @@ func TestServiceInstancesClient_Create_UserProvided(t *testing.T) {
 
 	instance, ok := result.(*capi.ServiceInstance)
 	require.True(t, ok, "Expected *capi.ServiceInstance for user-provided instance")
-	assert.Equal(t, "instance-guid", instance.GUID)
+	assert.Equal(t, testInstanceGUID, instance.GUID)
 	assert.Equal(t, "my-ups", instance.Name)
-	assert.Equal(t, "user-provided", instance.Type)
+	assert.Equal(t, testUserProvidedType, instance.Type)
 }
 
 func TestServiceInstancesClient_Get(t *testing.T) {
@@ -179,21 +179,21 @@ func TestServiceInstancesClient_Get(t *testing.T) {
 		now := time.Now()
 		instance := capi.ServiceInstance{
 			Resource: capi.Resource{
-				GUID:      "instance-guid",
+				GUID:      testInstanceGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name: "my-instance",
-			Type: "managed",
-			Tags: []string{"database", "postgresql"},
+			Name: testMyInstanceName,
+			Type: testManagedType,
+			Tags: []string{testDatabaseFixture, "postgresql"},
 			MaintenanceInfo: &capi.ServiceInstanceMaintenance{
-				Version: "1.0.0",
+				Version: testVersion100,
 			},
 			UpgradeAvailable: false,
 			DashboardURL:     StringPtr("https://dashboard.example.com"),
 			LastOperation: &capi.ServiceInstanceLastOperation{
-				Type:        "create",
-				State:       "succeeded",
+				Type:        testCreateOperation,
+				State:       testSucceededOperation,
 				Description: "Instance created",
 				CreatedAt:   &now,
 				UpdatedAt:   &now,
@@ -201,12 +201,12 @@ func TestServiceInstancesClient_Get(t *testing.T) {
 			Relationships: capi.ServiceInstanceRelationships{
 				Space: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "space-guid",
+						GUID: testSpaceGUID,
 					},
 				},
 				ServicePlan: &capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "plan-guid",
+						GUID: testPlanGUID,
 					},
 				},
 			},
@@ -220,13 +220,13 @@ func TestServiceInstancesClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	instance, err := serviceInstances.Get(context.Background(), "instance-guid")
+	instance, err := serviceInstances.Get(context.Background(), testInstanceGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, instance)
-	assert.Equal(t, "instance-guid", instance.GUID)
-	assert.Equal(t, "my-instance", instance.Name)
-	assert.Equal(t, "managed", instance.Type)
-	assert.Contains(t, instance.Tags, "database")
+	assert.Equal(t, testInstanceGUID, instance.GUID)
+	assert.Equal(t, testMyInstanceName, instance.Name)
+	assert.Equal(t, testManagedType, instance.Type)
+	assert.Contains(t, instance.Tags, testDatabaseFixture)
 	assert.Contains(t, instance.Tags, "postgresql")
 }
 
@@ -243,7 +243,7 @@ func TestServiceInstancesClient_List(t *testing.T) {
 				UpdatedAt: now,
 			},
 			Name: "my-instance-1",
-			Type: "managed",
+			Type: testManagedType,
 		},
 		{
 			Resource: capi.Resource{
@@ -252,24 +252,24 @@ func TestServiceInstancesClient_List(t *testing.T) {
 				UpdatedAt: now,
 			},
 			Name: "my-instance-2",
-			Type: "user-provided",
+			Type: testUserProvidedType,
 		},
 	}
 
 	RunServiceListTest(t, "service instances list", "/v3/service_instances",
 		func(request *http.Request) {
-			assert.Equal(t, "space-guid", request.URL.Query().Get("space_guids"))
-			assert.Equal(t, "my-instance", request.URL.Query().Get("names"))
+			assert.Equal(t, testSpaceGUID, request.URL.Query().Get(testSpaceGUIDsParam))
+			assert.Equal(t, testMyInstanceName, request.URL.Query().Get(testNamesParam))
 		},
 		responseData,
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewServiceInstancesClient(httpClient)
 		},
-		func(client interface{}) (*capi.ListResponse[capi.ServiceInstance], error) {
+		func(client any) (*capi.ListResponse[capi.ServiceInstance], error) {
 			params := &capi.QueryParams{
 				Filters: map[string][]string{
-					"space_guids": {"space-guid"},
-					"names":       {"my-instance"},
+					testSpaceGUIDsParam: {testSpaceGUID},
+					testNamesParam:      {testMyInstanceName},
 				},
 			}
 
@@ -282,9 +282,9 @@ func TestServiceInstancesClient_List(t *testing.T) {
 		},
 		func(resources []capi.ServiceInstance) {
 			assert.Equal(t, "my-instance-1", resources[0].Name)
-			assert.Equal(t, "managed", resources[0].Type)
+			assert.Equal(t, testManagedType, resources[0].Type)
 			assert.Equal(t, "my-instance-2", resources[1].Name)
-			assert.Equal(t, "user-provided", resources[1].Type)
+			assert.Equal(t, testUserProvidedType, resources[1].Type)
 		},
 	)
 }
@@ -304,14 +304,14 @@ func TestServiceInstancesClient_Update_Managed(t *testing.T) {
 		// Managed instances return a job for updates
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID: "job-guid",
+				GUID: testJobGUID,
 			},
 			Operation: "service_instance.update",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(writer).Encode(job)
 	}))
@@ -323,18 +323,18 @@ func TestServiceInstancesClient_Update_Managed(t *testing.T) {
 	newName := "updated-instance"
 	request := &capi.ServiceInstanceUpdateRequest{
 		Name: &newName,
-		Parameters: map[string]interface{}{
+		Parameters: map[string]any{
 			"max_connections": 100,
 		},
-		Tags: []string{"updated", "tags"},
+		Tags: []string{testUpdatedValue, "tags"},
 	}
 
-	result, err := serviceInstances.Update(context.Background(), "instance-guid", request)
+	result, err := serviceInstances.Update(context.Background(), testInstanceGUID, request)
 	require.NoError(t, err)
 
 	job, ok := result.(*capi.Job)
 	require.True(t, ok, "Expected *capi.Job for managed instance update")
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_instance.update", job.Operation)
 }
 
@@ -346,7 +346,7 @@ func TestServiceInstancesClient_Update_UserProvided(t *testing.T) {
 		assert.Equal(t, "PATCH", request.Method)
 
 		// Check for user-provided instance by examining the request
-		var requestBody map[string]interface{}
+		var requestBody map[string]any
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
@@ -355,13 +355,13 @@ func TestServiceInstancesClient_Update_UserProvided(t *testing.T) {
 		now := time.Now()
 		instance := capi.ServiceInstance{
 			Resource: capi.Resource{
-				GUID:      "instance-guid",
+				GUID:      testInstanceGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			Name: "updated-ups",
-			Type: "user-provided",
-			Tags: []string{"updated"},
+			Type: testUserProvidedType,
+			Tags: []string{testUpdatedValue},
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -376,18 +376,18 @@ func TestServiceInstancesClient_Update_UserProvided(t *testing.T) {
 	newName := "updated-ups"
 	request := &capi.ServiceInstanceUpdateRequest{
 		Name: &newName,
-		Credentials: map[string]interface{}{
-			"username": "newuser",
+		Credentials: map[string]any{
+			testUsernameKey: "newuser",
 		},
-		Tags: []string{"updated"},
+		Tags: []string{testUpdatedValue},
 	}
 
-	result, err := serviceInstances.Update(context.Background(), "instance-guid", request)
+	result, err := serviceInstances.Update(context.Background(), testInstanceGUID, request)
 	require.NoError(t, err)
 
 	instance, ok := result.(*capi.ServiceInstance)
 	require.True(t, ok, "Expected *capi.ServiceInstance for user-provided instance update")
-	assert.Equal(t, "instance-guid", instance.GUID)
+	assert.Equal(t, testInstanceGUID, instance.GUID)
 	assert.Equal(t, "updated-ups", instance.Name)
 }
 
@@ -402,7 +402,7 @@ func TestServiceInstancesClient_Delete(t *testing.T) {
 		// Without WithPurge, the purge query parameter must NOT be present.
 		assert.Empty(t, request.URL.Query().Get("purge"), "purge param must be absent when WithPurge is not passed")
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -410,10 +410,10 @@ func TestServiceInstancesClient_Delete(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	job, err := serviceInstances.Delete(context.Background(), "instance-guid")
+	job, err := serviceInstances.Delete(context.Background(), testInstanceGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestServiceInstancesClient_DeleteWithPurge(t *testing.T) {
@@ -426,7 +426,7 @@ func TestServiceInstancesClient_DeleteWithPurge(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_instances/instance-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
-		assert.Equal(t, "true", request.URL.Query().Get("purge"), "purge param must be 'true' when WithPurge(true) is passed")
+		assert.Equal(t, testTrueString, request.URL.Query().Get("purge"), "purge param must be 'true' when WithPurge(true) is passed")
 
 		writer.WriteHeader(http.StatusNoContent)
 	}))
@@ -435,7 +435,7 @@ func TestServiceInstancesClient_DeleteWithPurge(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	job, err := serviceInstances.Delete(context.Background(), "instance-guid", capi.WithPurge(true))
+	job, err := serviceInstances.Delete(context.Background(), testInstanceGUID, capi.WithPurge(true))
 	require.NoError(t, err)
 	assert.Nil(t, job)
 }
@@ -449,7 +449,7 @@ func TestServiceInstancesClient_DeleteWithPurgeFalse(t *testing.T) {
 		// WithPurge(false) must NOT set the purge query parameter.
 		assert.Empty(t, request.URL.Query().Get("purge"), "purge param must be absent when WithPurge(false) is passed")
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -457,10 +457,10 @@ func TestServiceInstancesClient_DeleteWithPurgeFalse(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	job, err := serviceInstances.Delete(context.Background(), "instance-guid", capi.WithPurge(false))
+	job, err := serviceInstances.Delete(context.Background(), testInstanceGUID, capi.WithPurge(false))
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestServiceInstancesClient_GetParameters(t *testing.T) {
@@ -480,7 +480,7 @@ func TestServiceInstancesClient_GetParameters(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	params, err := serviceInstances.GetParameters(context.Background(), "instance-guid")
+	params, err := serviceInstances.GetParameters(context.Background(), testInstanceGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, params)
 	assert.InDelta(t, float64(100), params.Parameters["max_connections"], 0)
@@ -505,10 +505,10 @@ func TestServiceInstancesClient_GetCredentials(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	creds, err := serviceInstances.GetCredentials(context.Background(), "instance-guid")
+	creds, err := serviceInstances.GetCredentials(context.Background(), testInstanceGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, creds)
-	assert.Equal(t, "my-username", creds.Credentials["username"])
+	assert.Equal(t, "my-username", creds.Credentials[testUsernameKey])
 	assert.Equal(t, "super-secret", creds.Credentials["password"])
 	assert.Equal(t, "credential", creds.Credentials["other"])
 }
@@ -522,11 +522,11 @@ func TestServiceInstancesClient_ListSharedSpaces(t *testing.T) {
 
 		relationships := capi.ServiceInstanceSharedSpacesRelationships{
 			Data: []capi.Relationship{
-				{Data: &capi.RelationshipData{GUID: "space-guid-1"}},
-				{Data: &capi.RelationshipData{GUID: "space-guid-2"}},
+				{Data: &capi.RelationshipData{GUID: testSpaceGUID1}},
+				{Data: &capi.RelationshipData{GUID: testSpaceGUID2}},
 			},
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: "/v3/service_instances/instance-guid/relationships/shared_spaces",
 				},
 			},
@@ -540,12 +540,12 @@ func TestServiceInstancesClient_ListSharedSpaces(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	sharedSpaces, err := serviceInstances.ListSharedSpaces(context.Background(), "instance-guid")
+	sharedSpaces, err := serviceInstances.ListSharedSpaces(context.Background(), testInstanceGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, sharedSpaces)
 	assert.Len(t, sharedSpaces.Data, 2)
-	assert.Equal(t, "space-guid-1", sharedSpaces.Data[0].Data.GUID)
-	assert.Equal(t, "space-guid-2", sharedSpaces.Data[1].Data.GUID)
+	assert.Equal(t, testSpaceGUID1, sharedSpaces.Data[0].Data.GUID)
+	assert.Equal(t, testSpaceGUID2, sharedSpaces.Data[1].Data.GUID)
 }
 
 func TestServiceInstancesClient_ShareWithSpaces(t *testing.T) {
@@ -553,7 +553,7 @@ func TestServiceInstancesClient_ShareWithSpaces(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_instances/instance-guid/relationships/shared_spaces", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceInstanceShareRequest
 
@@ -563,8 +563,8 @@ func TestServiceInstancesClient_ShareWithSpaces(t *testing.T) {
 
 		relationships := capi.ServiceInstanceSharedSpacesRelationships{
 			Data: []capi.Relationship{
-				{Data: &capi.RelationshipData{GUID: "space-guid-1"}},
-				{Data: &capi.RelationshipData{GUID: "space-guid-2"}},
+				{Data: &capi.RelationshipData{GUID: testSpaceGUID1}},
+				{Data: &capi.RelationshipData{GUID: testSpaceGUID2}},
 				{Data: &capi.RelationshipData{GUID: "space-guid-3"}},
 			},
 		}
@@ -579,12 +579,12 @@ func TestServiceInstancesClient_ShareWithSpaces(t *testing.T) {
 
 	request := &capi.ServiceInstanceShareRequest{
 		Data: []capi.Relationship{
-			{Data: &capi.RelationshipData{GUID: "space-guid-2"}},
+			{Data: &capi.RelationshipData{GUID: testSpaceGUID2}},
 			{Data: &capi.RelationshipData{GUID: "space-guid-3"}},
 		},
 	}
 
-	sharedSpaces, err := serviceInstances.ShareWithSpaces(context.Background(), "instance-guid", request)
+	sharedSpaces, err := serviceInstances.ShareWithSpaces(context.Background(), testInstanceGUID, request)
 	require.NoError(t, err)
 	assert.NotNil(t, sharedSpaces)
 	assert.Len(t, sharedSpaces.Data, 3)
@@ -604,7 +604,7 @@ func TestServiceInstancesClient_UnshareFromSpace(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	err := serviceInstances.UnshareFromSpace(context.Background(), "instance-guid", "space-guid")
+	err := serviceInstances.UnshareFromSpace(context.Background(), testInstanceGUID, testSpaceGUID)
 	require.NoError(t, err)
 }
 
@@ -622,7 +622,7 @@ func TestServiceInstancesClient_GetNotFound(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	instance, err := serviceInstances.Get(context.Background(), "instance-guid")
+	instance, err := serviceInstances.Get(context.Background(), testInstanceGUID)
 	require.Error(t, err)
 	assert.Nil(t, instance)
 }
@@ -641,7 +641,7 @@ func TestServiceInstancesClient_DeleteWithBindings(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceInstances := NewServiceInstancesClient(httpClient)
 
-	job, err := serviceInstances.Delete(context.Background(), "instance-guid")
+	job, err := serviceInstances.Delete(context.Background(), testInstanceGUID)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -666,5 +666,5 @@ func TestServiceInstancesClient_GetWithFields(t *testing.T) {
 		capi.WithServiceInstanceFields(capi.ServiceInstanceFieldsSpaceOrganization, "name", "guid"))
 	require.NoError(t, err)
 	require.NotNil(t, instance.Included)
-	assert.Equal(t, "org-1", instance.Included.Organizations[0].GUID)
+	assert.Equal(t, testOrgName1, instance.Included.Organizations[0].GUID)
 }

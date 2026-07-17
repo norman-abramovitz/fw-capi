@@ -20,31 +20,31 @@ func TestStacksClient_Create(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/stacks", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.StackCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "cflinuxfs4", requestBody.Name)
-		assert.Equal(t, "Ubuntu Jammy Stack", requestBody.Description)
+		assert.Equal(t, testCFLinuxFS4Stack, requestBody.Name)
+		assert.Equal(t, testUbuntuJammyDescription, requestBody.Description)
 
 		now := time.Now()
 		stack := capi.Stack{
 			Resource: capi.Resource{
-				GUID:      "stack-guid",
+				GUID:      testStackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			Name:             requestBody.Name,
 			Description:      requestBody.Description,
-			BuildRootfsImage: "cloudfoundry/cflinuxfs4",
-			RunRootfsImage:   "cloudfoundry/cflinuxfs4",
+			BuildRootfsImage: testCFLinuxFS4Image,
+			RunRootfsImage:   testCFLinuxFS4Image,
 			Default:          true,
 			Metadata:         requestBody.Metadata,
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: "https://api.example.org/v3/stacks/stack-guid",
 				},
 			},
@@ -60,11 +60,11 @@ func TestStacksClient_Create(t *testing.T) {
 	stacks := NewStacksClient(httpClient)
 
 	request := &capi.StackCreateRequest{
-		Name:        "cflinuxfs4",
-		Description: "Ubuntu Jammy Stack",
+		Name:        testCFLinuxFS4Stack,
+		Description: testUbuntuJammyDescription,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 		},
 	}
@@ -72,9 +72,9 @@ func TestStacksClient_Create(t *testing.T) {
 	stack, err := stacks.Create(context.Background(), request)
 	require.NoError(t, err)
 	assert.NotNil(t, stack)
-	assert.Equal(t, "stack-guid", stack.GUID)
-	assert.Equal(t, "cflinuxfs4", stack.Name)
-	assert.Equal(t, "Ubuntu Jammy Stack", stack.Description)
+	assert.Equal(t, testStackGUID, stack.GUID)
+	assert.Equal(t, testCFLinuxFS4Stack, stack.Name)
+	assert.Equal(t, testUbuntuJammyDescription, stack.Description)
 	assert.True(t, stack.Default)
 }
 
@@ -88,14 +88,14 @@ func TestStacksClient_Get(t *testing.T) {
 		now := time.Now()
 		stack := capi.Stack{
 			Resource: capi.Resource{
-				GUID:      "stack-guid",
+				GUID:      testStackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name:             "cflinuxfs3",
+			Name:             testCFLinuxFS3Stack,
 			Description:      "Ubuntu Bionic Stack",
-			BuildRootfsImage: "cloudfoundry/cflinuxfs3",
-			RunRootfsImage:   "cloudfoundry/cflinuxfs3",
+			BuildRootfsImage: testCFLinuxFS3Image,
+			RunRootfsImage:   testCFLinuxFS3Image,
 			Default:          false,
 		}
 
@@ -107,11 +107,11 @@ func TestStacksClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	stacks := NewStacksClient(httpClient)
 
-	stack, err := stacks.Get(context.Background(), "stack-guid")
+	stack, err := stacks.Get(context.Background(), testStackGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, stack)
-	assert.Equal(t, "stack-guid", stack.GUID)
-	assert.Equal(t, "cflinuxfs3", stack.Name)
+	assert.Equal(t, testStackGUID, stack.GUID)
+	assert.Equal(t, testCFLinuxFS3Stack, stack.Name)
 	assert.Equal(t, "Ubuntu Bionic Stack", stack.Description)
 	assert.False(t, stack.Default)
 }
@@ -122,7 +122,7 @@ func TestStacksClient_List(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/stacks", request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
-		assert.Equal(t, "cflinuxfs3,cflinuxfs4", request.URL.Query().Get("names"))
+		assert.Equal(t, "cflinuxfs3,cflinuxfs4", request.URL.Query().Get(testNamesParam))
 
 		now := time.Now()
 		response := capi.ListResponse[capi.Stack]{
@@ -139,10 +139,10 @@ func TestStacksClient_List(t *testing.T) {
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
-					Name:             "cflinuxfs3",
+					Name:             testCFLinuxFS3Stack,
 					Description:      "Ubuntu Bionic Stack",
-					BuildRootfsImage: "cloudfoundry/cflinuxfs3",
-					RunRootfsImage:   "cloudfoundry/cflinuxfs3",
+					BuildRootfsImage: testCFLinuxFS3Image,
+					RunRootfsImage:   testCFLinuxFS3Image,
 					Default:          false,
 				},
 				{
@@ -151,10 +151,10 @@ func TestStacksClient_List(t *testing.T) {
 						CreatedAt: now,
 						UpdatedAt: now,
 					},
-					Name:             "cflinuxfs4",
-					Description:      "Ubuntu Jammy Stack",
-					BuildRootfsImage: "cloudfoundry/cflinuxfs4",
-					RunRootfsImage:   "cloudfoundry/cflinuxfs4",
+					Name:             testCFLinuxFS4Stack,
+					Description:      testUbuntuJammyDescription,
+					BuildRootfsImage: testCFLinuxFS4Image,
+					RunRootfsImage:   testCFLinuxFS4Image,
 					Default:          true,
 				},
 			},
@@ -170,7 +170,7 @@ func TestStacksClient_List(t *testing.T) {
 
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"names": {"cflinuxfs3", "cflinuxfs4"},
+			testNamesParam: {testCFLinuxFS3Stack, testCFLinuxFS4Stack},
 		},
 	}
 
@@ -180,9 +180,9 @@ func TestStacksClient_List(t *testing.T) {
 	assert.Equal(t, 2, list.Pagination.TotalResults)
 	assert.Len(t, list.Resources, 2)
 	assert.Equal(t, "stack-guid-1", list.Resources[0].GUID)
-	assert.Equal(t, "cflinuxfs3", list.Resources[0].Name)
+	assert.Equal(t, testCFLinuxFS3Stack, list.Resources[0].Name)
 	assert.Equal(t, "stack-guid-2", list.Resources[1].GUID)
-	assert.Equal(t, "cflinuxfs4", list.Resources[1].Name)
+	assert.Equal(t, testCFLinuxFS4Stack, list.Resources[1].Name)
 }
 
 func TestStacksClient_Update(t *testing.T) {
@@ -198,19 +198,19 @@ func TestStacksClient_Update(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotNil(t, requestBody.Metadata)
-		assert.Equal(t, "true", requestBody.Metadata.Labels["updated"])
+		assert.Equal(t, testTrueString, requestBody.Metadata.Labels[testUpdatedValue])
 
 		now := time.Now()
 		stack := capi.Stack{
 			Resource: capi.Resource{
-				GUID:      "stack-guid",
+				GUID:      testStackGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name:             "cflinuxfs4",
-			Description:      "Ubuntu Jammy Stack",
-			BuildRootfsImage: "cloudfoundry/cflinuxfs4",
-			RunRootfsImage:   "cloudfoundry/cflinuxfs4",
+			Name:             testCFLinuxFS4Stack,
+			Description:      testUbuntuJammyDescription,
+			BuildRootfsImage: testCFLinuxFS4Image,
+			RunRootfsImage:   testCFLinuxFS4Image,
 			Default:          true,
 			Metadata:         requestBody.Metadata,
 		}
@@ -226,20 +226,20 @@ func TestStacksClient_Update(t *testing.T) {
 	request := &capi.StackUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"updated": "true",
+				testUpdatedValue: testTrueString,
 			},
 			Annotations: map[string]string{
-				"note": "Updated stack metadata",
+				testNoteAnnotationKey: "Updated stack metadata",
 			},
 		},
 	}
 
-	stack, err := stacks.Update(context.Background(), "stack-guid", request)
+	stack, err := stacks.Update(context.Background(), testStackGUID, request)
 	require.NoError(t, err)
 	assert.NotNil(t, stack)
-	assert.Equal(t, "stack-guid", stack.GUID)
+	assert.Equal(t, testStackGUID, stack.GUID)
 	assert.NotNil(t, stack.Metadata)
-	assert.Equal(t, "true", stack.Metadata.Labels["updated"])
+	assert.Equal(t, testTrueString, stack.Metadata.Labels[testUpdatedValue])
 }
 
 func TestStacksClient_Delete(t *testing.T) {
@@ -256,7 +256,7 @@ func TestStacksClient_Delete(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	stacks := NewStacksClient(httpClient)
 
-	err := stacks.Delete(context.Background(), "stack-guid")
+	err := stacks.Delete(context.Background(), testStackGUID)
 	require.NoError(t, err)
 }
 
@@ -283,7 +283,7 @@ func TestStacksClient_ListApps(t *testing.T) {
 						UpdatedAt: now,
 					},
 					Name:  "app1",
-					State: "STARTED",
+					State: testStateStarted,
 				},
 				{
 					Resource: capi.Resource{
@@ -292,7 +292,7 @@ func TestStacksClient_ListApps(t *testing.T) {
 						UpdatedAt: now,
 					},
 					Name:  "app2",
-					State: "STOPPED",
+					State: testStateStopped,
 				},
 			},
 		}
@@ -305,7 +305,7 @@ func TestStacksClient_ListApps(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	stacks := NewStacksClient(httpClient)
 
-	list, err := stacks.ListApps(context.Background(), "stack-guid", nil)
+	list, err := stacks.ListApps(context.Background(), testStackGUID, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.Equal(t, 2, list.Pagination.TotalResults)
@@ -330,7 +330,7 @@ func TestStacksClient_GetNotFound(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	stacks := NewStacksClient(httpClient)
 
-	stack, err := stacks.Get(context.Background(), "stack-guid")
+	stack, err := stacks.Get(context.Background(), testStackGUID)
 	require.Error(t, err)
 	assert.Nil(t, stack)
 }

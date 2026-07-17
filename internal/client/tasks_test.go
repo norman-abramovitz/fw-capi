@@ -23,7 +23,7 @@ func TestTasksClient_Create(t *testing.T) {
 		name         string
 		appGUID      string
 		request      *capi.TaskCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -31,12 +31,12 @@ func TestTasksClient_Create(t *testing.T) {
 	}{
 		{
 			name:         "create task with command",
-			appGUID:      "test-app-guid",
+			appGUID:      testAppGUIDFixture,
 			expectedPath: "/v3/apps/test-app-guid/tasks",
 			statusCode:   http.StatusAccepted,
 			request: &capi.TaskCreateRequest{
-				Command:    StringPtr("rake db:migrate"),
-				Name:       StringPtr("migrate"),
+				Command:    StringPtr(testMigrateCommand),
+				Name:       StringPtr(testMigrateTaskName),
 				MemoryInMB: intPtr(512),
 				DiskInMB:   intPtr(1024),
 			},
@@ -46,15 +46,15 @@ func TestTasksClient_Create(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/tasks/task-guid",
 						},
-						"app": capi.Link{
+						testAppKey: capi.Link{
 							Href: "https://api.example.org/v3/apps/test-app-guid",
 						},
 						"cancel": capi.Link{
 							Href:   "https://api.example.org/v3/tasks/task-guid/actions/cancel",
-							Method: "POST",
+							Method: http.MethodPost,
 						},
 						"droplet": capi.Link{
 							Href: "https://api.example.org/v3/droplets/droplet-guid",
@@ -62,13 +62,13 @@ func TestTasksClient_Create(t *testing.T) {
 					},
 				},
 				SequenceID:  1,
-				Name:        "migrate",
-				Command:     "rake db:migrate",
+				Name:        testMigrateTaskName,
+				Command:     testMigrateCommand,
 				User:        StringPtr("vcap"),
-				State:       "RUNNING",
+				State:       testStateRunning,
 				MemoryInMB:  512,
 				DiskInMB:    1024,
-				DropletGUID: "droplet-guid",
+				DropletGUID: testDropletGUID,
 				Result: &capi.TaskResult{
 					FailureReason: nil,
 				},
@@ -79,7 +79,7 @@ func TestTasksClient_Create(t *testing.T) {
 				Relationships: &capi.TaskRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "test-app-guid",
+							GUID: testAppGUIDFixture,
 						},
 					},
 				},
@@ -88,13 +88,13 @@ func TestTasksClient_Create(t *testing.T) {
 		},
 		{
 			name:         "create task with template",
-			appGUID:      "test-app-guid",
+			appGUID:      testAppGUIDFixture,
 			expectedPath: "/v3/apps/test-app-guid/tasks",
 			statusCode:   http.StatusAccepted,
 			request: &capi.TaskCreateRequest{
 				Template: &capi.TaskTemplate{
 					Process: &capi.TaskTemplateProcess{
-						GUID: "process-guid",
+						GUID: testProcessGUID,
 					},
 				},
 			},
@@ -107,10 +107,10 @@ func TestTasksClient_Create(t *testing.T) {
 				SequenceID:  2,
 				Name:        "task",
 				Command:     "bundle exec rackup",
-				State:       "PENDING",
+				State:       testStatePending,
 				MemoryInMB:  256,
 				DiskInMB:    512,
-				DropletGUID: "droplet-guid",
+				DropletGUID: testDropletGUID,
 			},
 			wantErr: false,
 		},
@@ -122,17 +122,17 @@ func TestTasksClient_Create(t *testing.T) {
 			request: &capi.TaskCreateRequest{
 				Command: StringPtr("ls"),
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "App not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "App not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -142,7 +142,7 @@ func TestTasksClient_Create(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				assert.Equal(t, testCase.expectedPath, request.URL.Path)
-				assert.Equal(t, "POST", request.Method)
+				assert.Equal(t, http.MethodPost, request.Method)
 
 				var requestBody capi.TaskCreateRequest
 
@@ -178,25 +178,25 @@ func TestTasksClient_Get(t *testing.T) {
 
 	tests := []TestGetOperation[capi.Task]{
 		{
-			Name:         "successful get",
-			GUID:         "test-task-guid",
+			Name:         testSuccessfulGetCase,
+			GUID:         testTaskGUIDFixture,
 			ExpectedPath: "/v3/tasks/test-task-guid",
 			StatusCode:   http.StatusOK,
 			Response: &capi.Task{
 				Resource: capi.Resource{
-					GUID:      "test-task-guid",
+					GUID:      testTaskGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
 				SequenceID:                   1,
-				Name:                         "migrate",
-				Command:                      "rake db:migrate",
+				Name:                         testMigrateTaskName,
+				Command:                      testMigrateCommand,
 				User:                         StringPtr("vcap"),
 				State:                        "SUCCEEDED",
 				MemoryInMB:                   512,
 				DiskInMB:                     1024,
 				LogRateLimitInBytesPerSecond: intPtr(1024),
-				DropletGUID:                  "droplet-guid",
+				DropletGUID:                  testDropletGUID,
 				Result: &capi.TaskResult{
 					FailureReason: nil,
 				},
@@ -205,19 +205,19 @@ func TestTasksClient_Get(t *testing.T) {
 		},
 		{
 			Name:         "task not found",
-			GUID:         "non-existent-guid",
+			GUID:         testNonExistentGUID,
 			ExpectedPath: "/v3/tasks/non-existent-guid",
 			StatusCode:   http.StatusNotFound,
 			Response: &capi.Task{
 				Resource: capi.Resource{
-					GUID:      "test-task-guid",
+					GUID:      testTaskGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
 				State: "SUCCEEDED",
 			},
 			WantErr:    true,
-			ErrMessage: "CF-ResourceNotFound",
+			ErrMessage: testNotFoundTitle,
 		},
 	}
 
@@ -236,11 +236,11 @@ func TestTasksClient_List(t *testing.T) {
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if appGuids := query.Get("app_guids"); appGuids != "" {
+		if appGuids := query.Get(testAppGUIDsParam); appGuids != "" {
 			assert.Equal(t, "app-1,app-2", appGuids)
 		}
 
-		if states := query.Get("states"); states != "" {
+		if states := query.Get(testStatesParam); states != "" {
 			assert.Equal(t, "RUNNING,PENDING", states)
 		}
 
@@ -261,9 +261,9 @@ func TestTasksClient_List(t *testing.T) {
 						UpdatedAt: time.Now(),
 					},
 					SequenceID:  1,
-					Name:        "migrate",
-					Command:     "rake db:migrate",
-					State:       "RUNNING",
+					Name:        testMigrateTaskName,
+					Command:     testMigrateCommand,
+					State:       testStateRunning,
 					MemoryInMB:  512,
 					DiskInMB:    1024,
 					DropletGUID: "droplet-1",
@@ -277,10 +277,10 @@ func TestTasksClient_List(t *testing.T) {
 					SequenceID:  2,
 					Name:        "seed",
 					Command:     "rake db:seed",
-					State:       "PENDING",
+					State:       testStatePending,
 					MemoryInMB:  256,
 					DiskInMB:    512,
-					DropletGUID: "droplet-2",
+					DropletGUID: testDropletName2,
 				},
 			},
 		}
@@ -301,13 +301,13 @@ func TestTasksClient_List(t *testing.T) {
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "task-1", result.Resources[0].GUID)
-	assert.Equal(t, "RUNNING", result.Resources[0].State)
+	assert.Equal(t, testStateRunning, result.Resources[0].State)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"app_guids": {"app-1", "app-2"},
-			"states":    {"RUNNING", "PENDING"},
+			testAppGUIDsParam: {testAppGUID1, testAppGUID2},
+			testStatesParam:   {testStateRunning, testStatePending},
 		},
 	}
 	result, err = client.Tasks().List(context.Background(), params)
@@ -329,17 +329,17 @@ func TestTasksClient_Update(t *testing.T) {
 
 		response := capi.Task{
 			Resource: capi.Resource{
-				GUID:      "test-task-guid",
+				GUID:      testTaskGUIDFixture,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
 			SequenceID:  1,
-			Name:        "migrate",
-			Command:     "rake db:migrate",
-			State:       "RUNNING",
+			Name:        testMigrateTaskName,
+			Command:     testMigrateCommand,
+			State:       testStateRunning,
 			MemoryInMB:  512,
 			DiskInMB:    1024,
-			DropletGUID: "droplet-guid",
+			DropletGUID: testDropletGUID,
 			Metadata:    requestBody.Metadata,
 		}
 
@@ -355,20 +355,20 @@ func TestTasksClient_Update(t *testing.T) {
 	request := &capi.TaskUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
-				"note": "database migration",
+				testNoteAnnotationKey: "database migration",
 			},
 		},
 	}
 
-	task, err := client.Tasks().Update(context.Background(), "test-task-guid", request)
+	task, err := client.Tasks().Update(context.Background(), testTaskGUIDFixture, request)
 	require.NoError(t, err)
 	require.NotNil(t, task)
-	assert.Equal(t, "test-task-guid", task.GUID)
-	assert.Equal(t, "production", task.Metadata.Labels["env"])
-	assert.Equal(t, "database migration", task.Metadata.Annotations["note"])
+	assert.Equal(t, testTaskGUIDFixture, task.GUID)
+	assert.Equal(t, testProductionLabel, task.Metadata.Labels[testEnvLabelKey])
+	assert.Equal(t, "database migration", task.Metadata.Annotations[testNoteAnnotationKey])
 }
 
 //nolint:funlen // Test functions can be longer for detailed testing
@@ -378,7 +378,7 @@ func TestTasksClient_Cancel(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -386,22 +386,22 @@ func TestTasksClient_Cancel(t *testing.T) {
 	}{
 		{
 			name:         "successful cancel",
-			guid:         "test-task-guid",
+			guid:         testTaskGUIDFixture,
 			expectedPath: "/v3/tasks/test-task-guid/actions/cancel",
 			statusCode:   http.StatusAccepted,
 			response: capi.Task{
 				Resource: capi.Resource{
-					GUID:      "test-task-guid",
+					GUID:      testTaskGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
 				SequenceID:  1,
-				Name:        "migrate",
-				Command:     "rake db:migrate",
+				Name:        testMigrateTaskName,
+				Command:     testMigrateCommand,
 				State:       "CANCELING",
 				MemoryInMB:  512,
 				DiskInMB:    1024,
-				DropletGUID: "droplet-guid",
+				DropletGUID: testDropletGUID,
 			},
 			wantErr: false,
 		},
@@ -410,34 +410,34 @@ func TestTasksClient_Cancel(t *testing.T) {
 			guid:         "completed-task-guid",
 			expectedPath: "/v3/tasks/completed-task-guid/actions/cancel",
 			statusCode:   http.StatusUnprocessableEntity,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "Task has already been completed",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: "Task has already been completed",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 		{
 			name:         "task not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			expectedPath: "/v3/tasks/non-existent-guid/actions/cancel",
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Task not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "Task not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -447,7 +447,7 @@ func TestTasksClient_Cancel(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				assert.Equal(t, testCase.expectedPath, request.URL.Path)
-				assert.Equal(t, "POST", request.Method)
+				assert.Equal(t, http.MethodPost, request.Method)
 				writer.Header().Set("Content-Type", "application/json")
 				writer.WriteHeader(testCase.statusCode)
 				_ = json.NewEncoder(writer).Encode(testCase.response)

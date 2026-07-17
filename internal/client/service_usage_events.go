@@ -12,11 +12,6 @@ type ServiceUsageEventsClient struct {
 	*UsageEventsClient[capi.ServiceUsageEvent]
 }
 
-// List implements capi.ServiceUsageEventsClient.List with typed filter options.
-func (c *ServiceUsageEventsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ServiceUsageEventListOption) (*capi.ListResponse[capi.ServiceUsageEvent], error) {
-	return c.listWithOptions(ctx, params, widenUsageEventOptions(opts))
-}
-
 // NewServiceUsageEventsClient creates a new service usage events client.
 func NewServiceUsageEventsClient(httpClient *http.Client) *ServiceUsageEventsClient {
 	return &ServiceUsageEventsClient{
@@ -26,4 +21,9 @@ func NewServiceUsageEventsClient(httpClient *http.Client) *ServiceUsageEventsCli
 			"service",
 		),
 	}
+}
+
+// List implements capi.ServiceUsageEventsClient.List with typed filter options.
+func (c *ServiceUsageEventsClient) List(ctx context.Context, params *capi.QueryParams, opts ...capi.ServiceUsageEventListOption) (*capi.ListResponse[capi.ServiceUsageEvent], error) {
+	return c.listWithOptions(ctx, params, widenUsageEventOptions(opts))
 }

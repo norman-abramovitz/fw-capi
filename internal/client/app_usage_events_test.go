@@ -15,43 +15,43 @@ import (
 )
 
 func createTestAppUsageEvent() capi.AppUsageEvent {
-	previousState := "STOPPED"
+	previousState := testStateStopped
 	previousInstanceCount := 1
 	previousMemoryInMB := 256
 	buildpackName := "nodejs_buildpack"
-	buildpackGUID := "buildpack-guid"
-	taskName := "migrate"
+	buildpackGUID := testBuildpackGUID
+	taskName := testMigrateTaskName
 	taskGUID := "task-guid"
 	parentAppName := "parent-app"
 	parentAppGUID := "parent-app-guid"
 
 	return capi.AppUsageEvent{
 		Resource: capi.Resource{
-			GUID:      "event-guid",
+			GUID:      testEventGUID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		State:                         "STARTED",
+		State:                         testStateStarted,
 		PreviousState:                 &previousState,
 		InstanceCount:                 2,
 		PreviousInstanceCount:         &previousInstanceCount,
 		MemoryInMBPerInstance:         512,
 		PreviousMemoryInMBPerInstance: &previousMemoryInMB,
-		AppName:                       "test-app",
-		AppGUID:                       "app-guid",
-		SpaceName:                     "test-space",
-		SpaceGUID:                     "space-guid",
-		OrganizationName:              "test-org",
-		OrganizationGUID:              "org-guid",
+		AppName:                       testAppNameFixture,
+		AppGUID:                       testAppGUID,
+		SpaceName:                     testSpaceNameFixture,
+		SpaceGUID:                     testSpaceGUID,
+		OrganizationName:              testOrgNameFixture,
+		OrganizationGUID:              testOrgGUID,
 		BuildpackName:                 &buildpackName,
 		BuildpackGUID:                 &buildpackGUID,
-		ProcessType:                   "web",
+		ProcessType:                   testWebProcessType,
 		TaskName:                      &taskName,
 		TaskGUID:                      &taskGUID,
 		ParentAppName:                 &parentAppName,
 		ParentAppGUID:                 &parentAppGUID,
 		Package: capi.AppUsageEventPackage{
-			State: "READY",
+			State: testStateReady,
 		},
 	}
 }
@@ -63,7 +63,7 @@ func TestAppUsageEventsClient_Get(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/app_usage_events/event-guid", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		_ = json.NewEncoder(writer).Encode(event)
 	}))
@@ -72,16 +72,16 @@ func TestAppUsageEventsClient_Get(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	result, err := client.AppUsageEvents().Get(context.Background(), "event-guid")
+	result, err := client.AppUsageEvents().Get(context.Background(), testEventGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "event-guid", result.GUID)
-	assert.Equal(t, "STARTED", result.State)
-	assert.Equal(t, "STOPPED", *result.PreviousState)
+	assert.Equal(t, testEventGUID, result.GUID)
+	assert.Equal(t, testStateStarted, result.State)
+	assert.Equal(t, testStateStopped, *result.PreviousState)
 	assert.Equal(t, 2, result.InstanceCount)
 	assert.Equal(t, 1, *result.PreviousInstanceCount)
 	assert.Equal(t, 512, result.MemoryInMBPerInstance)
 	assert.Equal(t, 256, *result.PreviousMemoryInMBPerInstance)
-	assert.Equal(t, "test-app", result.AppName)
+	assert.Equal(t, testAppNameFixture, result.AppName)
 	assert.Equal(t, "nodejs_buildpack", *result.BuildpackName)
 }
 
@@ -90,7 +90,7 @@ func TestAppUsageEventsClient_List(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/app_usage_events", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, http.MethodGet, request.Method)
 		assert.Equal(t, "1", request.URL.Query().Get("page"))
 		assert.Equal(t, "10", request.URL.Query().Get("per_page"))
 
@@ -102,29 +102,29 @@ func TestAppUsageEventsClient_List(t *testing.T) {
 			Resources: []capi.AppUsageEvent{
 				{
 					Resource:              capi.Resource{GUID: "event-1"},
-					State:                 "STARTED",
+					State:                 testStateStarted,
 					InstanceCount:         1,
 					MemoryInMBPerInstance: 256,
-					AppName:               "app-1",
+					AppName:               testAppGUID1,
 					AppGUID:               "app-guid-1",
-					SpaceName:             "space-1",
-					SpaceGUID:             "space-guid-1",
-					OrganizationName:      "org-1",
-					OrganizationGUID:      "org-guid-1",
-					ProcessType:           "web",
+					SpaceName:             testSpaceName1,
+					SpaceGUID:             testSpaceGUID1,
+					OrganizationName:      testOrgName1,
+					OrganizationGUID:      testOrgGUID1,
+					ProcessType:           testWebProcessType,
 				},
 				{
 					Resource:              capi.Resource{GUID: "event-2"},
-					State:                 "STOPPED",
+					State:                 testStateStopped,
 					InstanceCount:         0,
 					MemoryInMBPerInstance: 512,
-					AppName:               "app-2",
+					AppName:               testAppGUID2,
 					AppGUID:               "app-guid-2",
-					SpaceName:             "space-2",
-					SpaceGUID:             "space-guid-2",
-					OrganizationName:      "org-2",
-					OrganizationGUID:      "org-guid-2",
-					ProcessType:           "worker",
+					SpaceName:             testSpaceName2,
+					SpaceGUID:             testSpaceGUID2,
+					OrganizationName:      testOrgName2,
+					OrganizationGUID:      testOrgGUID2,
+					ProcessType:           testWorkerProcessType,
 				},
 			},
 		}
@@ -143,8 +143,8 @@ func TestAppUsageEventsClient_List(t *testing.T) {
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "event-1", result.Resources[0].GUID)
 	assert.Equal(t, "event-2", result.Resources[1].GUID)
-	assert.Equal(t, "STARTED", result.Resources[0].State)
-	assert.Equal(t, "STOPPED", result.Resources[1].State)
+	assert.Equal(t, testStateStarted, result.Resources[0].State)
+	assert.Equal(t, testStateStopped, result.Resources[1].State)
 }
 
 func TestAppUsageEventsClient_PurgeAndReseed(t *testing.T) {
@@ -152,7 +152,7 @@ func TestAppUsageEventsClient_PurgeAndReseed(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/app_usage_events/actions/destructively_purge_all_and_reseed", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		writer.WriteHeader(http.StatusAccepted)
 		_, _ = writer.Write([]byte("{}"))

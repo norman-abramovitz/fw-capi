@@ -18,6 +18,12 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// Test constants for droplet tests.
+const (
+	testDropletsPath       = "/v3/droplets"
+	testDropletFixtureGUID = "test-droplet-guid"
+)
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestDropletsClient_Create(t *testing.T) {
 	t.Parallel()
@@ -25,7 +31,7 @@ func TestDropletsClient_Create(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *capi.DropletCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -33,51 +39,51 @@ func TestDropletsClient_Create(t *testing.T) {
 	}{
 		{
 			name:         "create droplet",
-			expectedPath: "/v3/droplets",
+			expectedPath: testDropletsPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.DropletCreateRequest{
 				Relationships: capi.DropletRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
 				ProcessTypes: map[string]string{
-					"web":  "bundle exec rackup config.ru -p $PORT",
-					"rake": "bundle exec rake",
+					testWebProcessType: testRackupCommand,
+					"rake":             "bundle exec rake",
 				},
 			},
 			response: capi.Droplet{
 				Resource: capi.Resource{
-					GUID:      "droplet-guid",
+					GUID:      testDropletGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/droplets/droplet-guid",
 						},
 						"package": capi.Link{
 							Href: "https://api.example.org/v3/packages/package-guid",
 						},
-						"app": capi.Link{
-							Href: "https://api.example.org/v3/apps/app-guid",
+						testAppKey: capi.Link{
+							Href: testHrefAppLink,
 						},
 						"download": capi.Link{
 							Href: "https://api.example.org/v3/droplets/droplet-guid/download",
 						},
 					},
 				},
-				State: "AWAITING_UPLOAD",
+				State: testBuildpackStateAwaitingUpload,
 				Error: nil,
 				Lifecycle: capi.Lifecycle{
-					Type: "buildpack",
-					Data: map[string]interface{}{},
+					Type: testBuildpackLifecycle,
+					Data: map[string]any{},
 				},
 				ExecutionMetadata: "",
 				ProcessTypes: map[string]string{
-					"web":  "bundle exec rackup config.ru -p $PORT",
-					"rake": "bundle exec rake",
+					testWebProcessType: testRackupCommand,
+					"rake":             "bundle exec rake",
 				},
 				Metadata: &capi.Metadata{
 					Labels:      map[string]string{},
@@ -86,7 +92,7 @@ func TestDropletsClient_Create(t *testing.T) {
 				Relationships: &capi.DropletRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
@@ -94,23 +100,23 @@ func TestDropletsClient_Create(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:         "missing app relationship",
-			expectedPath: "/v3/droplets",
+			name:         testMissingAppRelationshipCase,
+			expectedPath: testDropletsPath,
 			statusCode:   http.StatusUnprocessableEntity,
 			request: &capi.DropletCreateRequest{
 				Relationships: capi.DropletRelationships{},
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "App relationship is required",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: testAppRelationshipRequired,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -124,64 +130,64 @@ func TestDropletsClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-droplet-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testDropletFixtureGUID,
 			expectedPath: "/v3/droplets/test-droplet-guid",
 			statusCode:   http.StatusOK,
 			response: capi.Droplet{
 				Resource: capi.Resource{
-					GUID:      "test-droplet-guid",
+					GUID:      testDropletFixtureGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				State: "STAGED",
+				State: testStateStaged,
 				Error: nil,
 				Lifecycle: capi.Lifecycle{
-					Type: "buildpack",
-					Data: map[string]interface{}{},
+					Type: testBuildpackLifecycle,
+					Data: map[string]any{},
 				},
 				ProcessTypes: map[string]string{
-					"web": "bundle exec rackup config.ru -p $PORT",
+					testWebProcessType: testRackupCommand,
 				},
 				Checksum: &capi.DropletChecksum{
-					Type:  "sha256",
+					Type:  testSHA256Type,
 					Value: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 				},
 				Buildpacks: []capi.DetectedBuildpack{
 					{
-						Name:          "ruby_buildpack",
+						Name:          testRubyBuildpackName,
 						DetectOutput:  "ruby 2.7.2",
 						Version:       StringPtr("1.8.0"),
 						BuildpackName: StringPtr("ruby"),
 					},
 				},
-				Stack: StringPtr("cflinuxfs4"),
+				Stack: StringPtr(testCFLinuxFS4Stack),
 			},
 			wantErr: false,
 		},
 		{
 			name:         "droplet not found",
-			guid:         "non-existent-guid",
+			guid:         testNonExistentGUID,
 			expectedPath: "/v3/droplets/non-existent-guid",
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Droplet not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: "Droplet not found",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -193,16 +199,16 @@ func TestDropletsClient_List(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/droplets", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, testDropletsPath, request.URL.Path)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if appGuids := query.Get("app_guids"); appGuids != "" {
+		if appGuids := query.Get(testAppGUIDsParam); appGuids != "" {
 			assert.Equal(t, "app-1,app-2", appGuids)
 		}
 
-		if states := query.Get("states"); states != "" {
+		if states := query.Get(testStatesParam); states != "" {
 			assert.Equal(t, "STAGED,FAILED", states)
 		}
 
@@ -222,22 +228,22 @@ func TestDropletsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					State: "STAGED",
+					State: testStateStaged,
 					Lifecycle: capi.Lifecycle{
-						Type: "buildpack",
-						Data: map[string]interface{}{},
+						Type: testBuildpackLifecycle,
+						Data: map[string]any{},
 					},
 				},
 				{
 					Resource: capi.Resource{
-						GUID:      "droplet-2",
+						GUID:      testDropletName2,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					State: "STAGED",
+					State: testStateStaged,
 					Lifecycle: capi.Lifecycle{
-						Type: "docker",
-						Data: map[string]interface{}{},
+						Type: testDockerType,
+						Data: map[string]any{},
 					},
 					Image: StringPtr("nginx:latest"),
 				},
@@ -260,13 +266,13 @@ func TestDropletsClient_List(t *testing.T) {
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "droplet-1", result.Resources[0].GUID)
-	assert.Equal(t, "buildpack", result.Resources[0].Lifecycle.Type)
+	assert.Equal(t, testBuildpackLifecycle, result.Resources[0].Lifecycle.Type)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"app_guids": {"app-1", "app-2"},
-			"states":    {"STAGED", "FAILED"},
+			testAppGUIDsParam: {testAppGUID1, testAppGUID2},
+			testStatesParam:   {testStateStaged, testStateFailed},
 		},
 	}
 	result, err = client.Droplets().List(context.Background(), params)
@@ -280,13 +286,13 @@ func TestDropletsClient_ListForApp(t *testing.T) {
 		func(i int) capi.Droplet {
 			return capi.Droplet{
 				Resource: capi.Resource{GUID: "droplet-for-app"},
-				State:    "STAGED",
+				State:    testStateStaged,
 			}
 		},
 		func(c *Client) func(context.Context, string, *capi.QueryParams) (*capi.ListResponse[capi.Droplet], error) {
 			return c.Droplets().ListForApp
 		},
-		"app-guid",
+		testAppGUID,
 		func(resources []capi.Droplet) {
 			assert.Equal(t, "droplet-for-app", resources[0].GUID)
 		},
@@ -299,13 +305,13 @@ func TestDropletsClient_ListForPackage(t *testing.T) {
 		func(i int) capi.Droplet {
 			return capi.Droplet{
 				Resource: capi.Resource{GUID: "droplet-for-package"},
-				State:    "STAGED",
+				State:    testStateStaged,
 			}
 		},
 		func(c *Client) func(context.Context, string, *capi.QueryParams) (*capi.ListResponse[capi.Droplet], error) {
 			return c.Droplets().ListForPackage
 		},
-		"package-guid",
+		testPackageGUID,
 		func(resources []capi.Droplet) {
 			assert.Equal(t, "droplet-for-package", resources[0].GUID)
 		},
@@ -319,32 +325,32 @@ func TestDropletsClient_Update(t *testing.T) {
 	request := &capi.DropletUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
-				"version": "1.0.0",
+				testVersionAnnotationKey: testVersion100,
 			},
 		},
 	}
 
 	response := &capi.Droplet{
 		Resource: capi.Resource{
-			GUID:      "test-droplet-guid",
+			GUID:      testDropletFixtureGUID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		State: "STAGED",
+		State: testStateStaged,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
-				"version": "1.0.0",
+				testVersionAnnotationKey: testVersion100,
 			},
 		},
 	}
 
-	RunStandardUpdateTest(t, "droplet", "test-droplet-guid", "/v3/droplets/test-droplet-guid", request, response,
+	RunStandardUpdateTest(t, "droplet", testDropletFixtureGUID, "/v3/droplets/test-droplet-guid", request, response,
 		func(c *Client) func(context.Context, string, *capi.DropletUpdateRequest) (*capi.Droplet, error) {
 			return c.Droplets().Update
 		})
@@ -356,11 +362,11 @@ func TestDropletsClient_Delete(t *testing.T) {
 	t.Parallel()
 
 	RunJobDeleteTest(t, "droplet delete", "/v3/droplets/test-droplet-guid", "droplet.delete",
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewDropletsClient(httpClient)
 		},
-		func(client interface{}) (*capi.Job, error) {
-			return client.(*DropletsClient).Delete(context.Background(), "test-droplet-guid") //nolint:forcetypeassert // test factory supplies concrete client type
+		func(client any) (*capi.Job, error) {
+			return client.(*DropletsClient).Delete(context.Background(), testDropletFixtureGUID) //nolint:forcetypeassert // test factory supplies concrete client type
 		},
 	)
 }
@@ -372,7 +378,7 @@ func TestDropletsClient_DeleteMissingLocation(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/droplets/test-droplet-guid", request.URL.Path)
-		assert.Equal(t, "DELETE", request.Method)
+		assert.Equal(t, http.MethodDelete, request.Method)
 
 		writer.WriteHeader(http.StatusAccepted)
 	}))
@@ -381,7 +387,7 @@ func TestDropletsClient_DeleteMissingLocation(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	client := NewDropletsClient(httpClient)
 
-	job, err := client.Delete(context.Background(), "test-droplet-guid")
+	job, err := client.Delete(context.Background(), testDropletFixtureGUID)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -390,19 +396,19 @@ func TestDropletsClient_Copy(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		expectedPath := "/v3/droplets"
+		expectedPath := testDropletsPath
 		if request.URL.RawQuery != "" {
 			expectedPath = expectedPath + "?" + request.URL.RawQuery
 		}
 
 		assert.Equal(t, "/v3/droplets?source_guid=source-droplet-guid", expectedPath)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.DropletCopyRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
-		assert.Equal(t, "target-app-guid", requestBody.Relationships.App.Data.GUID)
+		assert.Equal(t, testTargetAppGUID, requestBody.Relationships.App.Data.GUID)
 
 		response := capi.Droplet{
 			Resource: capi.Resource{
@@ -414,7 +420,7 @@ func TestDropletsClient_Copy(t *testing.T) {
 			Relationships: &capi.DropletRelationships{
 				App: &capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "target-app-guid",
+						GUID: testTargetAppGUID,
 					},
 				},
 			},
@@ -433,7 +439,7 @@ func TestDropletsClient_Copy(t *testing.T) {
 		Relationships: capi.DropletRelationships{
 			App: &capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "target-app-guid",
+					GUID: testTargetAppGUID,
 				},
 			},
 		},
@@ -444,14 +450,14 @@ func TestDropletsClient_Copy(t *testing.T) {
 	require.NotNil(t, droplet)
 	assert.Equal(t, "new-droplet-guid", droplet.GUID)
 	assert.Equal(t, "COPYING", droplet.State)
-	assert.Equal(t, "target-app-guid", droplet.Relationships.App.Data.GUID)
+	assert.Equal(t, testTargetAppGUID, droplet.Relationships.App.Data.GUID)
 }
 
 // runCreateTestsForDroplets runs droplet create tests.
 func runCreateTestsForDroplets(t *testing.T, tests []struct {
 	name         string
 	request      *capi.DropletCreateRequest
-	response     interface{}
+	response     any
 	statusCode   int
 	expectedPath string
 	wantErr      bool
@@ -480,7 +486,7 @@ func runCreateTestsForDroplets(t *testing.T, tests []struct {
 func runGetTestsForDroplets(t *testing.T, tests []struct {
 	name         string
 	guid         string
-	response     interface{}
+	response     any
 	statusCode   int
 	expectedPath string
 	wantErr      bool
@@ -493,7 +499,7 @@ func runGetTestsForDroplets(t *testing.T, tests []struct {
 			droplet, err := client.Droplets().Get(context.Background(), guid)
 			if err == nil {
 				assert.Equal(t, guid, droplet.GUID)
-				assert.Equal(t, "STAGED", droplet.State)
+				assert.Equal(t, testStateStaged, droplet.State)
 			}
 
 			if err != nil {
@@ -510,7 +516,7 @@ func TestDropletsClient_Download(t *testing.T) {
 
 	expectedContent := []byte("test droplet content")
 
-	RunDownloadTest(t, "droplet", "test-droplet-guid", "/v3/droplets/test-droplet-guid/download", expectedContent,
+	RunDownloadTest(t, "droplet", testDropletFixtureGUID, "/v3/droplets/test-droplet-guid/download", expectedContent,
 		func(c *Client) func(context.Context, string) ([]byte, error) {
 			return c.Droplets().Download
 		})
@@ -521,11 +527,11 @@ func TestDropletsClient_Upload(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/droplets/test-droplet-guid/upload", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 		assert.Contains(t, request.Header.Get("Content-Type"), "multipart/form-data")
 
 		// Read the uploaded file
-		file, _, err := request.FormFile("bits")
+		file, _, err := request.FormFile(testBitsType)
 		assert.NoError(t, err)
 
 		defer func() {
@@ -541,7 +547,7 @@ func TestDropletsClient_Upload(t *testing.T) {
 
 		response := capi.Droplet{
 			Resource: capi.Resource{
-				GUID:      "test-droplet-guid",
+				GUID:      testDropletFixtureGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -558,9 +564,9 @@ func TestDropletsClient_Upload(t *testing.T) {
 	require.NoError(t, err)
 
 	dropletContent := []byte("test droplet content")
-	droplet, err := c.Droplets().Upload(context.Background(), "test-droplet-guid", dropletContent)
+	droplet, err := c.Droplets().Upload(context.Background(), testDropletFixtureGUID, dropletContent)
 	require.NoError(t, err)
 	require.NotNil(t, droplet)
-	assert.Equal(t, "test-droplet-guid", droplet.GUID)
+	assert.Equal(t, testDropletFixtureGUID, droplet.GUID)
 	assert.Equal(t, "PROCESSING_UPLOAD", droplet.State)
 }

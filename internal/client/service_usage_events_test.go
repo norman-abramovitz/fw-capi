@@ -23,7 +23,7 @@ func TestServiceUsageEventsClient_Get(t *testing.T) {
 
 		event := capi.ServiceUsageEvent{
 			Resource: capi.Resource{
-				GUID:      "event-guid",
+				GUID:      testEventGUID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -34,13 +34,13 @@ func TestServiceUsageEventsClient_Get(t *testing.T) {
 			ServicePlanName:     "premium",
 			ServicePlanGUID:     "plan-guid-2",
 			ServiceOfferingName: "postgres",
-			ServiceOfferingGUID: "offering-guid",
+			ServiceOfferingGUID: testOfferingGUID,
 			ServiceBrokerName:   "postgres-broker",
-			ServiceBrokerGUID:   "broker-guid",
-			SpaceName:           "test-space",
-			SpaceGUID:           "space-guid",
-			OrganizationName:    "test-org",
-			OrganizationGUID:    "org-guid",
+			ServiceBrokerGUID:   testBrokerGUID,
+			SpaceName:           testSpaceNameFixture,
+			SpaceGUID:           testSpaceGUID,
+			OrganizationName:    testOrgNameFixture,
+			OrganizationGUID:    testOrgGUID,
 		}
 
 		_ = json.NewEncoder(writer).Encode(event)
@@ -50,9 +50,9 @@ func TestServiceUsageEventsClient_Get(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	event, err := client.ServiceUsageEvents().Get(context.Background(), "event-guid")
+	event, err := client.ServiceUsageEvents().Get(context.Background(), testEventGUID)
 	require.NoError(t, err)
-	assert.Equal(t, "event-guid", event.GUID)
+	assert.Equal(t, testEventGUID, event.GUID)
 	assert.Equal(t, "CREATED", event.State)
 	assert.Equal(t, "my-db", event.ServiceInstanceName)
 	assert.Equal(t, "premium", event.ServicePlanName)
@@ -81,16 +81,16 @@ func TestServiceUsageEventsClient_List(t *testing.T) {
 					ServiceInstanceName: "service-1",
 					ServiceInstanceGUID: "service-instance-guid-1",
 					ServiceInstanceType: "managed_service_instance",
-					ServicePlanName:     "basic",
+					ServicePlanName:     testBasicAuthType,
 					ServicePlanGUID:     "plan-guid-1",
 					ServiceOfferingName: "redis",
 					ServiceOfferingGUID: "offering-guid-1",
 					ServiceBrokerName:   "redis-broker",
 					ServiceBrokerGUID:   "broker-guid-1",
-					SpaceName:           "space-1",
-					SpaceGUID:           "space-guid-1",
-					OrganizationName:    "org-1",
-					OrganizationGUID:    "org-guid-1",
+					SpaceName:           testSpaceName1,
+					SpaceGUID:           testSpaceGUID1,
+					OrganizationName:    testOrgName1,
+					OrganizationGUID:    testOrgGUID1,
 				},
 				{
 					Resource:            capi.Resource{GUID: "event-2"},
@@ -104,10 +104,10 @@ func TestServiceUsageEventsClient_List(t *testing.T) {
 					ServiceOfferingGUID: "",
 					ServiceBrokerName:   "",
 					ServiceBrokerGUID:   "",
-					SpaceName:           "space-2",
-					SpaceGUID:           "space-guid-2",
-					OrganizationName:    "org-2",
-					OrganizationGUID:    "org-guid-2",
+					SpaceName:           testSpaceName2,
+					SpaceGUID:           testSpaceGUID2,
+					OrganizationName:    testOrgName2,
+					OrganizationGUID:    testOrgGUID2,
 				},
 			},
 		}
@@ -137,7 +137,7 @@ func TestServiceUsageEventsClient_PurgeAndReseed(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_usage_events/actions/destructively_purge_all_and_reseed", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		writer.WriteHeader(http.StatusAccepted)
 		_, _ = writer.Write([]byte("{}"))

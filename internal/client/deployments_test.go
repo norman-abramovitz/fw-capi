@@ -16,6 +16,13 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// Test constants for deployment tests.
+const (
+	testDeploymentsPath        = "/v3/deployments"
+	testDeploymentActiveStatus = "ACTIVE"
+	testDeploymentGUID         = "test-deployment-guid"
+)
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestDeploymentsClient_Create(t *testing.T) {
 	t.Parallel()
@@ -23,7 +30,7 @@ func TestDeploymentsClient_Create(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *capi.DeploymentCreateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -31,22 +38,22 @@ func TestDeploymentsClient_Create(t *testing.T) {
 	}{
 		{
 			name:         "create deployment with droplet",
-			expectedPath: "/v3/deployments",
+			expectedPath: testDeploymentsPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.DeploymentCreateRequest{
 				Droplet: &capi.DeploymentDropletRef{
-					GUID: "droplet-guid",
+					GUID: testDropletGUID,
 				},
 				Relationships: capi.DeploymentRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"version": "v1.0.0",
+						testVersionAnnotationKey: "v1.0.0",
 					},
 				},
 			},
@@ -56,46 +63,46 @@ func TestDeploymentsClient_Create(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/deployments/deployment-guid",
 						},
-						"app": capi.Link{
-							Href: "https://api.example.org/v3/apps/app-guid",
+						testAppKey: capi.Link{
+							Href: testHrefAppLink,
 						},
 						"cancel": capi.Link{
 							Href:   "https://api.example.org/v3/deployments/deployment-guid/actions/cancel",
-							Method: "POST",
+							Method: http.MethodPost,
 						},
 					},
 				},
-				State: "DEPLOYING",
+				State: testStateDeploying,
 				Status: capi.DeploymentStatus{
-					Value:  "ACTIVE",
-					Reason: "DEPLOYING",
+					Value:  testDeploymentActiveStatus,
+					Reason: testStateDeploying,
 				},
-				Strategy: "rolling",
+				Strategy: testRollingStrategy,
 				Droplet: &capi.DeploymentDropletRef{
-					GUID: "droplet-guid",
+					GUID: testDropletGUID,
 				},
 				PreviousDroplet: &capi.DeploymentDropletRef{
 					GUID: "previous-droplet-guid",
 				},
 				NewProcesses: []capi.DeploymentProcess{
 					{
-						GUID: "process-guid",
-						Type: "web",
+						GUID: testProcessGUID,
+						Type: testWebProcessType,
 					},
 				},
 				Relationships: &capi.DeploymentRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"version": "v1.0.0",
+						testVersionAnnotationKey: "v1.0.0",
 					},
 				},
 			},
@@ -103,11 +110,11 @@ func TestDeploymentsClient_Create(t *testing.T) {
 		},
 		{
 			name:         "create deployment with revision",
-			expectedPath: "/v3/deployments",
+			expectedPath: testDeploymentsPath,
 			statusCode:   http.StatusCreated,
 			request: &capi.DeploymentCreateRequest{
 				Revision: &capi.DeploymentRevisionRef{
-					GUID:    "revision-guid",
+					GUID:    testRevisionGUID,
 					Version: 42,
 				},
 				Strategy: StringPtr("canary"),
@@ -123,7 +130,7 @@ func TestDeploymentsClient_Create(t *testing.T) {
 				Relationships: capi.DeploymentRelationships{
 					App: &capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "app-guid",
+							GUID: testAppGUID,
 						},
 					},
 				},
@@ -134,10 +141,10 @@ func TestDeploymentsClient_Create(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				State: "DEPLOYING",
+				State: testStateDeploying,
 				Status: capi.DeploymentStatus{
-					Value:  "ACTIVE",
-					Reason: "DEPLOYING",
+					Value:  testDeploymentActiveStatus,
+					Reason: testStateDeploying,
 					Canary: &capi.DeploymentCanaryStatus{
 						Steps: capi.DeploymentCanarySteps{
 							Current: 1,
@@ -147,33 +154,33 @@ func TestDeploymentsClient_Create(t *testing.T) {
 				},
 				Strategy: "canary",
 				Revision: &capi.DeploymentRevisionRef{
-					GUID:    "revision-guid",
+					GUID:    testRevisionGUID,
 					Version: 42,
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:         "missing app relationship",
-			expectedPath: "/v3/deployments",
+			name:         testMissingAppRelationshipCase,
+			expectedPath: testDeploymentsPath,
 			statusCode:   http.StatusUnprocessableEntity,
 			request: &capi.DeploymentCreateRequest{
 				Droplet: &capi.DeploymentDropletRef{
-					GUID: "droplet-guid",
+					GUID: testDropletGUID,
 				},
 				Relationships: capi.DeploymentRelationships{},
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "App relationship is required",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: testAppRelationshipRequired,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -185,46 +192,46 @@ func TestDeploymentsClient_Get(t *testing.T) {
 
 	tests := []TestGetOperation[capi.Deployment]{
 		{
-			Name:         "successful get",
-			GUID:         "test-deployment-guid",
+			Name:         testSuccessfulGetCase,
+			GUID:         testDeploymentGUID,
 			ExpectedPath: "/v3/deployments/test-deployment-guid",
 			StatusCode:   http.StatusOK,
 			Response: &capi.Deployment{
 				Resource: capi.Resource{
-					GUID:      "test-deployment-guid",
+					GUID:      testDeploymentGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				State: "DEPLOYED",
+				State: testStateDeployed,
 				Status: capi.DeploymentStatus{
-					Value:  "FINALIZED",
-					Reason: "DEPLOYED",
+					Value:  testStateFinalized,
+					Reason: testStateDeployed,
 					Details: &capi.DeploymentStatusDetails{
 						LastHealthyAt: timePtr(time.Now()),
 					},
 				},
-				Strategy: "rolling",
+				Strategy: testRollingStrategy,
 				Droplet: &capi.DeploymentDropletRef{
-					GUID: "droplet-guid",
+					GUID: testDropletGUID,
 				},
 			},
 			WantErr: false,
 		},
 		{
 			Name:         "deployment not found",
-			GUID:         "non-existent-guid",
+			GUID:         testNonExistentGUID,
 			ExpectedPath: "/v3/deployments/non-existent-guid",
 			StatusCode:   http.StatusNotFound,
 			Response: &capi.Deployment{
 				Resource: capi.Resource{
-					GUID:      "test-deployment-guid",
+					GUID:      testDeploymentGUID,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
-				State: "DEPLOYED",
+				State: testStateDeployed,
 			},
 			WantErr:    true,
-			ErrMessage: "CF-ResourceNotFound",
+			ErrMessage: testNotFoundTitle,
 		},
 	}
 
@@ -238,16 +245,16 @@ func TestDeploymentsClient_List(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/deployments", request.URL.Path)
-		assert.Equal(t, "GET", request.Method)
+		assert.Equal(t, testDeploymentsPath, request.URL.Path)
+		assert.Equal(t, http.MethodGet, request.Method)
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if appGuids := query.Get("app_guids"); appGuids != "" {
+		if appGuids := query.Get(testAppGUIDsParam); appGuids != "" {
 			assert.Equal(t, "app-1,app-2", appGuids)
 		}
 
-		if states := query.Get("states"); states != "" {
+		if states := query.Get(testStatesParam); states != "" {
 			assert.Equal(t, "DEPLOYING,DEPLOYED", states)
 		}
 
@@ -275,12 +282,12 @@ func TestDeploymentsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					State: "DEPLOYING",
+					State: testStateDeploying,
 					Status: capi.DeploymentStatus{
-						Value:  "ACTIVE",
-						Reason: "DEPLOYING",
+						Value:  testDeploymentActiveStatus,
+						Reason: testStateDeploying,
 					},
-					Strategy: "rolling",
+					Strategy: testRollingStrategy,
 				},
 				{
 					Resource: capi.Resource{
@@ -288,12 +295,12 @@ func TestDeploymentsClient_List(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					},
-					State: "DEPLOYED",
+					State: testStateDeployed,
 					Status: capi.DeploymentStatus{
-						Value:  "FINALIZED",
-						Reason: "DEPLOYED",
+						Value:  testStateFinalized,
+						Reason: testStateDeployed,
 					},
-					Strategy: "rolling",
+					Strategy: testRollingStrategy,
 				},
 			},
 		}
@@ -314,15 +321,15 @@ func TestDeploymentsClient_List(t *testing.T) {
 	assert.Equal(t, 2, result.Pagination.TotalResults)
 	assert.Len(t, result.Resources, 2)
 	assert.Equal(t, "deployment-1", result.Resources[0].GUID)
-	assert.Equal(t, "DEPLOYING", result.Resources[0].State)
+	assert.Equal(t, testStateDeploying, result.Resources[0].State)
 
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"app_guids":      {"app-1", "app-2"},
-			"states":         {"DEPLOYING", "DEPLOYED"},
-			"status_reasons": {"DEPLOYING", "DEPLOYED"},
-			"status_values":  {"ACTIVE", "FINALIZED"},
+			testAppGUIDsParam: {testAppGUID1, testAppGUID2},
+			testStatesParam:   {testStateDeploying, testStateDeployed},
+			"status_reasons":  {testStateDeploying, testStateDeployed},
+			"status_values":   {testDeploymentActiveStatus, testStateFinalized},
 		},
 	}
 	result, err = client.Deployments().List(context.Background(), params)
@@ -337,32 +344,32 @@ func TestDeploymentsClient_Update(t *testing.T) {
 	request := &capi.DeploymentUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"version": "v1.0.1",
+				testVersionAnnotationKey: "v1.0.1",
 			},
 			Annotations: map[string]string{
-				"note": "Updated deployment",
+				testNoteAnnotationKey: "Updated deployment",
 			},
 		},
 	}
 
 	response := &capi.Deployment{
 		Resource: capi.Resource{
-			GUID:      "test-deployment-guid",
+			GUID:      testDeploymentGUID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		State: "DEPLOYING",
+		State: testStateDeploying,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"version": "v1.0.1",
+				testVersionAnnotationKey: "v1.0.1",
 			},
 			Annotations: map[string]string{
-				"note": "Updated deployment",
+				testNoteAnnotationKey: "Updated deployment",
 			},
 		},
 	}
 
-	RunStandardUpdateTest(t, "deployment", "test-deployment-guid", "/v3/deployments/test-deployment-guid", request, response,
+	RunStandardUpdateTest(t, "deployment", testDeploymentGUID, "/v3/deployments/test-deployment-guid", request, response,
 		func(c *Client) func(context.Context, string, *capi.DeploymentUpdateRequest) (*capi.Deployment, error) {
 			return c.Deployments().Update
 		})
@@ -373,7 +380,7 @@ func TestDeploymentsClient_Cancel(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/deployments/test-deployment-guid/actions/cancel", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 		writer.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -381,7 +388,7 @@ func TestDeploymentsClient_Cancel(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = c.Deployments().Cancel(context.Background(), "test-deployment-guid")
+	err = c.Deployments().Cancel(context.Background(), testDeploymentGUID)
 	require.NoError(t, err)
 }
 
@@ -390,7 +397,7 @@ func TestDeploymentsClient_Continue(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/deployments/test-deployment-guid/actions/continue", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 		writer.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -398,7 +405,7 @@ func TestDeploymentsClient_Continue(t *testing.T) {
 	c, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = c.Deployments().Continue(context.Background(), "test-deployment-guid")
+	err = c.Deployments().Continue(context.Background(), testDeploymentGUID)
 	require.NoError(t, err)
 }
 
@@ -406,7 +413,7 @@ func TestDeploymentsClient_Continue(t *testing.T) {
 func runCreateTestsForDeployments(t *testing.T, tests []struct {
 	name         string
 	request      *capi.DeploymentCreateRequest
-	response     interface{}
+	response     any
 	statusCode   int
 	expectedPath string
 	wantErr      bool

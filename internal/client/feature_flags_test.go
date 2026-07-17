@@ -15,23 +15,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testFeatureFlagPath is the path for the "my_feature_flag" fixture flag.
+const testFeatureFlagPath = "/v3/feature_flags/my_feature_flag"
+
 func TestFeatureFlagsClient_Get(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/feature_flags/my_feature_flag", request.URL.Path)
+		assert.Equal(t, testFeatureFlagPath, request.URL.Path)
 		assert.Equal(t, "GET", request.Method)
 
 		now := time.Now()
 		customError := "error message the user sees"
 		featureFlag := capi.FeatureFlag{
-			Name:               "my_feature_flag",
+			Name:               testFeatureFlagNameFixture,
 			Enabled:            true,
 			UpdatedAt:          &now,
 			CustomErrorMessage: &customError,
 			Links: capi.Links{
-				"self": capi.Link{
-					Href: "/v3/feature_flags/my_feature_flag",
+				testSelfKey: capi.Link{
+					Href: testFeatureFlagPath,
 				},
 			},
 		}
@@ -44,10 +47,10 @@ func TestFeatureFlagsClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	featureFlags := NewFeatureFlagsClient(httpClient)
 
-	featureFlag, err := featureFlags.Get(context.Background(), "my_feature_flag")
+	featureFlag, err := featureFlags.Get(context.Background(), testFeatureFlagNameFixture)
 	require.NoError(t, err)
 	assert.NotNil(t, featureFlag)
-	assert.Equal(t, "my_feature_flag", featureFlag.Name)
+	assert.Equal(t, testFeatureFlagNameFixture, featureFlag.Name)
 	assert.True(t, featureFlag.Enabled)
 	assert.NotNil(t, featureFlag.UpdatedAt)
 	assert.NotNil(t, featureFlag.CustomErrorMessage)
@@ -67,7 +70,7 @@ func TestFeatureFlagsClient_Get_NotConfigured(t *testing.T) {
 			UpdatedAt:          nil, // Not configured flags have null updated_at
 			CustomErrorMessage: nil, // Not configured flags have null custom_error_message
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: "/v3/feature_flags/app_scaling",
 				},
 			},
@@ -112,13 +115,13 @@ func TestFeatureFlagsClient_List(t *testing.T) {
 			},
 			Resources: []capi.FeatureFlag{
 				{
-					Name:               "my_feature_flag",
+					Name:               testFeatureFlagNameFixture,
 					Enabled:            true,
 					UpdatedAt:          &now,
 					CustomErrorMessage: &customError,
 					Links: capi.Links{
-						"self": capi.Link{
-							Href: "/v3/feature_flags/my_feature_flag",
+						testSelfKey: capi.Link{
+							Href: testFeatureFlagPath,
 						},
 					},
 				},
@@ -128,7 +131,7 @@ func TestFeatureFlagsClient_List(t *testing.T) {
 					UpdatedAt:          nil,
 					CustomErrorMessage: nil,
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "/v3/feature_flags/my_second_feature_flag",
 						},
 					},
@@ -155,7 +158,7 @@ func TestFeatureFlagsClient_List(t *testing.T) {
 	assert.Equal(t, 3, list.Pagination.TotalResults)
 	assert.Equal(t, 2, list.Pagination.TotalPages)
 	assert.Len(t, list.Resources, 2)
-	assert.Equal(t, "my_feature_flag", list.Resources[0].Name)
+	assert.Equal(t, testFeatureFlagNameFixture, list.Resources[0].Name)
 	assert.True(t, list.Resources[0].Enabled)
 	assert.Equal(t, "my_second_feature_flag", list.Resources[1].Name)
 	assert.False(t, list.Resources[1].Enabled)
@@ -165,7 +168,7 @@ func TestFeatureFlagsClient_Update(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		assert.Equal(t, "/v3/feature_flags/my_feature_flag", request.URL.Path)
+		assert.Equal(t, testFeatureFlagPath, request.URL.Path)
 		assert.Equal(t, "PATCH", request.Method)
 
 		var requestBody capi.FeatureFlagUpdateRequest
@@ -179,13 +182,13 @@ func TestFeatureFlagsClient_Update(t *testing.T) {
 
 		now := time.Now()
 		featureFlag := capi.FeatureFlag{
-			Name:               "my_feature_flag",
+			Name:               testFeatureFlagNameFixture,
 			Enabled:            requestBody.Enabled,
 			UpdatedAt:          &now,
 			CustomErrorMessage: requestBody.CustomErrorMessage,
 			Links: capi.Links{
-				"self": capi.Link{
-					Href: "/v3/feature_flags/my_feature_flag",
+				testSelfKey: capi.Link{
+					Href: testFeatureFlagPath,
 				},
 			},
 		}
@@ -204,10 +207,10 @@ func TestFeatureFlagsClient_Update(t *testing.T) {
 		CustomErrorMessage: &customError,
 	}
 
-	featureFlag, err := featureFlags.Update(context.Background(), "my_feature_flag", request)
+	featureFlag, err := featureFlags.Update(context.Background(), testFeatureFlagNameFixture, request)
 	require.NoError(t, err)
 	assert.NotNil(t, featureFlag)
-	assert.Equal(t, "my_feature_flag", featureFlag.Name)
+	assert.Equal(t, testFeatureFlagNameFixture, featureFlag.Name)
 	assert.False(t, featureFlag.Enabled)
 	assert.NotNil(t, featureFlag.UpdatedAt)
 	assert.NotNil(t, featureFlag.CustomErrorMessage)
@@ -236,7 +239,7 @@ func TestFeatureFlagsClient_Update_EnableOnly(t *testing.T) {
 			UpdatedAt:          &now,
 			CustomErrorMessage: nil,
 			Links: capi.Links{
-				"self": capi.Link{
+				testSelfKey: capi.Link{
 					Href: "/v3/feature_flags/diego_docker",
 				},
 			},

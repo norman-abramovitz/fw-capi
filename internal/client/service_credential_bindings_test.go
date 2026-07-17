@@ -22,29 +22,29 @@ func TestServiceCredentialBindingsClient_Create_App(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_credential_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceCredentialBindingCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "app", requestBody.Type)
-		assert.Equal(t, "my-binding", *requestBody.Name)
-		assert.Equal(t, "instance-guid", requestBody.Relationships.ServiceInstance.Data.GUID)
-		assert.Equal(t, "app-guid", requestBody.Relationships.App.Data.GUID)
+		assert.Equal(t, testAppKey, requestBody.Type)
+		assert.Equal(t, testBindingName, *requestBody.Name)
+		assert.Equal(t, testInstanceGUID, requestBody.Relationships.ServiceInstance.Data.GUID)
+		assert.Equal(t, testAppGUID, requestBody.Relationships.App.Data.GUID)
 
 		// App bindings may return a job for async operations
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID: "job-guid",
+				GUID: testJobGUID,
 			},
 			Operation: "service_credential_binding.create",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(writer).Encode(job)
 	}))
@@ -53,22 +53,22 @@ func TestServiceCredentialBindingsClient_Create_App(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
-	name := "my-binding"
+	name := testBindingName
 	request := &capi.ServiceCredentialBindingCreateRequest{
-		Type: "app",
+		Type: testAppKey,
 		Name: &name,
-		Parameters: map[string]interface{}{
-			"foo": "bar",
+		Parameters: map[string]any{
+			testFooKey: testBarValue,
 		},
 		Relationships: capi.ServiceCredentialBindingRelationships{
 			ServiceInstance: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "instance-guid",
+					GUID: testInstanceGUID,
 				},
 			},
 			App: &capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "app-guid",
+					GUID: testAppGUID,
 				},
 			},
 		},
@@ -79,7 +79,7 @@ func TestServiceCredentialBindingsClient_Create_App(t *testing.T) {
 
 	job, ok := result.(*capi.Job)
 	require.True(t, ok, "Expected *capi.Job for app binding")
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_credential_binding.create", job.Operation)
 }
 
@@ -89,17 +89,17 @@ func TestServiceCredentialBindingsClient_Create_App_WithStrategy(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_credential_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceCredentialBindingCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "app", requestBody.Type)
-		assert.Equal(t, "my-binding", *requestBody.Name)
-		assert.Equal(t, "instance-guid", requestBody.Relationships.ServiceInstance.Data.GUID)
-		assert.Equal(t, "app-guid", requestBody.Relationships.App.Data.GUID)
+		assert.Equal(t, testAppKey, requestBody.Type)
+		assert.Equal(t, testBindingName, *requestBody.Name)
+		assert.Equal(t, testInstanceGUID, requestBody.Relationships.ServiceInstance.Data.GUID)
+		assert.Equal(t, testAppGUID, requestBody.Relationships.App.Data.GUID)
 		assert.NotNil(t, requestBody.Strategy)
 
 		if requestBody.Strategy != nil {
@@ -108,14 +108,14 @@ func TestServiceCredentialBindingsClient_Create_App_WithStrategy(t *testing.T) {
 
 		job := capi.Job{
 			Resource: capi.Resource{
-				GUID: "job-guid",
+				GUID: testJobGUID,
 			},
 			Operation: "service_credential_binding.create",
-			State:     "PROCESSING",
+			State:     testStateProcessing,
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(writer).Encode(job)
 	}))
@@ -125,17 +125,17 @@ func TestServiceCredentialBindingsClient_Create_App_WithStrategy(t *testing.T) {
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
 	strategy := "multiple"
-	name := "my-binding"
+	name := testBindingName
 	request := &capi.ServiceCredentialBindingCreateRequest{
-		Type:     "app",
+		Type:     testAppKey,
 		Name:     &name,
 		Strategy: &strategy,
 		Relationships: capi.ServiceCredentialBindingRelationships{
 			ServiceInstance: capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "instance-guid"},
+				Data: &capi.RelationshipData{GUID: testInstanceGUID},
 			},
 			App: &capi.Relationship{
-				Data: &capi.RelationshipData{GUID: "app-guid"},
+				Data: &capi.RelationshipData{GUID: testAppGUID},
 			},
 		},
 	}
@@ -145,7 +145,7 @@ func TestServiceCredentialBindingsClient_Create_App_WithStrategy(t *testing.T) {
 
 	job, ok := result.(*capi.Job)
 	require.True(t, ok, "Expected *capi.Job for app binding with strategy")
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 	assert.Equal(t, "service_credential_binding.create", job.Operation)
 }
 
@@ -155,38 +155,38 @@ func TestServiceCredentialBindingsClient_Create_Key(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_credential_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		var requestBody capi.ServiceCredentialBindingCreateRequest
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "key", requestBody.Type)
+		assert.Equal(t, testKeyBindingType, requestBody.Type)
 		assert.Equal(t, "my-key", *requestBody.Name)
-		assert.Equal(t, "instance-guid", requestBody.Relationships.ServiceInstance.Data.GUID)
+		assert.Equal(t, testInstanceGUID, requestBody.Relationships.ServiceInstance.Data.GUID)
 		assert.Nil(t, requestBody.Relationships.App)
 
 		// Key bindings usually return the binding directly
 		now := time.Now()
 		binding := capi.ServiceCredentialBinding{
 			Resource: capi.Resource{
-				GUID:      "binding-guid",
+				GUID:      testBindingGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
 			Name: "my-key",
-			Type: "key",
+			Type: testKeyBindingType,
 			LastOperation: &capi.ServiceCredentialBindingLastOperation{
-				Type:      "create",
-				State:     "succeeded",
+				Type:      testCreateOperation,
+				State:     testSucceededOperation,
 				CreatedAt: &now,
 				UpdatedAt: &now,
 			},
 			Relationships: capi.ServiceCredentialBindingRelationships{
 				ServiceInstance: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "instance-guid",
+						GUID: testInstanceGUID,
 					},
 				},
 			},
@@ -203,12 +203,12 @@ func TestServiceCredentialBindingsClient_Create_Key(t *testing.T) {
 
 	name := "my-key"
 	request := &capi.ServiceCredentialBindingCreateRequest{
-		Type: "key",
+		Type: testKeyBindingType,
 		Name: &name,
 		Relationships: capi.ServiceCredentialBindingRelationships{
 			ServiceInstance: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "instance-guid",
+					GUID: testInstanceGUID,
 				},
 			},
 		},
@@ -219,9 +219,9 @@ func TestServiceCredentialBindingsClient_Create_Key(t *testing.T) {
 
 	binding, ok := result.(*capi.ServiceCredentialBinding)
 	require.True(t, ok, "Expected *capi.ServiceCredentialBinding for key binding")
-	assert.Equal(t, "binding-guid", binding.GUID)
+	assert.Equal(t, testBindingGUID, binding.GUID)
 	assert.Equal(t, "my-key", binding.Name)
-	assert.Equal(t, "key", binding.Type)
+	assert.Equal(t, testKeyBindingType, binding.Type)
 }
 
 func TestServiceCredentialBindingsClient_Get(t *testing.T) {
@@ -234,27 +234,27 @@ func TestServiceCredentialBindingsClient_Get(t *testing.T) {
 		now := time.Now()
 		binding := capi.ServiceCredentialBinding{
 			Resource: capi.Resource{
-				GUID:      "binding-guid",
+				GUID:      testBindingGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name: "my-binding",
-			Type: "app",
+			Name: testBindingName,
+			Type: testAppKey,
 			LastOperation: &capi.ServiceCredentialBindingLastOperation{
-				Type:      "create",
-				State:     "succeeded",
+				Type:      testCreateOperation,
+				State:     testSucceededOperation,
 				CreatedAt: &now,
 				UpdatedAt: &now,
 			},
 			Relationships: capi.ServiceCredentialBindingRelationships{
 				ServiceInstance: capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "instance-guid",
+						GUID: testInstanceGUID,
 					},
 				},
 				App: &capi.Relationship{
 					Data: &capi.RelationshipData{
-						GUID: "app-guid",
+						GUID: testAppGUID,
 					},
 				},
 			},
@@ -268,12 +268,12 @@ func TestServiceCredentialBindingsClient_Get(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
-	binding, err := serviceBindings.Get(context.Background(), "binding-guid")
+	binding, err := serviceBindings.Get(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, binding)
-	assert.Equal(t, "binding-guid", binding.GUID)
-	assert.Equal(t, "my-binding", binding.Name)
-	assert.Equal(t, "app", binding.Type)
+	assert.Equal(t, testBindingGUID, binding.GUID)
+	assert.Equal(t, testBindingName, binding.Name)
+	assert.Equal(t, testAppKey, binding.Type)
 }
 
 //nolint:dupl // Acceptable duplication - each test validates different endpoints with different query params and assertions
@@ -289,7 +289,7 @@ func TestServiceCredentialBindingsClient_List(t *testing.T) {
 				UpdatedAt: now,
 			},
 			Name: "binding-1",
-			Type: "app",
+			Type: testAppKey,
 		},
 		{
 			Resource: capi.Resource{
@@ -298,24 +298,24 @@ func TestServiceCredentialBindingsClient_List(t *testing.T) {
 				UpdatedAt: now,
 			},
 			Name: "binding-2",
-			Type: "key",
+			Type: testKeyBindingType,
 		},
 	}
 
 	RunServiceListTest(t, "service credential bindings list", "/v3/service_credential_bindings",
 		func(request *http.Request) {
-			assert.Equal(t, "instance-guid", request.URL.Query().Get("service_instance_guids"))
-			assert.Equal(t, "app-guid", request.URL.Query().Get("app_guids"))
+			assert.Equal(t, testInstanceGUID, request.URL.Query().Get("service_instance_guids"))
+			assert.Equal(t, testAppGUID, request.URL.Query().Get(testAppGUIDsParam))
 		},
 		responseData,
-		func(httpClient *internalhttp.Client) interface{} {
+		func(httpClient *internalhttp.Client) any {
 			return NewServiceCredentialBindingsClient(httpClient)
 		},
-		func(client interface{}) (*capi.ListResponse[capi.ServiceCredentialBinding], error) {
+		func(client any) (*capi.ListResponse[capi.ServiceCredentialBinding], error) {
 			params := &capi.QueryParams{
 				Filters: map[string][]string{
-					"service_instance_guids": {"instance-guid"},
-					"app_guids":              {"app-guid"},
+					"service_instance_guids": {testInstanceGUID},
+					testAppGUIDsParam:        {testAppGUID},
 				},
 			}
 
@@ -327,9 +327,9 @@ func TestServiceCredentialBindingsClient_List(t *testing.T) {
 		},
 		func(resources []capi.ServiceCredentialBinding) {
 			assert.Equal(t, "binding-1", resources[0].Name)
-			assert.Equal(t, "app", resources[0].Type)
+			assert.Equal(t, testAppKey, resources[0].Type)
 			assert.Equal(t, "binding-2", resources[1].Name)
-			assert.Equal(t, "key", resources[1].Type)
+			assert.Equal(t, testKeyBindingType, resources[1].Type)
 		},
 	)
 }
@@ -349,12 +349,12 @@ func TestServiceCredentialBindingsClient_Update(t *testing.T) {
 		now := time.Now()
 		binding := capi.ServiceCredentialBinding{
 			Resource: capi.Resource{
-				GUID:      "binding-guid",
+				GUID:      testBindingGUID,
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-			Name:     "my-binding",
-			Type:     "app",
+			Name:     testBindingName,
+			Type:     testAppKey,
 			Metadata: requestBody.Metadata,
 		}
 
@@ -369,7 +369,7 @@ func TestServiceCredentialBindingsClient_Update(t *testing.T) {
 	request := &capi.ServiceCredentialBindingUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"env": "production",
+				testEnvLabelKey: testProductionLabel,
 			},
 			Annotations: map[string]string{
 				"owner": "team-a",
@@ -377,10 +377,10 @@ func TestServiceCredentialBindingsClient_Update(t *testing.T) {
 		},
 	}
 
-	binding, err := serviceBindings.Update(context.Background(), "binding-guid", request)
+	binding, err := serviceBindings.Update(context.Background(), testBindingGUID, request)
 	require.NoError(t, err)
 	assert.NotNil(t, binding)
-	assert.Equal(t, "binding-guid", binding.GUID)
+	assert.Equal(t, testBindingGUID, binding.GUID)
 }
 
 func TestServiceCredentialBindingsClient_Delete_ManagedAsync(t *testing.T) {
@@ -392,7 +392,7 @@ func TestServiceCredentialBindingsClient_Delete_ManagedAsync(t *testing.T) {
 		assert.Equal(t, "/v3/service_credential_bindings/binding-guid", request.URL.Path)
 		assert.Equal(t, "DELETE", request.Method)
 
-		writer.Header().Set("Location", "/v3/jobs/job-guid")
+		writer.Header().Set("Location", testJobPath)
 		writer.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -400,10 +400,10 @@ func TestServiceCredentialBindingsClient_Delete_ManagedAsync(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := client.ServiceCredentialBindings().Delete(context.Background(), "binding-guid")
+	job, err := client.ServiceCredentialBindings().Delete(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, "job-guid", job.GUID)
+	assert.Equal(t, testJobGUID, job.GUID)
 }
 
 func TestServiceCredentialBindingsClient_Delete_UserProvidedSync(t *testing.T) {
@@ -420,7 +420,7 @@ func TestServiceCredentialBindingsClient_Delete_UserProvidedSync(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := client.ServiceCredentialBindings().Delete(context.Background(), "binding-guid")
+	job, err := client.ServiceCredentialBindings().Delete(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.Nil(t, job)
 }
@@ -438,7 +438,7 @@ func TestServiceCredentialBindingsClient_Delete_MissingLocationOn202(t *testing.
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	job, err := client.ServiceCredentialBindings().Delete(context.Background(), "binding-guid")
+	job, err := client.ServiceCredentialBindings().Delete(context.Background(), testBindingGUID)
 	require.Error(t, err)
 	assert.Nil(t, job)
 }
@@ -451,13 +451,13 @@ func TestServiceCredentialBindingsClient_GetDetails(t *testing.T) {
 		assert.Equal(t, "GET", request.Method)
 
 		details := capi.ServiceCredentialBindingDetails{
-			Credentials: map[string]interface{}{
-				"username": "admin",
-				"password": "secret",
-				"uri":      "mysql://admin:secret@localhost:3306/mydb",
+			Credentials: map[string]any{
+				testUsernameKey: testAdminUsername,
+				"password":      "secret",
+				"uri":           "mysql://admin:secret@localhost:3306/mydb",
 			},
 			SyslogDrainURL: StringPtr("syslog://example.com"),
-			VolumeMounts:   []interface{}{},
+			VolumeMounts:   []any{},
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -468,10 +468,10 @@ func TestServiceCredentialBindingsClient_GetDetails(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
-	details, err := serviceBindings.GetDetails(context.Background(), "binding-guid")
+	details, err := serviceBindings.GetDetails(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, details)
-	assert.Equal(t, "admin", details.Credentials["username"])
+	assert.Equal(t, testAdminUsername, details.Credentials[testUsernameKey])
 	assert.Equal(t, "secret", details.Credentials["password"])
 	assert.NotNil(t, details.SyslogDrainURL)
 	assert.Equal(t, "syslog://example.com", *details.SyslogDrainURL)
@@ -485,8 +485,8 @@ func TestServiceCredentialBindingsClient_GetParameters(t *testing.T) {
 		assert.Equal(t, "GET", request.Method)
 
 		params := capi.ServiceCredentialBindingParameters{
-			Parameters: map[string]interface{}{
-				"foo":             "bar",
+			Parameters: map[string]any{
+				testFooKey:        testBarValue,
 				"max_connections": 10,
 			},
 		}
@@ -499,10 +499,10 @@ func TestServiceCredentialBindingsClient_GetParameters(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
-	params, err := serviceBindings.GetParameters(context.Background(), "binding-guid")
+	params, err := serviceBindings.GetParameters(context.Background(), testBindingGUID)
 	require.NoError(t, err)
 	assert.NotNil(t, params)
-	assert.Equal(t, "bar", params.Parameters["foo"])
+	assert.Equal(t, testBarValue, params.Parameters[testFooKey])
 	assert.InDelta(t, float64(10), params.Parameters["max_connections"], 0)
 }
 
@@ -520,7 +520,7 @@ func TestServiceCredentialBindingsClient_GetNotFound(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
-	binding, err := serviceBindings.Get(context.Background(), "binding-guid")
+	binding, err := serviceBindings.Get(context.Background(), testBindingGUID)
 	require.Error(t, err)
 	assert.Nil(t, binding)
 }
@@ -530,7 +530,7 @@ func TestServiceCredentialBindingsClient_CreateForbidden(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Equal(t, "/v3/service_credential_bindings", request.URL.Path)
-		assert.Equal(t, "POST", request.Method)
+		assert.Equal(t, http.MethodPost, request.Method)
 
 		writer.WriteHeader(http.StatusForbidden)
 	}))
@@ -539,19 +539,19 @@ func TestServiceCredentialBindingsClient_CreateForbidden(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	serviceBindings := NewServiceCredentialBindingsClient(httpClient)
 
-	name := "my-binding"
+	name := testBindingName
 	request := &capi.ServiceCredentialBindingCreateRequest{
-		Type: "app",
+		Type: testAppKey,
 		Name: &name,
 		Relationships: capi.ServiceCredentialBindingRelationships{
 			ServiceInstance: capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "instance-guid",
+					GUID: testInstanceGUID,
 				},
 			},
 			App: &capi.Relationship{
 				Data: &capi.RelationshipData{
-					GUID: "app-guid",
+					GUID: testAppGUID,
 				},
 			},
 		},
@@ -581,10 +581,10 @@ func TestServiceCredentialBindingsClient_GetWithIncludes(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	bindings := NewServiceCredentialBindingsClient(httpClient)
 
-	binding, err := bindings.Get(context.Background(), "binding-guid",
+	binding, err := bindings.Get(context.Background(), testBindingGUID,
 		capi.ServiceCredentialBindingIncludeApp, capi.ServiceCredentialBindingIncludeServiceInstance)
 	require.NoError(t, err)
 	require.NotNil(t, binding.Included)
-	assert.Equal(t, "app-1", binding.Included.Apps[0].GUID)
+	assert.Equal(t, testAppGUID1, binding.Included.Apps[0].GUID)
 	assert.Equal(t, "si-1", binding.Included.ServiceInstances[0].GUID)
 }

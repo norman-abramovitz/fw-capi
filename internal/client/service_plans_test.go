@@ -16,6 +16,12 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/capi"
 )
 
+// Test constants for service plan tests.
+const (
+	testServicePlanGUIDPath        = "/v3/service_plans/test-plan-guid"
+	testServicePlanNonExistentPath = "/v3/service_plans/non-existent-guid"
+)
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestServicePlansClient_Get(t *testing.T) {
 	t.Parallel()
@@ -23,24 +29,24 @@ func TestServicePlansClient_Get(t *testing.T) {
 	tests := []struct {
 		name         string
 		guid         string
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
 		errMessage   string
 	}{
 		{
-			name:         "successful get",
-			guid:         "test-plan-guid",
-			expectedPath: "/v3/service_plans/test-plan-guid",
+			name:         testSuccessfulGetCase,
+			guid:         testPlanGUIDFixture,
+			expectedPath: testServicePlanGUIDPath,
 			statusCode:   http.StatusOK,
 			response: capi.ServicePlan{
 				Resource: capi.Resource{
-					GUID:      "test-plan-guid",
+					GUID:      testPlanGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Links: capi.Links{
-						"self": capi.Link{
+						testSelfKey: capi.Link{
 							Href: "https://api.example.org/v3/service_plans/test-plan-guid",
 						},
 						"service_offering": capi.Link{
@@ -54,7 +60,7 @@ func TestServicePlansClient_Get(t *testing.T) {
 				Name:           "my_big_service_plan",
 				Description:    "Big",
 				Available:      true,
-				VisibilityType: "public",
+				VisibilityType: testPublicVisibility,
 				Free:           false,
 				Costs: []capi.ServicePlanCost{
 					{
@@ -69,7 +75,7 @@ func TestServicePlansClient_Get(t *testing.T) {
 				},
 				BrokerCatalog: capi.ServicePlanCatalog{
 					ID: "db730a8c-11e5-11ea-838a-0f4fff3b1cfb",
-					Metadata: map[string]interface{}{
+					Metadata: map[string]any{
 						"custom-key": "custom-information",
 					},
 					Features: capi.ServicePlanCatalogFeatures{
@@ -80,52 +86,52 @@ func TestServicePlansClient_Get(t *testing.T) {
 				Schemas: capi.ServicePlanSchemas{
 					ServiceInstance: capi.ServiceInstanceSchema{
 						Create: capi.SchemaDefinition{
-							Parameters: map[string]interface{}{
-								"$schema": "http://json-schema.org/draft-04/schema#",
-								"type":    "object",
+							Parameters: map[string]any{
+								"$schema":   "http://json-schema.org/draft-04/schema#",
+								testTypeKey: "object",
 							},
 						},
 						Update: capi.SchemaDefinition{
-							Parameters: map[string]interface{}{},
+							Parameters: map[string]any{},
 						},
 					},
 					ServiceBinding: capi.ServiceBindingSchema{
 						Create: capi.SchemaDefinition{
-							Parameters: map[string]interface{}{},
+							Parameters: map[string]any{},
 						},
 					},
 				},
 				Relationships: capi.ServicePlanRelationships{
 					ServiceOffering: capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "offering-guid",
+							GUID: testOfferingGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"type": "database",
+						testTypeKey: testDatabaseFixture,
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:         "plan not found",
-			guid:         "non-existent-guid",
-			expectedPath: "/v3/service_plans/non-existent-guid",
+			name:         testPlanNotFoundCase,
+			guid:         testNonExistentGUID,
+			expectedPath: testServicePlanNonExistentPath,
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Service plan not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: testPlanNotFoundDetail,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -156,7 +162,7 @@ func TestServicePlansClient_Get(t *testing.T) {
 				require.NotNil(t, plan)
 				assert.Equal(t, testCase.guid, plan.GUID)
 				assert.Equal(t, "my_big_service_plan", plan.Name)
-				assert.Equal(t, "public", plan.VisibilityType)
+				assert.Equal(t, testPublicVisibility, plan.VisibilityType)
 				assert.True(t, plan.Available)
 				assert.False(t, plan.Free)
 			}
@@ -174,7 +180,7 @@ func TestServicePlansClient_List(t *testing.T) {
 
 		// Check query parameters if present
 		query := request.URL.Query()
-		if names := query.Get("names"); names != "" {
+		if names := query.Get(testNamesParam); names != "" {
 			assert.Equal(t, "plan1,plan2", names)
 		}
 
@@ -183,7 +189,7 @@ func TestServicePlansClient_List(t *testing.T) {
 		}
 
 		if available := query.Get("available"); available != "" {
-			assert.Equal(t, "true", available)
+			assert.Equal(t, testTrueString, available)
 		}
 
 		response := capi.ListResponse[capi.ServicePlan]{
@@ -205,7 +211,7 @@ func TestServicePlansClient_List(t *testing.T) {
 					Name:           "small_plan",
 					Description:    "Small database",
 					Available:      true,
-					VisibilityType: "public",
+					VisibilityType: testPublicVisibility,
 					Free:           true,
 					Costs:          []capi.ServicePlanCost{},
 					BrokerCatalog: capi.ServicePlanCatalog{
@@ -217,22 +223,22 @@ func TestServicePlansClient_List(t *testing.T) {
 					Schemas: capi.ServicePlanSchemas{
 						ServiceInstance: capi.ServiceInstanceSchema{
 							Create: capi.SchemaDefinition{
-								Parameters: map[string]interface{}{},
+								Parameters: map[string]any{},
 							},
 							Update: capi.SchemaDefinition{
-								Parameters: map[string]interface{}{},
+								Parameters: map[string]any{},
 							},
 						},
 						ServiceBinding: capi.ServiceBindingSchema{
 							Create: capi.SchemaDefinition{
-								Parameters: map[string]interface{}{},
+								Parameters: map[string]any{},
 							},
 						},
 					},
 					Relationships: capi.ServicePlanRelationships{
 						ServiceOffering: capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "offering-1",
+								GUID: testOfferingName1,
 							},
 						},
 					},
@@ -246,7 +252,7 @@ func TestServicePlansClient_List(t *testing.T) {
 					Name:           "large_plan",
 					Description:    "Large database",
 					Available:      false,
-					VisibilityType: "organization",
+					VisibilityType: testOrganizationType,
 					Free:           false,
 					Costs: []capi.ServicePlanCost{
 						{
@@ -265,22 +271,22 @@ func TestServicePlansClient_List(t *testing.T) {
 					Schemas: capi.ServicePlanSchemas{
 						ServiceInstance: capi.ServiceInstanceSchema{
 							Create: capi.SchemaDefinition{
-								Parameters: map[string]interface{}{},
+								Parameters: map[string]any{},
 							},
 							Update: capi.SchemaDefinition{
-								Parameters: map[string]interface{}{},
+								Parameters: map[string]any{},
 							},
 						},
 						ServiceBinding: capi.ServiceBindingSchema{
 							Create: capi.SchemaDefinition{
-								Parameters: map[string]interface{}{},
+								Parameters: map[string]any{},
 							},
 						},
 					},
 					Relationships: capi.ServicePlanRelationships{
 						ServiceOffering: capi.Relationship{
 							Data: &capi.RelationshipData{
-								GUID: "offering-2",
+								GUID: testOfferingName2,
 							},
 						},
 					},
@@ -313,9 +319,9 @@ func TestServicePlansClient_List(t *testing.T) {
 	// Test with filters
 	params := &capi.QueryParams{
 		Filters: map[string][]string{
-			"names":                  {"plan1", "plan2"},
-			"service_offering_guids": {"offering-1", "offering-2"},
-			"available":              {"true"},
+			testNamesParam:           {"plan1", "plan2"},
+			"service_offering_guids": {testOfferingName1, testOfferingName2},
+			"available":              {testTrueString},
 		},
 	}
 	result, err = client.ServicePlans().List(context.Background(), params)
@@ -331,7 +337,7 @@ func TestServicePlansClient_Update(t *testing.T) {
 		name         string
 		guid         string
 		request      *capi.ServicePlanUpdateRequest
-		response     interface{}
+		response     any
 		statusCode   int
 		expectedPath string
 		wantErr      bool
@@ -339,29 +345,29 @@ func TestServicePlansClient_Update(t *testing.T) {
 	}{
 		{
 			name:         "successful update",
-			guid:         "test-plan-guid",
-			expectedPath: "/v3/service_plans/test-plan-guid",
+			guid:         testPlanGUIDFixture,
+			expectedPath: testServicePlanGUIDPath,
 			statusCode:   http.StatusOK,
 			request: &capi.ServicePlanUpdateRequest{
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 					Annotations: map[string]string{
-						"note": "Updated plan",
+						testNoteAnnotationKey: "Updated plan",
 					},
 				},
 			},
 			response: capi.ServicePlan{
 				Resource: capi.Resource{
-					GUID:      "test-plan-guid",
+					GUID:      testPlanGUIDFixture,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				},
 				Name:           "my_service_plan",
 				Description:    "A service plan",
 				Available:      true,
-				VisibilityType: "public",
+				VisibilityType: testPublicVisibility,
 				Free:           false,
 				BrokerCatalog: capi.ServicePlanCatalog{
 					ID: "catalog-id",
@@ -372,40 +378,40 @@ func TestServicePlansClient_Update(t *testing.T) {
 				Schemas: capi.ServicePlanSchemas{
 					ServiceInstance: capi.ServiceInstanceSchema{
 						Create: capi.SchemaDefinition{
-							Parameters: map[string]interface{}{},
+							Parameters: map[string]any{},
 						},
 						Update: capi.SchemaDefinition{
-							Parameters: map[string]interface{}{},
+							Parameters: map[string]any{},
 						},
 					},
 					ServiceBinding: capi.ServiceBindingSchema{
 						Create: capi.SchemaDefinition{
-							Parameters: map[string]interface{}{},
+							Parameters: map[string]any{},
 						},
 					},
 				},
 				Relationships: capi.ServicePlanRelationships{
 					ServiceOffering: capi.Relationship{
 						Data: &capi.RelationshipData{
-							GUID: "offering-guid",
+							GUID: testOfferingGUID,
 						},
 					},
 				},
 				Metadata: &capi.Metadata{
 					Labels: map[string]string{
-						"environment": "production",
+						testEnvironmentLabelKey: testProductionLabel,
 					},
 					Annotations: map[string]string{
-						"note": "Updated plan",
+						testNoteAnnotationKey: "Updated plan",
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:         "plan not found",
-			guid:         "non-existent-guid",
-			expectedPath: "/v3/service_plans/non-existent-guid",
+			name:         testPlanNotFoundCase,
+			guid:         testNonExistentGUID,
+			expectedPath: testServicePlanNonExistentPath,
 			statusCode:   http.StatusNotFound,
 			request: &capi.ServicePlanUpdateRequest{
 				Metadata: &capi.Metadata{
@@ -414,17 +420,17 @@ func TestServicePlansClient_Update(t *testing.T) {
 					},
 				},
 			},
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Service plan not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: testPlanNotFoundDetail,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 	}
 
@@ -477,48 +483,48 @@ func TestServicePlansClient_Delete(t *testing.T) {
 		expectedPath string
 		wantErr      bool
 		errMessage   string
-		response     interface{}
+		response     any
 	}{
 		{
 			name:         "successful delete",
-			guid:         "test-plan-guid",
-			expectedPath: "/v3/service_plans/test-plan-guid",
+			guid:         testPlanGUIDFixture,
+			expectedPath: testServicePlanGUIDPath,
 			statusCode:   http.StatusNoContent,
 			wantErr:      false,
 		},
 		{
-			name:         "plan not found",
-			guid:         "non-existent-guid",
-			expectedPath: "/v3/service_plans/non-existent-guid",
+			name:         testPlanNotFoundCase,
+			guid:         testNonExistentGUID,
+			expectedPath: testServicePlanNonExistentPath,
 			statusCode:   http.StatusNotFound,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10010,
-						"title":  "CF-ResourceNotFound",
-						"detail": "Service plan not found",
+						testCodeKey:   10010,
+						testTitleKey:  testNotFoundTitle,
+						testDetailKey: testPlanNotFoundDetail,
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-ResourceNotFound",
+			errMessage: testNotFoundTitle,
 		},
 		{
 			name:         "plan has service instances",
 			guid:         "plan-with-instances",
 			expectedPath: "/v3/service_plans/plan-with-instances",
 			statusCode:   http.StatusUnprocessableEntity,
-			response: map[string]interface{}{
-				"errors": []map[string]interface{}{
+			response: map[string]any{
+				testErrorsKey: []map[string]any{
 					{
-						"code":   10008,
-						"title":  "CF-UnprocessableEntity",
-						"detail": "Service plan has service instances",
+						testCodeKey:   10008,
+						testTitleKey:  testUnprocessableTitle,
+						testDetailKey: "Service plan has service instances",
 					},
 				},
 			},
 			wantErr:    true,
-			errMessage: "CF-UnprocessableEntity",
+			errMessage: testUnprocessableTitle,
 		},
 	}
 
@@ -565,14 +571,14 @@ func TestServicePlansClient_GetVisibility(t *testing.T) {
 		assert.Equal(t, "GET", request.Method)
 
 		response := capi.ServicePlanVisibility{
-			Type: "organization",
+			Type: testOrganizationType,
 			Organizations: []capi.ServicePlanVisibilityOrg{
 				{
-					GUID: "org-1",
+					GUID: testOrgName1,
 					Name: "Organization One",
 				},
 				{
-					GUID: "org-2",
+					GUID: testOrgName2,
 					Name: "Organization Two",
 				},
 			},
@@ -587,12 +593,12 @@ func TestServicePlansClient_GetVisibility(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	visibility, err := client.ServicePlans().GetVisibility(context.Background(), "test-plan-guid")
+	visibility, err := client.ServicePlans().GetVisibility(context.Background(), testPlanGUIDFixture)
 	require.NoError(t, err)
 	require.NotNil(t, visibility)
-	assert.Equal(t, "organization", visibility.Type)
+	assert.Equal(t, testOrganizationType, visibility.Type)
 	assert.Len(t, visibility.Organizations, 2)
-	assert.Equal(t, "org-1", visibility.Organizations[0].GUID)
+	assert.Equal(t, testOrgName1, visibility.Organizations[0].GUID)
 }
 
 func TestServicePlansClient_UpdateVisibility(t *testing.T) {
@@ -606,14 +612,14 @@ func TestServicePlansClient_UpdateVisibility(t *testing.T) {
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
-		assert.Equal(t, "organization", requestBody.Type)
-		assert.Contains(t, requestBody.Organizations, "org-1")
+		assert.Equal(t, testOrganizationType, requestBody.Type)
+		assert.Contains(t, requestBody.Organizations, testOrgName1)
 
 		response := capi.ServicePlanVisibility{
-			Type: "organization",
+			Type: testOrganizationType,
 			Organizations: []capi.ServicePlanVisibilityOrg{
 				{
-					GUID: "org-1",
+					GUID: testOrgName1,
 					Name: "Organization One",
 				},
 			},
@@ -629,14 +635,14 @@ func TestServicePlansClient_UpdateVisibility(t *testing.T) {
 	require.NoError(t, err)
 
 	request := &capi.ServicePlanVisibilityUpdateRequest{
-		Type:          "organization",
-		Organizations: []string{"org-1"},
+		Type:          testOrganizationType,
+		Organizations: []string{testOrgName1},
 	}
 
-	visibility, err := client.ServicePlans().UpdateVisibility(context.Background(), "test-plan-guid", request)
+	visibility, err := client.ServicePlans().UpdateVisibility(context.Background(), testPlanGUIDFixture, request)
 	require.NoError(t, err)
 	require.NotNil(t, visibility)
-	assert.Equal(t, "organization", visibility.Type)
+	assert.Equal(t, testOrganizationType, visibility.Type)
 	assert.Len(t, visibility.Organizations, 1)
 }
 
@@ -653,7 +659,7 @@ func TestServicePlansClient_RemoveOrgFromVisibility(t *testing.T) {
 	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
 	require.NoError(t, err)
 
-	err = client.ServicePlans().RemoveOrgFromVisibility(context.Background(), "test-plan-guid", "org-guid")
+	err = client.ServicePlans().RemoveOrgFromVisibility(context.Background(), testPlanGUIDFixture, testOrgGUID)
 	require.NoError(t, err)
 }
 
@@ -678,10 +684,10 @@ func TestServicePlansClient_GetWithIncludeAndFields(t *testing.T) {
 	httpClient := internalhttp.NewClient(server.URL, nil)
 	plans := NewServicePlansClient(httpClient)
 
-	plan, err := plans.Get(context.Background(), "plan-guid",
+	plan, err := plans.Get(context.Background(), testPlanGUID,
 		capi.ServicePlanIncludeServiceOffering,
 		capi.WithServicePlanFields(capi.ServicePlanFieldsServiceOfferingServiceBroker, "name"))
 	require.NoError(t, err)
 	require.NotNil(t, plan.Included)
-	assert.Equal(t, "offering-1", plan.Included.ServiceOfferings[0].GUID)
+	assert.Equal(t, testOfferingName1, plan.Included.ServiceOfferings[0].GUID)
 }
