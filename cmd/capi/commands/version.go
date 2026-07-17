@@ -14,7 +14,7 @@ import (
 // NewVersionCommand creates the version command.
 func NewVersionCommand(version, commit, date string) *cobra.Command {
 	return &cobra.Command{
-		Use:   "version",
+		Use:   Version,
 		Short: "Display version information",
 		Long:  "Display detailed version information about the CAPI CLI",
 		RunE: func(cmd *cobra.Command, args []string) error {

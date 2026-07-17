@@ -40,7 +40,7 @@ func NewTargetCommand() *cobra.Command {
 
 	// Add flags
 	cmd.Flags().StringVarP(&orgName, "org", "o", "", "target organization")
-	cmd.Flags().StringVarP(&spaceName, "space", "s", "", "target space")
+	cmd.Flags().StringVarP(&spaceName, spaceKey, "s", "", "target space")
 
 	return cmd
 }

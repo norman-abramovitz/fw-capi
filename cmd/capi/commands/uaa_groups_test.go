@@ -88,13 +88,13 @@ func TestCreateUsersMapGroupCommand(t *testing.T) {
 	t.Parallel()
 
 	cmd := createUsersMapGroupCommand()
-	assert.Equal(t, "map-group", cmd.Use)
+	assert.Equal(t, OperationMapGroup, cmd.Use)
 	assert.Equal(t, "Map external group to UAA group", cmd.Short)
 	assert.NotNil(t, cmd.RunE)
 	assert.Contains(t, cmd.Long, "Map an external group")
 
 	// Check flags
-	assert.NotNil(t, cmd.Flags().Lookup("group"))
+	assert.NotNil(t, cmd.Flags().Lookup(flagGroup))
 	assert.NotNil(t, cmd.Flags().Lookup("external-group"))
 	assert.NotNil(t, cmd.Flags().Lookup("origin"))
 }
@@ -103,13 +103,13 @@ func TestCreateUsersUnmapGroupCommand(t *testing.T) {
 	t.Parallel()
 
 	cmd := createUsersUnmapGroupCommand()
-	assert.Equal(t, "unmap-group", cmd.Use)
+	assert.Equal(t, OperationUnmapGroup, cmd.Use)
 	assert.Equal(t, "Unmap external group from UAA group", cmd.Short)
 	assert.NotNil(t, cmd.RunE)
 	assert.Contains(t, cmd.Long, "Remove a mapping")
 
 	// Check flags
-	assert.NotNil(t, cmd.Flags().Lookup("group"))
+	assert.NotNil(t, cmd.Flags().Lookup(flagGroup))
 	assert.NotNil(t, cmd.Flags().Lookup("external-group"))
 	assert.NotNil(t, cmd.Flags().Lookup("origin"))
 }

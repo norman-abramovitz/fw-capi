@@ -79,7 +79,7 @@ func renderAppsOutput(output string, apps []capi.App) error {
 }
 
 // renderJSONOutput renders data as JSON.
-func renderJSONOutput(data interface{}) error {
+func renderJSONOutput(data any) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 
@@ -92,7 +92,7 @@ func renderJSONOutput(data interface{}) error {
 }
 
 // renderYAMLOutput renders data as YAML.
-func renderYAMLOutput(data interface{}) error {
+func renderYAMLOutput(data any) error {
 	encoder := yaml.NewEncoder(os.Stdout)
 
 	err := encoder.Encode(data)
@@ -214,7 +214,7 @@ func newStacksListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List stacks",
 		Long:  "List all stacks available in the platform",
 		RunE: func(cmd *cobra.Command, args []string) error {

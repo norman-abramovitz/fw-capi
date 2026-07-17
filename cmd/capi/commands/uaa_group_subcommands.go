@@ -7,7 +7,7 @@ import (
 // NewUAAGroupCommand creates the group sub-command group.
 func NewUAAGroupCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "group",
+		Use:   GroupCommandName,
 		Short: "Manage UAA groups",
 		Long: `Manage UAA groups and group memberships.
 
@@ -65,7 +65,7 @@ func createGroupGetCommand() *cobra.Command {
 
 func createGroupListCommand() *cobra.Command {
 	cmd := createUsersListGroupsCommand()
-	cmd.Use = "list"
+	cmd.Use = List
 
 	return cmd
 }

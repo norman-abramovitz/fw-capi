@@ -76,7 +76,7 @@ func newSecurityGroupsListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List security groups",
 		Long:  "List all security groups",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -317,7 +317,7 @@ func newSecurityGroupsCreateCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create a security group",
 		Long:  "Create a new security group with rules",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -548,7 +548,7 @@ func newSecurityGroupsDeleteCommand() *cobra.Command {
 		Long:        "Delete a security group",
 		EntityType:  "security group",
 		GetResource: CreateSecurityGroupDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType
@@ -655,8 +655,8 @@ func newSecurityGroupsBindCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringArrayVarP(&spaceNames, "spaces", "s", nil, "spaces to bind to (required)")
-	cmd.Flags().BoolVar(&running, "running", false, "bind for running applications")
-	cmd.Flags().BoolVar(&staging, "staging", false, "bind for staging applications")
+	cmd.Flags().BoolVar(&running, LifecycleRunning, false, "bind for running applications")
+	cmd.Flags().BoolVar(&staging, LifecycleStaging, false, "bind for staging applications")
 	_ = cmd.MarkFlagRequired("spaces")
 
 	return cmd
@@ -730,17 +730,17 @@ func newSecurityGroupsUnbindCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&spaceName, "space", "s", "", "space to unbind from (required)")
-	cmd.Flags().BoolVar(&running, "running", false, "unbind from running applications")
-	cmd.Flags().BoolVar(&staging, "staging", false, "unbind from staging applications")
-	_ = cmd.MarkFlagRequired("space")
+	cmd.Flags().StringVarP(&spaceName, spaceKey, "s", "", "space to unbind from (required)")
+	cmd.Flags().BoolVar(&running, LifecycleRunning, false, "unbind from running applications")
+	cmd.Flags().BoolVar(&staging, LifecycleStaging, false, "unbind from staging applications")
+	_ = cmd.MarkFlagRequired(spaceKey)
 
 	return cmd
 }
 
 func newSecurityGroupsRunningCommand() *cobra.Command {
 	return createSecurityGroupListCommand(SecurityGroupListConfig{
-		Use:        "running",
+		Use:        LifecycleRunning,
 		Short:      "List running security groups",
 		Long:       "List all security groups that are globally enabled for running applications",
 		FilterKey:  "globally_enabled_running",
@@ -751,7 +751,7 @@ func newSecurityGroupsRunningCommand() *cobra.Command {
 
 func newSecurityGroupsStagingCommand() *cobra.Command {
 	return createSecurityGroupListCommand(SecurityGroupListConfig{
-		Use:        "staging",
+		Use:        LifecycleStaging,
 		Short:      "List staging security groups",
 		Long:       "List all security groups that are globally enabled for staging applications",
 		FilterKey:  "globally_enabled_staging",

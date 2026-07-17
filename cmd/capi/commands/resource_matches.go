@@ -65,7 +65,7 @@ func newResourceMatchesCreateCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create resource matches",
 		Long:  "Create resource matches to check which resources already exist on the platform",
 		RunE: func(cmd *cobra.Command, args []string) error {

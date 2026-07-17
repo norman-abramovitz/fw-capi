@@ -45,7 +45,7 @@ func newDomainsListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List domains",
 		Long:  "List all domains the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -433,7 +433,7 @@ func newDomainsCreateCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create a domain",
 		Long:  "Create a new Cloud Foundry domain",
 		RunE:  runDomainsCreate,
@@ -643,7 +643,7 @@ func newDomainsDeleteCommand() *cobra.Command {
 		Long:        "Delete a Cloud Foundry domain",
 		EntityType:  "domain",
 		GetResource: CreateDomainDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType

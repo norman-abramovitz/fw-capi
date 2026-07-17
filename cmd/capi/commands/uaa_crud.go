@@ -18,6 +18,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// flagNameActive is the CLI flag name used to set or query a UAA user's active state.
+const flagNameActive = "active"
+
 // createUsersCreateUserCommand creates the create user command.
 func createUsersCreateUserCommand() *cobra.Command {
 	var (
@@ -27,7 +30,7 @@ func createUsersCreateUserCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "create-user <username>",
-		Aliases: []string{"create", "add-user", "new-user"},
+		Aliases: []string{Create, "add-user", "new-user"},
 		Short:   "Create a new user",
 		Long: `Create a new user in the UAA database.
 
@@ -60,7 +63,7 @@ prompted for required information.`,
 	cmd.Flags().StringVar(&familyName, "family-name", "", "User's family name (last name)")
 	cmd.Flags().StringVar(&phoneNumber, "phone-number", "", "User's phone number")
 	cmd.Flags().StringVar(&origin, "origin", "uaa", "Identity provider origin")
-	cmd.Flags().BoolVar(&active, "active", true, "User is active")
+	cmd.Flags().BoolVar(&active, flagNameActive, true, "User is active")
 	cmd.Flags().BoolVar(&verified, "verified", false, "User is verified")
 
 	return cmd
@@ -229,7 +232,7 @@ func createUsersGetUserCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "get-user <username>",
-		Aliases: []string{"get", "show-user", "user"},
+		Aliases: []string{"get", "show-user", UserCommandName},
 		Short:   "Get user details",
 		Long: `Look up a user by username and display detailed information.
 
@@ -320,7 +323,7 @@ func createUsersListUsersCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list-users",
-		Aliases: []string{"list", "users", "ls"},
+		Aliases: []string{List, "users", "ls"},
 		Short:   "List users",
 		Long: `Search and list users with optional SCIM filters.
 
@@ -496,7 +499,7 @@ will remain unchanged.`,
 	cmd.Flags().StringVar(&givenName, "given-name", "", "User's given name (first name)")
 	cmd.Flags().StringVar(&familyName, "family-name", "", "User's family name (last name)")
 	cmd.Flags().StringVar(&phoneNumber, "phone-number", "", "User's phone number")
-	cmd.Flags().StringVar(&activeStr, "active", "", "User is active (true/false)")
+	cmd.Flags().StringVar(&activeStr, flagNameActive, "", "User is active (true/false)")
 	cmd.Flags().StringVar(&verifiedStr, "verified", "", "User is verified (true/false)")
 
 	return cmd

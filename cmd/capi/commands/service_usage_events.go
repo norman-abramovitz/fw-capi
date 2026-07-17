@@ -46,7 +46,7 @@ func newServiceUsageEventsListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List service usage events",
 		Long:  "List service usage events with optional filtering",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -183,7 +183,7 @@ func renderServiceUsageEventsTable(events []capi.ServiceUsageEvent, pagination *
 
 func newServiceUsageEventsGetCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "get EVENT_GUID",
+		Use:   UseGetEventGUID,
 		Short: "Get service usage event details",
 		Long:  "Display detailed information about a specific service usage event",
 		Args:  cobra.ExactArgs(1),
@@ -265,7 +265,7 @@ func newServiceUsageEventsPurgeReseedCommand() *cobra.Command {
 	config := PurgeReseedConfig{
 		EntityType:       "service usage events",
 		EntityTypePlural: "service instances",
-		PurgeFunc: func(ctx context.Context, client interface{}) error {
+		PurgeFunc: func(ctx context.Context, client any) error {
 			if capiClient, ok := client.(interface {
 				ServiceUsageEvents() interface {
 					PurgeAndReseed(ctx context.Context) error

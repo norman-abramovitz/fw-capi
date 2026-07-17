@@ -23,7 +23,7 @@ func TestCreateUsersCreateUserCommand(t *testing.T) {
 	assert.NotNil(t, cmd.Flags().Lookup("family-name"))
 	assert.NotNil(t, cmd.Flags().Lookup("phone-number"))
 	assert.NotNil(t, cmd.Flags().Lookup("origin"))
-	assert.NotNil(t, cmd.Flags().Lookup("active"))
+	assert.NotNil(t, cmd.Flags().Lookup(flagNameActive))
 	assert.NotNil(t, cmd.Flags().Lookup("verified"))
 }
 
@@ -59,7 +59,7 @@ func TestCreateUsersUpdateUserCommand(t *testing.T) {
 	assert.NotNil(t, cmd.Flags().Lookup("given-name"))
 	assert.NotNil(t, cmd.Flags().Lookup("family-name"))
 	assert.NotNil(t, cmd.Flags().Lookup("phone-number"))
-	assert.NotNil(t, cmd.Flags().Lookup("active"))
+	assert.NotNil(t, cmd.Flags().Lookup(flagNameActive))
 	assert.NotNil(t, cmd.Flags().Lookup("verified"))
 }
 

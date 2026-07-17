@@ -21,12 +21,12 @@ import (
 
 // UAAVersionInfo contains UAA version and compatibility information.
 type UAAVersionInfo struct {
-	Version       string                 `json:"version"       yaml:"version"`
-	Endpoint      string                 `json:"endpoint"      yaml:"endpoint"`
-	ServerInfo    map[string]interface{} `json:"server_info"   yaml:"server_info"`
-	Features      []string               `json:"features"      yaml:"features"`
-	Compatibility CompatibilityStatus    `json:"compatibility" yaml:"compatibility"`
-	TestedAt      time.Time              `json:"tested_at"     yaml:"tested_at"`
+	Version       string              `json:"version"       yaml:"version"`
+	Endpoint      string              `json:"endpoint"      yaml:"endpoint"`
+	ServerInfo    map[string]any      `json:"server_info"   yaml:"server_info"`
+	Features      []string            `json:"features"      yaml:"features"`
+	Compatibility CompatibilityStatus `json:"compatibility" yaml:"compatibility"`
+	TestedAt      time.Time           `json:"tested_at"     yaml:"tested_at"`
 }
 
 // CompatibilityStatus represents the compatibility test results.
@@ -202,7 +202,7 @@ func runCompatibilityTests(client *UAAClientWrapper, comprehensive bool) *UAAVer
 	_, _ = os.Stdout.WriteString("✅ Success\n")
 
 	// Extract version information
-	if app, ok := serverInfo["app"].(map[string]interface{}); ok {
+	if app, ok := serverInfo[uaaInfoKeyApp].(map[string]any); ok {
 		if version, ok := app["version"].(string); ok {
 			versionInfo.Version = version
 		}
@@ -474,7 +474,7 @@ func extractUAAVersionInfo(uaaClient *UAAClientWrapper, ctx context.Context, int
 		return
 	}
 
-	app, ok := serverInfo["app"].(map[string]interface{})
+	app, ok := serverInfo[uaaInfoKeyApp].(map[string]any)
 	if !ok {
 		return
 	}

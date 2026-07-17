@@ -25,15 +25,15 @@ func TestNewResourceMatchesCommand(t *testing.T) {
 		commandNames = append(commandNames, subcmd.Name())
 	}
 
-	assert.Contains(t, commandNames, "create")
+	assert.Contains(t, commandNames, commands.Create)
 }
 
 func TestResourceMatchesCreateCommand(t *testing.T) {
 	t.Parallel()
 
 	root := commands.NewResourceMatchesCommand()
-	cmd := findSubcommand(root, "create")
-	assert.Equal(t, "create", cmd.Use)
+	cmd := findSubcommand(root, commands.Create)
+	assert.Equal(t, commands.Create, cmd.Use)
 	assert.Equal(t, "Create resource matches", cmd.Short)
 	assert.Equal(t, "Create resource matches to check which resources already exist on the platform", cmd.Long)
 	assert.NotNil(t, cmd.RunE)

@@ -7,7 +7,7 @@ import (
 // NewUAATokenCommand creates the token sub-command group.
 func NewUAATokenCommand() *cobra.Command {
 	config := CommandConfig{
-		Use:   "token",
+		Use:   Token,
 		Short: "Manage UAA OAuth tokens",
 		Long: `Manage UAA OAuth tokens and token operations.
 
@@ -35,7 +35,7 @@ This command group provides comprehensive token management capabilities includin
 			{Name: "client-credentials", CommandFunc: createUsersGetClientCredentialsTokenCommand, Use: "get-client-credentials"},
 			{Name: "password", CommandFunc: createUsersGetPasswordTokenCommand, Use: "get-password"},
 			{Name: "implicit", CommandFunc: createUsersGetImplicitTokenCommand, Use: "get-implicit"},
-			{Name: "refresh", CommandFunc: createUsersRefreshTokenCommand, Use: "refresh"},
+			{Name: Refresh, CommandFunc: createUsersRefreshTokenCommand, Use: Refresh},
 			{Name: "key", CommandFunc: createUsersGetTokenKeyCommand, Use: "get-key"},
 			{Name: "keys", CommandFunc: createUsersGetTokenKeysCommand, Use: "get-keys"},
 		},

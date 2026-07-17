@@ -44,7 +44,7 @@ func newOrgsListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List organizations",
 		Long:  "List all organizations the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -127,7 +127,7 @@ func renderOrganizationTable(orgs []capi.Organization, pagination capi.Paginatio
 	table.Header("Name", "GUID", "Status", "Created", "Updated")
 
 	for _, org := range orgs {
-		status := "active"
+		status := Active
 		if org.Suspended {
 			status = "suspended"
 		}
@@ -216,7 +216,7 @@ func renderOrganizationDetailsTable(org *capi.Organization) error {
 	_ = table.Append("Name", org.Name)
 	_ = table.Append("GUID", org.GUID)
 
-	status := "active"
+	status := Active
 	if org.Suspended {
 		status = "suspended"
 	}
@@ -264,12 +264,12 @@ func renderMetadataTables(labels, annotations map[string]string) {
 
 func newOrgsCreateCommand() *cobra.Command {
 	return createGenericCreateCommand(CreateConfig{
-		Use:        "create",
+		Use:        Create,
 		Short:      "Create a new organization",
 		Long:       "Create a new Cloud Foundry organization",
-		EntityType: "organization",
+		EntityType: organizationKey,
 		NameError:  ErrOrganizationNameRequired,
-		CreateFunc: func(ctx context.Context, client interface{}, name string, labels map[string]string) (string, string, error) {
+		CreateFunc: func(ctx context.Context, client any, name string, labels map[string]string) (string, string, error) {
 			createReq := &capi.OrganizationCreateRequest{
 				Name: name,
 			}
@@ -387,9 +387,9 @@ func newOrgsDeleteCommand() *cobra.Command {
 		Use:         "delete ORG_NAME_OR_GUID",
 		Short:       "Delete an organization",
 		Long:        "Delete a Cloud Foundry organization",
-		EntityType:  "organization",
+		EntityType:  organizationKey,
 		GetResource: CreateOrganizationDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType
@@ -484,17 +484,17 @@ func outputOrganizationQuotaResult(orgName, quotaName string) error {
 	switch output {
 	case OutputFormatJSON:
 		result := map[string]string{
-			"organization": orgName,
-			"quota":        quotaName,
-			"status":       "applied",
+			organizationKey: orgName,
+			"quota":         quotaName,
+			keyStatus:       Applied,
 		}
 
 		return StandardJSONRenderer(result)
 	case OutputFormatYAML:
 		result := map[string]string{
-			"organization": orgName,
-			"quota":        quotaName,
-			"status":       "applied",
+			organizationKey: orgName,
+			"quota":         quotaName,
+			keyStatus:       Applied,
 		}
 
 		return StandardYAMLRenderer(result)
@@ -678,6 +678,10 @@ func renderOrganizationUsersTable(users []*UserRoleInfo, pagination capi.Paginat
 	return nil
 }
 
+// RoleOrganizationUser is the default organization role assigned to a user
+// added to an organization.
+const RoleOrganizationUser = "organization_user"
+
 type UserRoleInfo struct {
 	Username string   `json:"username" yaml:"username"`
 	GUID     string   `json:"guid"     yaml:"guid"`
@@ -686,24 +690,24 @@ type UserRoleInfo struct {
 
 func newOrgsAddUserCommand() *cobra.Command {
 	roleContext := RoleContext{
-		ResourceType:   "organization",
-		DefaultRole:    "organization_user",
-		ValidRoles:     []string{"organization_user", "organization_manager", "organization_auditor", "organization_billing_manager"},
+		ResourceType:   organizationKey,
+		DefaultRole:    RoleOrganizationUser,
+		ValidRoles:     []string{RoleOrganizationUser, "organization_manager", "organization_auditor", "organization_billing_manager"},
 		SuccessMessage: "Successfully added user to organization with role '%s'\n",
 	}
 
-	return CreateRoleCommand("add-user", "organization", roleContext)()
+	return CreateRoleCommand(roleOperationAddUser, organizationKey, roleContext)()
 }
 
 func newOrgsRemoveUserCommand() *cobra.Command {
 	roleContext := RoleContext{
-		ResourceType:   "organization",
+		ResourceType:   organizationKey,
 		DefaultRole:    "",
-		ValidRoles:     []string{"organization_user", "organization_manager", "organization_auditor", "organization_billing_manager"},
+		ValidRoles:     []string{RoleOrganizationUser, "organization_manager", "organization_auditor", "organization_billing_manager"},
 		SuccessMessage: "Successfully removed user role from organization\n",
 	}
 
-	return CreateRoleCommand("remove-user", "organization", roleContext)()
+	return CreateRoleCommand("remove-user", organizationKey, roleContext)()
 }
 
 func newOrgsListSpacesCommand() *cobra.Command {

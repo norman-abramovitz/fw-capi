@@ -127,7 +127,7 @@ func newAdminUsageSummaryCommand() *cobra.Command {
 
 func newAdminInfoCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "info",
+		Use:   Info,
 		Short: "Get extended platform information",
 		Long:  "Get extended information about the Cloud Foundry platform",
 		RunE:  runAdminInfo,

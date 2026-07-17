@@ -25,7 +25,7 @@ func TestNewServiceUsageEventsCommand(t *testing.T) {
 		commandNames = append(commandNames, subcmd.Name())
 	}
 
-	assert.Contains(t, commandNames, "list")
+	assert.Contains(t, commandNames, commands.List)
 	assert.Contains(t, commandNames, "get")
 	assert.Contains(t, commandNames, "purge-and-reseed")
 }

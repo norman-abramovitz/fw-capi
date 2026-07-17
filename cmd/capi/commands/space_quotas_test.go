@@ -25,9 +25,9 @@ func TestNewSpaceQuotasCommand(t *testing.T) {
 		commandNames = append(commandNames, subcmd.Name())
 	}
 
-	assert.Contains(t, commandNames, "list")
+	assert.Contains(t, commandNames, commands.List)
 	assert.Contains(t, commandNames, "get")
-	assert.Contains(t, commandNames, "create")
+	assert.Contains(t, commandNames, commands.Create)
 	assert.Contains(t, commandNames, "update")
 	assert.Contains(t, commandNames, "delete")
 	assert.Contains(t, commandNames, "apply")

@@ -101,7 +101,7 @@ func renderInfoTable(info *capi.Info) error {
 
 func NewInfoCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "info",
+		Use:   Info,
 		Short: "Display API endpoint information",
 		Long:  "Display information about the Cloud Foundry API endpoint",
 		RunE:  runInfo,

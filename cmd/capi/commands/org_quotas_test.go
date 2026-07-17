@@ -25,9 +25,9 @@ func TestNewOrgQuotasCommand(t *testing.T) {
 		commandNames = append(commandNames, subcmd.Name())
 	}
 
-	assert.Contains(t, commandNames, "list")
+	assert.Contains(t, commandNames, commands.List)
 	assert.Contains(t, commandNames, "get")
-	assert.Contains(t, commandNames, "create")
+	assert.Contains(t, commandNames, commands.Create)
 	assert.Contains(t, commandNames, "update")
 	assert.Contains(t, commandNames, "delete")
 	assert.Contains(t, commandNames, "apply")
@@ -37,8 +37,8 @@ func TestOrgQuotasListCommand(t *testing.T) {
 	t.Parallel()
 
 	root := commands.NewOrgQuotasCommand()
-	cmd := findSubcommand(root, "list")
-	assert.Equal(t, "list", cmd.Use)
+	cmd := findSubcommand(root, commands.List)
+	assert.Equal(t, commands.List, cmd.Use)
 	assert.Equal(t, "List organization quotas", cmd.Short)
 	assert.Equal(t, "List all organization quotas", cmd.Long)
 	assert.NotNil(t, cmd.RunE)
@@ -71,8 +71,8 @@ func TestOrgQuotasCreateCommand(t *testing.T) {
 	t.Parallel()
 
 	root := commands.NewOrgQuotasCommand()
-	cmd := findSubcommand(root, "create")
-	assert.Equal(t, "create", cmd.Use)
+	cmd := findSubcommand(root, commands.Create)
+	assert.Equal(t, commands.Create, cmd.Use)
 	assert.Equal(t, "Create a new organization quota", cmd.Short)
 	assert.Equal(t, "Create a new Cloud Foundry organization quota", cmd.Long)
 	assert.NotNil(t, cmd.RunE)

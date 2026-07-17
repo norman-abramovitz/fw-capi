@@ -31,7 +31,7 @@ func TestCreateUsersInfoCommand(t *testing.T) {
 	t.Parallel()
 
 	cmd := createUsersInfoCommand()
-	assert.Equal(t, "info", cmd.Use)
+	assert.Equal(t, Info, cmd.Use)
 	assert.Equal(t, "Display UAA server information", cmd.Short)
 	assert.NotNil(t, cmd.RunE)
 	assert.Contains(t, cmd.Long, "Show version and configuration information")
@@ -41,7 +41,7 @@ func TestCreateUsersVersionCommand(t *testing.T) {
 	t.Parallel()
 
 	cmd := createUsersVersionCommand()
-	assert.Equal(t, "version", cmd.Use)
+	assert.Equal(t, Version, cmd.Use)
 	assert.Equal(t, "Display UAA server version", cmd.Short)
 	assert.NotNil(t, cmd.RunE)
 	assert.Contains(t, cmd.Long, "Show the version of the targeted UAA server")

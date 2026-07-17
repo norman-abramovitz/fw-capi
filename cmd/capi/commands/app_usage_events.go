@@ -35,7 +35,7 @@ func newAppUsageEventsListCommand() *cobra.Command {
 	var opts appUsageEventListOptions
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List application usage events",
 		Long:  "List application usage events with optional filtering",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -220,7 +220,7 @@ func formatStateTransition(previousState *string, currentState string) string {
 
 func newAppUsageEventsGetCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "get EVENT_GUID",
+		Use:   UseGetEventGUID,
 		Short: "Get app usage event details",
 		Long:  "Display detailed information about a specific app usage event",
 		Args:  cobra.ExactArgs(1),
@@ -378,7 +378,7 @@ func newAppUsageEventsPurgeReseedCommand() *cobra.Command {
 	config := PurgeReseedConfig{
 		EntityType:       "app usage events",
 		EntityTypePlural: "applications",
-		PurgeFunc: func(ctx context.Context, client interface{}) error {
+		PurgeFunc: func(ctx context.Context, client any) error {
 			if capiClient, ok := client.(interface {
 				AppUsageEvents() interface {
 					PurgeAndReseed(ctx context.Context) error

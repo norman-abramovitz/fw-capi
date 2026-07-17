@@ -23,6 +23,20 @@ import (
 
 const (
 	organizationKey = "organization"
+	// spaceKey is the canonical literal for the space resource: used as the
+	// viper config key, CLI flag name/alias, and role ResourceType/EntityType
+	// discriminator, mirroring organizationKey's usage.
+	spaceKey = "space"
+
+	// UAA-related viper/persisted-config key names.
+	uaaEndpointKey     = "uaa_endpoint"
+	uaaTokenKey        = "uaa_token"         //#nosec G101 -- nolint:gosec -- config key name, not a credential
+	uaaRefreshTokenKey = "uaa_refresh_token" //#nosec G101 -- nolint:gosec -- config key name, not a credential
+	uaaClientIDKey     = "uaa_client_id"
+	uaaClientSecretKey = "uaa_client_secret" //#nosec G101 -- nolint:gosec -- config key name, not a credential
+
+	// tokenKey is the viper/persisted-config key for the legacy CF token.
+	tokenKey = "token"
 )
 
 // Config represents the CLI configuration.
@@ -259,21 +273,21 @@ func createBaseConfig() *Config {
 
 		// Legacy fields for migration
 		API:               viper.GetString("api"),
-		Token:             viper.GetString("token"),
+		Token:             viper.GetString(tokenKey),
 		RefreshToken:      viper.GetString("refresh_token"),
 		Username:          viper.GetString("username"),
 		Organization:      viper.GetString(organizationKey),
 		OrganizationGUID:  viper.GetString("organization_guid"),
-		Space:             viper.GetString("space"),
+		Space:             viper.GetString(spaceKey),
 		SpaceGUID:         viper.GetString("space_guid"),
 		SkipSSLValidation: viper.GetBool("skip_ssl_validation"),
 		CurrentTarget:     viper.GetString("current_target"),
 		Targets:           make(map[string]Target),
-		UAAEndpoint:       viper.GetString("uaa_endpoint"),
-		UAAToken:          viper.GetString("uaa_token"),
-		UAARefreshToken:   viper.GetString("uaa_refresh_token"),
-		UAAClientID:       viper.GetString("uaa_client_id"),
-		UAAClientSecret:   viper.GetString("uaa_client_secret"),
+		UAAEndpoint:       viper.GetString(uaaEndpointKey),
+		UAAToken:          viper.GetString(uaaTokenKey),
+		UAARefreshToken:   viper.GetString(uaaRefreshTokenKey),
+		UAAClientID:       viper.GetString(uaaClientIDKey),
+		UAAClientSecret:   viper.GetString(uaaClientSecretKey),
 	}
 }
 
@@ -287,7 +301,7 @@ func loadAPIConfigurations(config *Config) {
 	}
 
 	for domain, apiRaw := range apisRaw {
-		if apiMap, ok := apiRaw.(map[string]interface{}); ok {
+		if apiMap, ok := apiRaw.(map[string]any); ok {
 			apiConfig := parseAPIConfig(apiMap)
 			config.APIs[domain] = apiConfig
 		}
@@ -295,7 +309,7 @@ func loadAPIConfigurations(config *Config) {
 }
 
 // parseAPIConfig parses API configuration from a map.
-func parseAPIConfig(apiMap map[string]interface{}) *APIConfig {
+func parseAPIConfig(apiMap map[string]any) *APIConfig {
 	apiConfig := &APIConfig{}
 
 	parseAPIBasicFields(apiConfig, apiMap)
@@ -308,7 +322,7 @@ func parseAPIConfig(apiMap map[string]interface{}) *APIConfig {
 }
 
 // parseAPIBasicFields parses basic API configuration fields.
-func parseAPIBasicFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
+func parseAPIBasicFields(apiConfig *APIConfig, apiMap map[string]any) {
 	if endpoint, ok := apiMap["endpoint"].(string); ok {
 		apiConfig.Endpoint = endpoint
 	}
@@ -319,8 +333,8 @@ func parseAPIBasicFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
 }
 
 // parseAPIAuthFields parses authentication-related API configuration fields.
-func parseAPIAuthFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
-	if token, ok := apiMap["token"].(string); ok {
+func parseAPIAuthFields(apiConfig *APIConfig, apiMap map[string]any) {
+	if token, ok := apiMap[tokenKey].(string); ok {
 		apiConfig.Token = token
 	}
 
@@ -334,13 +348,13 @@ func parseAPIAuthFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
 }
 
 // parseAPIUAAFields parses UAA-related API configuration fields.
-func parseAPIUAAFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
+func parseAPIUAAFields(apiConfig *APIConfig, apiMap map[string]any) {
 	uaaFields := map[string]*string{
-		"uaa_endpoint":      &apiConfig.UAAEndpoint,
-		"uaa_token":         &apiConfig.UAAToken,
-		"uaa_refresh_token": &apiConfig.UAARefreshToken,
-		"uaa_client_id":     &apiConfig.UAAClientID,
-		"uaa_client_secret": &apiConfig.UAAClientSecret,
+		uaaEndpointKey:     &apiConfig.UAAEndpoint,
+		uaaTokenKey:        &apiConfig.UAAToken,
+		uaaRefreshTokenKey: &apiConfig.UAARefreshToken,
+		uaaClientIDKey:     &apiConfig.UAAClientID,
+		uaaClientSecretKey: &apiConfig.UAAClientSecret,
 	}
 
 	for key, field := range uaaFields {
@@ -351,7 +365,7 @@ func parseAPIUAAFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
 }
 
 // parseAPIOrganizationSpaceFields parses organization and space fields.
-func parseAPIOrganizationSpaceFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
+func parseAPIOrganizationSpaceFields(apiConfig *APIConfig, apiMap map[string]any) {
 	if org, ok := apiMap[organizationKey].(string); ok {
 		apiConfig.Organization = org
 	}
@@ -360,7 +374,7 @@ func parseAPIOrganizationSpaceFields(apiConfig *APIConfig, apiMap map[string]int
 		apiConfig.OrganizationGUID = orgGUID
 	}
 
-	if space, ok := apiMap["space"].(string); ok {
+	if space, ok := apiMap[spaceKey].(string); ok {
 		apiConfig.Space = space
 	}
 
@@ -370,7 +384,7 @@ func parseAPIOrganizationSpaceFields(apiConfig *APIConfig, apiMap map[string]int
 }
 
 // parseAPITimestampFields parses timestamp fields in API configuration.
-func parseAPITimestampFields(apiConfig *APIConfig, apiMap map[string]interface{}) {
+func parseAPITimestampFields(apiConfig *APIConfig, apiMap map[string]any) {
 	if tokenExpiresAtStr, ok := apiMap["token_expires_at"].(string); ok && tokenExpiresAtStr != "" {
 		t, err := time.Parse(time.RFC3339, tokenExpiresAtStr)
 		if err == nil {
@@ -401,7 +415,7 @@ func loadLegacyTargets(config *Config) {
 	}
 
 	for name, targetRaw := range targetsRaw {
-		if targetMap, ok := targetRaw.(map[string]interface{}); ok {
+		if targetMap, ok := targetRaw.(map[string]any); ok {
 			target := parseTarget(targetMap)
 			config.Targets[name] = target
 		}
@@ -409,7 +423,7 @@ func loadLegacyTargets(config *Config) {
 }
 
 // parseTarget parses a target configuration from a map.
-func parseTarget(targetMap map[string]interface{}) Target {
+func parseTarget(targetMap map[string]any) Target {
 	target := Target{}
 
 	parseTargetBasicFields(&target, targetMap)
@@ -420,7 +434,7 @@ func parseTarget(targetMap map[string]interface{}) Target {
 }
 
 // parseTargetBasicFields parses basic target fields.
-func parseTargetBasicFields(target *Target, targetMap map[string]interface{}) {
+func parseTargetBasicFields(target *Target, targetMap map[string]any) {
 	if api, ok := targetMap["api"].(string); ok {
 		target.API = api
 	}
@@ -429,7 +443,7 @@ func parseTargetBasicFields(target *Target, targetMap map[string]interface{}) {
 		target.Organization = org
 	}
 
-	if space, ok := targetMap["space"].(string); ok {
+	if space, ok := targetMap[spaceKey].(string); ok {
 		target.Space = space
 	}
 
@@ -439,8 +453,8 @@ func parseTargetBasicFields(target *Target, targetMap map[string]interface{}) {
 }
 
 // parseTargetAuthFields parses authentication fields for targets.
-func parseTargetAuthFields(target *Target, targetMap map[string]interface{}) {
-	if token, ok := targetMap["token"].(string); ok {
+func parseTargetAuthFields(target *Target, targetMap map[string]any) {
+	if token, ok := targetMap[tokenKey].(string); ok {
 		target.Token = token
 	}
 
@@ -454,13 +468,13 @@ func parseTargetAuthFields(target *Target, targetMap map[string]interface{}) {
 }
 
 // parseTargetUAAFields parses UAA-related fields for targets.
-func parseTargetUAAFields(target *Target, targetMap map[string]interface{}) {
+func parseTargetUAAFields(target *Target, targetMap map[string]any) {
 	uaaFields := map[string]*string{
-		"uaa_endpoint":      &target.UAAEndpoint,
-		"uaa_token":         &target.UAAToken,
-		"uaa_refresh_token": &target.UAARefreshToken,
-		"uaa_client_id":     &target.UAAClientID,
-		"uaa_client_secret": &target.UAAClientSecret,
+		uaaEndpointKey:     &target.UAAEndpoint,
+		uaaTokenKey:        &target.UAAToken,
+		uaaRefreshTokenKey: &target.UAARefreshToken,
+		uaaClientIDKey:     &target.UAAClientID,
+		uaaClientSecretKey: &target.UAAClientSecret,
 	}
 
 	for key, field := range uaaFields {
@@ -783,10 +797,10 @@ func setViperAPIConfig(apiConfig *APIConfig) {
 	viper.Set("api", apiConfig.Endpoint)
 	viper.Set(organizationKey, apiConfig.Organization)
 	viper.Set("organization_guid", apiConfig.OrganizationGUID)
-	viper.Set("space", apiConfig.Space)
+	viper.Set(spaceKey, apiConfig.Space)
 	viper.Set("space_guid", apiConfig.SpaceGUID)
 	viper.Set("username", apiConfig.Username)
-	viper.Set("uaa_endpoint", apiConfig.UAAEndpoint)
+	viper.Set(uaaEndpointKey, apiConfig.UAAEndpoint)
 }
 
 func createTokenManager(apiConfig *APIConfig, apiDomain string) auth.TokenManager {
@@ -946,12 +960,12 @@ func getAPIConfigHandler(key string) (func(*APIConfig, string), bool) {
 		"username":            func(c *APIConfig, v string) { c.Username = v },
 		organizationKey:       func(c *APIConfig, v string) { c.Organization = v },
 		"organization_guid":   func(c *APIConfig, v string) { c.OrganizationGUID = v },
-		"space":               func(c *APIConfig, v string) { c.Space = v },
+		spaceKey:              func(c *APIConfig, v string) { c.Space = v },
 		"space_guid":          func(c *APIConfig, v string) { c.SpaceGUID = v },
 		"skip_ssl_validation": func(c *APIConfig, v string) { c.SkipSSLValidation = parseBoolValue(v) },
-		"uaa_endpoint":        func(c *APIConfig, v string) { c.UAAEndpoint = v },
-		"uaa_client_id":       func(c *APIConfig, v string) { c.UAAClientID = v },
-		"uaa_client_secret":   func(c *APIConfig, v string) { c.UAAClientSecret = v },
+		uaaEndpointKey:        func(c *APIConfig, v string) { c.UAAEndpoint = v },
+		uaaClientIDKey:        func(c *APIConfig, v string) { c.UAAClientID = v },
+		uaaClientSecretKey:    func(c *APIConfig, v string) { c.UAAClientSecret = v },
 	}
 	handler, exists := handlers[key]
 
@@ -996,20 +1010,20 @@ func unsetAPISpecificConfig(config *Config, apiDomain, key string) error {
 		apiConfig.Organization = ""
 	case "organization_guid":
 		apiConfig.OrganizationGUID = ""
-	case "space":
+	case spaceKey:
 		apiConfig.Space = ""
 	case "space_guid":
 		apiConfig.SpaceGUID = ""
 	case "skip_ssl_validation":
 		apiConfig.SkipSSLValidation = false
-	case "uaa_endpoint":
+	case uaaEndpointKey:
 		apiConfig.UAAEndpoint = ""
-	case "uaa_client_id":
+	case uaaClientIDKey:
 		apiConfig.UAAClientID = ""
-	case "uaa_client_secret":
+	case uaaClientSecretKey:
 		apiConfig.UAAClientSecret = ""
 	// Token fields should not be unset via config command for security
-	case "token", "refresh_token", "uaa_token", "uaa_refresh_token":
+	case tokenKey, "refresh_token", uaaTokenKey, uaaRefreshTokenKey:
 		return fmt.Errorf("%w. Use 'capi logout' instead", capi.ErrTokenFieldsCannotUnset)
 	default:
 		return fmt.Errorf("%w: %s", capi.ErrUnknownConfigKey, key)

@@ -71,7 +71,7 @@ func newBuildpacksListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List buildpacks",
 		Long:  "List all buildpacks",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -407,7 +407,7 @@ func newBuildpacksCreateCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create a buildpack",
 		Long:  "Create a new buildpack",
 		RunE:  runBuildpacksCreate,

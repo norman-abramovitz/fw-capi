@@ -7,7 +7,7 @@ import (
 // NewUAAClientCommand creates the client sub-command group.
 func NewUAAClientCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "client",
+		Use:   ClientCommandName,
 		Short: "Manage UAA OAuth clients",
 		Long: `Manage UAA OAuth clients with CRUD operations.
 

@@ -101,7 +101,7 @@ func newOrgQuotasListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List organization quotas",
 		Long:  "List all organization quotas",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -499,7 +499,7 @@ func newOrgQuotasCreateCommand() *cobra.Command {
 	config := &orgQuotaCreateConfig{}
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create a new organization quota",
 		Long:  "Create a new Cloud Foundry organization quota",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -731,7 +731,7 @@ func newOrgQuotasDeleteCommand() *cobra.Command {
 		Long:        "Delete a Cloud Foundry organization quota",
 		EntityType:  "organization quota",
 		GetResource: CreateOrganizationQuotaDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType

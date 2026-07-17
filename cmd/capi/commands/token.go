@@ -20,7 +20,7 @@ import (
 // NewTokenCommand creates the token command group.
 func NewTokenCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "token",
+		Use:   Token,
 		Short: "Manage authentication tokens",
 		Long:  "Commands for managing authentication tokens including status and refresh",
 	}
@@ -38,7 +38,7 @@ func newTokenStatusCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "status",
+		Use:   Status,
 		Short: "Show token status and expiration",
 		Long:  "Display information about the current authentication token including expiration time",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -96,7 +96,7 @@ func newTokenRefreshCommand() *cobra.Command {
 	var apiFlag string
 
 	cmd := &cobra.Command{
-		Use:   "refresh",
+		Use:   Refresh,
 		Short: "Manually refresh authentication token",
 		Long:  "Force refresh the authentication token using the stored refresh token",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -155,9 +155,9 @@ func displayTokenStatus(apiConfig *APIConfig, apiDomain string) error {
 	}
 }
 
-func displayTokenStatusTable(tokenStatus map[string]interface{}) error {
+func displayTokenStatusTable(tokenStatus map[string]any) error {
 	_, _ = fmt.Fprintf(os.Stdout, "Token Status for API: %s\n", tokenStatus["api_domain"])
-	_, _ = fmt.Fprintf(os.Stdout, "Endpoint: %s\n\n", tokenStatus["endpoint"])
+	_, _ = fmt.Fprintf(os.Stdout, "Endpoint: %s\n\n", tokenStatus[keyEndpoint])
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header("Property", "Value")
@@ -167,7 +167,7 @@ func displayTokenStatusTable(tokenStatus map[string]interface{}) error {
 		return fmt.Errorf("failed to append authenticated status: %w", err)
 	}
 
-	err = table.Append([]string{"Status", fmt.Sprintf("%v", tokenStatus["status"])})
+	err = table.Append([]string{"Status", fmt.Sprintf("%v", tokenStatus[keyStatus])})
 	if err != nil {
 		return fmt.Errorf("failed to append status: %w", err)
 	}
@@ -220,7 +220,7 @@ func displayAllTokenStatus(config *Config) error {
 
 	if output == OutputFormatJSON || output == OutputFormatYAML {
 		// For structured output, show all APIs in one object
-		allStatus := make(map[string]interface{})
+		allStatus := make(map[string]any)
 
 		for domain, apiConfig := range config.APIs {
 			tokenStatus := buildTokenStatusData(apiConfig, domain)
@@ -268,14 +268,14 @@ func displayAllTokenStatus(config *Config) error {
 	return nil
 }
 
-func buildTokenStatusData(apiConfig *APIConfig, apiDomain string) map[string]interface{} {
-	tokenStatus := map[string]interface{}{
+func buildTokenStatusData(apiConfig *APIConfig, apiDomain string) map[string]any {
+	tokenStatus := map[string]any{
 		"api_domain": apiDomain,
-		"endpoint":   apiConfig.Endpoint,
+		keyEndpoint:  apiConfig.Endpoint,
 	}
 
 	if apiConfig.Token == "" {
-		tokenStatus["status"] = "No token"
+		tokenStatus[keyStatus] = "No token"
 		tokenStatus["authenticated"] = false
 
 		return tokenStatus
@@ -287,8 +287,8 @@ func buildTokenStatusData(apiConfig *APIConfig, apiDomain string) map[string]int
 }
 
 // populateTokenInfo adds token information to the status map when a token is present.
-func populateTokenInfo(tokenStatus map[string]interface{}, apiConfig *APIConfig) {
-	tokenStatus["status"] = "Token present"
+func populateTokenInfo(tokenStatus map[string]any, apiConfig *APIConfig) {
+	tokenStatus[keyStatus] = "Token present"
 	tokenStatus["authenticated"] = true
 
 	// Add expiration info if available
@@ -324,7 +324,7 @@ func getTokenExpiration(apiConfig *APIConfig) *time.Time {
 }
 
 // addExpirationInfo adds expiration status and timing information.
-func addExpirationInfo(tokenStatus map[string]interface{}, expiresAt *time.Time) {
+func addExpirationInfo(tokenStatus map[string]any, expiresAt *time.Time) {
 	tokenStatus["expires_at"] = expiresAt.Format(time.RFC3339)
 
 	now := time.Now()

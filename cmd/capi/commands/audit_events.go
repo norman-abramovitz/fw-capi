@@ -44,7 +44,7 @@ func newAuditEventsListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List audit events",
 		Long:  "List audit events with optional filtering",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -308,7 +308,7 @@ func formatTargetInfo(name, targetType string) string {
 	return targetInfo
 }
 
-func formatSpaceName(space interface{}) string {
+func formatSpaceName(space any) string {
 	if space == nil {
 		return constants.NotAvailable
 	}
@@ -323,7 +323,7 @@ func formatSpaceName(space interface{}) string {
 	}
 }
 
-func formatOrgName(org interface{}) string {
+func formatOrgName(org any) string {
 	if org == nil {
 		return constants.NotAvailable
 	}
@@ -340,7 +340,7 @@ func formatOrgName(org interface{}) string {
 
 func newAuditEventsGetCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "get EVENT_GUID",
+		Use:   UseGetEventGUID,
 		Short: "Get audit event details",
 		Long:  "Display detailed information about a specific audit event",
 		Args:  cobra.ExactArgs(1),
@@ -436,7 +436,7 @@ func printTargetInfo(target capi.Target) {
 	_, _ = os.Stdout.WriteString("\n")
 }
 
-func printSpaceInfo(space interface{}) {
+func printSpaceInfo(space any) {
 	if space == nil {
 		return
 	}
@@ -455,7 +455,7 @@ func printSpaceInfo(space interface{}) {
 	_, _ = os.Stdout.WriteString("\n")
 }
 
-func printOrganizationInfo(org interface{}) {
+func printOrganizationInfo(org any) {
 	if org == nil {
 		return
 	}
@@ -474,7 +474,7 @@ func printOrganizationInfo(org interface{}) {
 	_, _ = os.Stdout.WriteString("\n")
 }
 
-func printEventData(data map[string]interface{}) {
+func printEventData(data map[string]any) {
 	if len(data) == 0 {
 		return
 	}
@@ -486,8 +486,8 @@ func printEventData(data map[string]interface{}) {
 	}
 }
 
-func printEventDataValue(key string, value interface{}, indent string) {
-	if valueMap, ok := value.(map[string]interface{}); ok {
+func printEventDataValue(key string, value any, indent string) {
+	if valueMap, ok := value.(map[string]any); ok {
 		_, _ = fmt.Fprintf(os.Stdout, "%s%s:\n", indent, key)
 
 		for subKey, subValue := range valueMap {

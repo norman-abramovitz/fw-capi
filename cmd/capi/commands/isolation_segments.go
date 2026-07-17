@@ -14,6 +14,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// EntityTypeIsolationSegment is the shared EntityType value for isolation segment
+// create/update/delete command configs.
+const EntityTypeIsolationSegment = "isolation segment"
+
 // NewIsolationSegmentsCommand creates the isolation-segments command group.
 func NewIsolationSegmentsCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -140,7 +144,7 @@ func newIsolationSegmentsListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List isolation segments",
 		Long:  "List all isolation segments the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -278,12 +282,12 @@ func newIsolationSegmentsGetCommand() *cobra.Command {
 
 func newIsolationSegmentsCreateCommand() *cobra.Command {
 	return createGenericCreateCommand(CreateConfig{
-		Use:        "create",
+		Use:        Create,
 		Short:      "Create an isolation segment",
 		Long:       "Create a new Cloud Foundry isolation segment",
-		EntityType: "isolation segment",
+		EntityType: EntityTypeIsolationSegment,
 		NameError:  ErrIsolationSegmentNameRequired,
-		CreateFunc: func(ctx context.Context, client interface{}, name string, labels map[string]string) (string, string, error) {
+		CreateFunc: func(ctx context.Context, client any, name string, labels map[string]string) (string, string, error) {
 			createReq := &capi.IsolationSegmentCreateRequest{
 				Name: name,
 			}
@@ -314,9 +318,9 @@ func newIsolationSegmentsUpdateCommand() *cobra.Command {
 		Use:         "update ISOLATION_SEGMENT_NAME_OR_GUID",
 		Short:       "Update an isolation segment",
 		Long:        "Update an existing Cloud Foundry isolation segment",
-		EntityType:  "isolation segment",
+		EntityType:  EntityTypeIsolationSegment,
 		GetResource: CreateIsolationSegmentUpdateResourceFunc(),
-		UpdateFunc: func(ctx context.Context, client interface{}, guid, newName string, labels map[string]string) (string, error) {
+		UpdateFunc: func(ctx context.Context, client any, guid, newName string, labels map[string]string) (string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return "", constants.ErrInvalidClientType
@@ -353,9 +357,9 @@ func newIsolationSegmentsDeleteCommand() *cobra.Command {
 		Use:         "delete ISOLATION_SEGMENT_NAME_OR_GUID",
 		Short:       "Delete an isolation segment",
 		Long:        "Delete a Cloud Foundry isolation segment",
-		EntityType:  "isolation segment",
+		EntityType:  EntityTypeIsolationSegment,
 		GetResource: CreateIsolationSegmentDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType
@@ -424,10 +428,10 @@ func validateOrgNames(orgNames []string) error {
 	return nil
 }
 
-func findIsolationSegment(client interface{}, nameOrGUID string) (string, string, error) {
+func findIsolationSegment(client any, nameOrGUID string) (string, string, error) {
 	ctx := context.Background()
 
-	clientWithSegments, hasSegments := client.(interface{ IsolationSegments() interface{} })
+	clientWithSegments, hasSegments := client.(interface{ IsolationSegments() any })
 	if !hasSegments {
 		return "", "", constants.ErrInvalidClientType
 	}
@@ -436,7 +440,7 @@ func findIsolationSegment(client interface{}, nameOrGUID string) (string, string
 
 	// Try to get by GUID first
 	getClient, ok := segmentsClient.(interface {
-		Get(ctx context.Context, id string) (interface{}, error)
+		Get(ctx context.Context, id string) (any, error)
 	})
 	if !ok {
 		return "", "", constants.ErrInvalidClientType
@@ -452,13 +456,13 @@ func findIsolationSegment(client interface{}, nameOrGUID string) (string, string
 	return "segment_guid", "segment_name", nil
 }
 
-func findIsolationSegmentByName(segmentsClient interface{}, nameOrGUID string) (string, string, error) {
+func findIsolationSegmentByName(segmentsClient any, nameOrGUID string) (string, string, error) {
 	ctx := context.Background()
 	params := capi.NewQueryParams()
 	params.WithFilter("names", nameOrGUID)
 
 	listClient, ok := segmentsClient.(interface {
-		List(ctx context.Context, params interface{}) (interface{}, error)
+		List(ctx context.Context, params any) (any, error)
 	})
 	if !ok {
 		return "", "", constants.ErrInvalidClientType
@@ -474,7 +478,7 @@ func findIsolationSegmentByName(segmentsClient interface{}, nameOrGUID string) (
 	return "segment_guid", "segment_name", nil
 }
 
-func findOrganizationsByNames(client interface{}, orgNames []string) ([]string, error) {
+func findOrganizationsByNames(client any, orgNames []string) ([]string, error) {
 	orgGUIDs := make([]string, 0, len(orgNames))
 
 	for _, orgName := range orgNames {
@@ -489,18 +493,18 @@ func findOrganizationsByNames(client interface{}, orgNames []string) ([]string, 
 	return orgGUIDs, nil
 }
 
-func findOrganizationByName(client interface{}, orgName string) (string, error) {
+func findOrganizationByName(client any, orgName string) (string, error) {
 	ctx := context.Background()
 	params := capi.NewQueryParams()
 	params.WithFilter("names", orgName)
 
-	clientWithOrgs, orgClientOk := client.(interface{ Organizations() interface{} })
+	clientWithOrgs, orgClientOk := client.(interface{ Organizations() any })
 	if !orgClientOk {
 		return "", constants.ErrClientNoOrganizationsSupport
 	}
 
 	orgsClient, ok := clientWithOrgs.Organizations().(interface {
-		List(ctx context.Context, params interface{}) (interface{}, error)
+		List(ctx context.Context, params any) (any, error)
 	})
 	if !ok {
 		return "", constants.ErrOrganizationsNoListSupport
@@ -516,10 +520,10 @@ func findOrganizationByName(client interface{}, orgName string) (string, error) 
 	return OrgGUID, nil
 }
 
-func entitleOrganizationsToSegment(client interface{}, segmentGUID, segmentName string, orgGUIDs []string, orgCount int) error {
+func entitleOrganizationsToSegment(client any, segmentGUID, segmentName string, orgGUIDs []string, orgCount int) error {
 	ctx := context.Background()
 
-	clientWithSegments, hasSegments := client.(interface{ IsolationSegments() interface{} })
+	clientWithSegments, hasSegments := client.(interface{ IsolationSegments() any })
 	if !hasSegments {
 		return constants.ErrInvalidClientType
 	}
@@ -527,7 +531,7 @@ func entitleOrganizationsToSegment(client interface{}, segmentGUID, segmentName 
 	segmentsClient := clientWithSegments.IsolationSegments()
 
 	entitleClient, ok := segmentsClient.(interface {
-		EntitleOrganizations(ctx context.Context, segmentID string, orgIDs []string) (interface{}, error)
+		EntitleOrganizations(ctx context.Context, segmentID string, orgIDs []string) (any, error)
 	})
 	if !ok {
 		return constants.ErrInvalidClientType
@@ -574,17 +578,17 @@ func runIsolationSegmentsRevokeOrgCommand(cmd *cobra.Command, segmentNameOrGUID,
 	return revokeOrganizationFromSegment(client, segmentGUID, segmentName, orgGUID, orgName)
 }
 
-func findOrganization(client interface{}, orgNameOrGUID string) (string, string, error) {
+func findOrganization(client any, orgNameOrGUID string) (string, string, error) {
 	ctx := context.Background()
 
 	// Try to get by GUID first
-	clientWithOrgs, orgClientOk := client.(interface{ Organizations() interface{} })
+	clientWithOrgs, orgClientOk := client.(interface{ Organizations() any })
 	if !orgClientOk {
 		return "", "", constants.ErrClientNoOrganizationsSupport
 	}
 
 	orgsClient, ok := clientWithOrgs.Organizations().(interface {
-		Get(ctx context.Context, id string) (interface{}, error)
+		Get(ctx context.Context, id string) (any, error)
 	})
 	if !ok {
 		return "", "", constants.ErrOrganizationsNoGetSupport
@@ -600,18 +604,18 @@ func findOrganization(client interface{}, orgNameOrGUID string) (string, string,
 	return OrgGUID, "org_name", nil
 }
 
-func findOrganizationByNameDetailed(client interface{}, orgNameOrGUID string) (string, string, error) {
+func findOrganizationByNameDetailed(client any, orgNameOrGUID string) (string, string, error) {
 	ctx := context.Background()
 	params := capi.NewQueryParams()
 	params.WithFilter("names", orgNameOrGUID)
 
-	clientWithOrgs, hasOrgsSupport := client.(interface{ Organizations() interface{} })
+	clientWithOrgs, hasOrgsSupport := client.(interface{ Organizations() any })
 	if !hasOrgsSupport {
 		return "", "", constants.ErrClientNoOrganizationsSupport
 	}
 
 	orgsClient, hasListSupport := clientWithOrgs.Organizations().(interface {
-		List(ctx context.Context, params interface{}) (interface{}, error)
+		List(ctx context.Context, params any) (any, error)
 	})
 	if !hasListSupport {
 		return "", "", constants.ErrOrganizationsNoListSupport
@@ -627,10 +631,10 @@ func findOrganizationByNameDetailed(client interface{}, orgNameOrGUID string) (s
 	return OrgGUID, "org_name", nil
 }
 
-func revokeOrganizationFromSegment(client interface{}, segmentGUID, segmentName, orgGUID, orgName string) error {
+func revokeOrganizationFromSegment(client any, segmentGUID, segmentName, orgGUID, orgName string) error {
 	ctx := context.Background()
 
-	clientWithSegments, hasSegmentsSupport := client.(interface{ IsolationSegments() interface{} })
+	clientWithSegments, hasSegmentsSupport := client.(interface{ IsolationSegments() any })
 	if !hasSegmentsSupport {
 		return constants.ErrClientNoIsolationSegmentsSupport
 	}

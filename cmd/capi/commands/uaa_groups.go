@@ -374,7 +374,7 @@ The group can be specified by name or ID, and the member can be a username or us
 // createUsersMapGroupCommand creates the map group command.
 func createUsersMapGroupCommand() *cobra.Command {
 	config := GroupMappingConfig{
-		Operation:      "map-group",
+		Operation:      OperationMapGroup,
 		SuccessMessage: "Successfully mapped external group '%s' from origin '%s' to UAA group '%s'\n",
 	}
 
@@ -384,7 +384,7 @@ func createUsersMapGroupCommand() *cobra.Command {
 // createUsersUnmapGroupCommand creates the unmap group command.
 func createUsersUnmapGroupCommand() *cobra.Command {
 	config := GroupMappingConfig{
-		Operation:      "unmap-group",
+		Operation:      OperationUnmapGroup,
 		SuccessMessage: "Successfully unmapped external group '%s' from origin '%s' from UAA group '%s'\n",
 	}
 

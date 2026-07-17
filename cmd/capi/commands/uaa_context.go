@@ -18,7 +18,7 @@ import (
 func createUsersContextCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:     "context",
-		Aliases: []string{"ctx", "status"},
+		Aliases: []string{"ctx", Status},
 		Short:   "Display current UAA context",
 		Long:    "Show information about the currently active UAA context including endpoint, authentication status, and user information",
 		Example: `  # Show current UAA context
@@ -48,7 +48,7 @@ func createUsersContextCommand() *cobra.Command {
 			ctx := context.Background()
 
 			var (
-				serverInfo      map[string]interface{}
+				serverInfo      map[string]any
 				connectionError error
 			)
 
@@ -100,7 +100,7 @@ func createUsersTargetCommand() *cobra.Command {
 			}
 
 			// Update configuration
-			viper.Set("uaa_endpoint", targetURL)
+			viper.Set(uaaEndpointKey, targetURL)
 
 			config := loadConfig()
 			config.UAAEndpoint = targetURL
@@ -135,7 +135,7 @@ func createUsersTargetCommand() *cobra.Command {
 // createUsersInfoCommand creates the UAA info command.
 func createUsersInfoCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "info",
+		Use:   Info,
 		Short: "Display UAA server information",
 		Long:  "Show version and configuration information for the targeted UAA server",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -188,7 +188,7 @@ func createUsersInfoCommand() *cobra.Command {
 // createUsersVersionCommand creates the UAA version command.
 func createUsersVersionCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "version",
+		Use:   Version,
 		Short: "Display UAA server version",
 		Long:  "Show the version of the targeted UAA server",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -213,7 +213,7 @@ func createUsersVersionCommand() *cobra.Command {
 			// Extract version information
 			version := Unknown
 
-			if app, ok := serverInfo["app"].(map[string]interface{}); ok {
+			if app, ok := serverInfo[uaaInfoKeyApp].(map[string]any); ok {
 				if v, ok := app["version"].(string); ok && v != "" {
 					version = v
 				}
@@ -223,8 +223,8 @@ func createUsersVersionCommand() *cobra.Command {
 			switch output {
 			case OutputFormatJSON:
 				result := map[string]string{
-					"version":  version,
-					"endpoint": GetEffectiveUAAEndpoint(config),
+					keyVersion:  version,
+					keyEndpoint: GetEffectiveUAAEndpoint(config),
 				}
 				encoder := json.NewEncoder(os.Stdout)
 				encoder.SetIndent("", "  ")
@@ -237,8 +237,8 @@ func createUsersVersionCommand() *cobra.Command {
 				return nil
 			case OutputFormatYAML:
 				result := map[string]string{
-					"version":  version,
-					"endpoint": GetEffectiveUAAEndpoint(config),
+					keyVersion:  version,
+					keyEndpoint: GetEffectiveUAAEndpoint(config),
 				}
 				encoder := yaml.NewEncoder(os.Stdout)
 
@@ -268,8 +268,8 @@ func createUsersVersionCommand() *cobra.Command {
 // Helper functions for context display
 
 func showContextJSON(config *Config, clientError error) error {
-	context := map[string]interface{}{
-		"uaa_endpoint":   config.UAAEndpoint,
+	context := map[string]any{
+		uaaEndpointKey:   config.UAAEndpoint,
 		keyAuthenticated: config.UAAToken != "" || config.Token != "",
 		"client_error":   nil,
 	}
@@ -290,8 +290,8 @@ func showContextJSON(config *Config, clientError error) error {
 }
 
 func showContextYAML(config *Config, clientError error) error {
-	context := map[string]interface{}{
-		"uaa_endpoint":   config.UAAEndpoint,
+	context := map[string]any{
+		uaaEndpointKey:   config.UAAEndpoint,
 		keyAuthenticated: config.UAAToken != "" || config.Token != "",
 		"client_error":   nil,
 	}
@@ -338,9 +338,9 @@ func showContextTable(config *Config, clientError error) error {
 	return nil
 }
 
-func showContextWithServerInfoJSON(client *UAAClientWrapper, serverInfo map[string]interface{}, connectionError error) error {
-	context := map[string]interface{}{
-		"uaa_endpoint":      client.Endpoint(),
+func showContextWithServerInfoJSON(client *UAAClientWrapper, serverInfo map[string]any, connectionError error) error {
+	context := map[string]any{
+		uaaEndpointKey:      client.Endpoint(),
 		keyAuthenticated:    client.IsAuthenticated(),
 		"connection_status": connectionError == nil,
 		keyServerInfo:       serverInfo,
@@ -360,9 +360,9 @@ func showContextWithServerInfoJSON(client *UAAClientWrapper, serverInfo map[stri
 	return nil
 }
 
-func showContextWithServerInfoYAML(client *UAAClientWrapper, serverInfo map[string]interface{}, connectionError error) error {
-	context := map[string]interface{}{
-		"uaa_endpoint":      client.Endpoint(),
+func showContextWithServerInfoYAML(client *UAAClientWrapper, serverInfo map[string]any, connectionError error) error {
+	context := map[string]any{
+		uaaEndpointKey:      client.Endpoint(),
 		keyAuthenticated:    client.IsAuthenticated(),
 		"connection_status": connectionError == nil,
 		keyServerInfo:       serverInfo,
@@ -381,7 +381,7 @@ func showContextWithServerInfoYAML(client *UAAClientWrapper, serverInfo map[stri
 	return nil
 }
 
-func showContextWithServerInfoTable(client *UAAClientWrapper, serverInfo map[string]interface{}, connectionError error) error {
+func showContextWithServerInfoTable(client *UAAClientWrapper, serverInfo map[string]any, connectionError error) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header("Property", "Value")
 
@@ -420,7 +420,7 @@ func showContextWithServerInfoTable(client *UAAClientWrapper, serverInfo map[str
 	return nil
 }
 
-func displayServerInfoTable(serverInfo map[string]interface{}) error {
+func displayServerInfoTable(serverInfo map[string]any) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header("Property", "Value")
 
@@ -428,7 +428,7 @@ func displayServerInfoTable(serverInfo map[string]interface{}) error {
 	for key, value := range serverInfo {
 		if valueStr, ok := value.(string); ok && valueStr != "" {
 			_ = table.Append(key, valueStr)
-		} else if valueMap, ok := value.(map[string]interface{}); ok {
+		} else if valueMap, ok := value.(map[string]any); ok {
 			// Handle nested objects like "app"
 			for nestedKey, nestedValue := range valueMap {
 				if nestedStr, ok := nestedValue.(string); ok && nestedStr != "" {
@@ -447,7 +447,7 @@ func displayServerInfoTable(serverInfo map[string]interface{}) error {
 }
 
 // addServerInfoToTable adds server information to the table if available.
-func addServerInfoToTable(table *tablewriter.Table, serverInfo map[string]interface{}) {
+func addServerInfoToTable(table *tablewriter.Table, serverInfo map[string]any) {
 	if len(serverInfo) == 0 {
 		return
 	}
@@ -458,8 +458,8 @@ func addServerInfoToTable(table *tablewriter.Table, serverInfo map[string]interf
 }
 
 // addAppInfoToTable adds application information from server info.
-func addAppInfoToTable(table *tablewriter.Table, serverInfo map[string]interface{}) {
-	app, ok := serverInfo["app"].(map[string]interface{})
+func addAppInfoToTable(table *tablewriter.Table, serverInfo map[string]any) {
+	app, ok := serverInfo[uaaInfoKeyApp].(map[string]any)
 	if !ok {
 		return
 	}
@@ -474,7 +474,7 @@ func addAppInfoToTable(table *tablewriter.Table, serverInfo map[string]interface
 }
 
 // addServerPropertyIfExists adds a server property to the table if it exists and is not empty.
-func addServerPropertyIfExists(table *tablewriter.Table, serverInfo map[string]interface{}, key, displayName string) {
+func addServerPropertyIfExists(table *tablewriter.Table, serverInfo map[string]any, key, displayName string) {
 	if value, ok := serverInfo[key].(string); ok && value != "" {
 		_ = table.Append(displayName, value)
 	}

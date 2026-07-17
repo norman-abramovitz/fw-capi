@@ -44,7 +44,7 @@ func newSpaceQuotasListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List space quotas",
 		Long:  "List all space quotas",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -520,7 +520,7 @@ func newSpaceQuotasCreateCommand() *cobra.Command {
 	config := &spaceQuotaCreateConfig{}
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create a new space quota",
 		Long:  "Create a new Cloud Foundry space quota",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -746,7 +746,7 @@ func newSpaceQuotasDeleteCommand() *cobra.Command {
 		Long:        "Delete a Cloud Foundry space quota",
 		EntityType:  "space quota",
 		GetResource: CreateSpaceQuotaDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType

@@ -39,6 +39,9 @@ const (
 	// Display limits.
 	commandTruncateLength     = 50
 	descriptionTruncateLength = 60
+
+	// healthCheckTypeNone is the CF API discriminator for "no health check".
+	healthCheckTypeNone = "none"
 )
 
 // validateFilePath validates that a file path is safe to read.
@@ -106,7 +109,7 @@ func newAppsListCommand() *cobra.Command {
 	var spaceName string
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List applications",
 		Long:  "List all applications the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +117,7 @@ func newAppsListCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&spaceName, "space", "s", "", "filter by space name")
+	cmd.Flags().StringVarP(&spaceName, spaceKey, "s", "", "filter by space name")
 
 	return cmd
 }
@@ -278,7 +281,7 @@ func extractBuildpacks(app capi.App) string {
 		return ""
 	}
 
-	bps, ok := app.Lifecycle.Data["buildpacks"].([]interface{})
+	bps, ok := app.Lifecycle.Data["buildpacks"].([]any)
 	if !ok {
 		return ""
 	}
@@ -677,13 +680,13 @@ func outputScaleInfoTable(info scaleInfo, title string) error {
 }
 
 // flattenJSON recursively flattens a JSON object into a map with dot-separated keys.
-func flattenJSON(obj interface{}, prefix string) map[string]interface{} {
-	result := make(map[string]interface{})
+func flattenJSON(obj any, prefix string) map[string]any {
+	result := make(map[string]any)
 
 	switch value := obj.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		flattenMapObject(value, prefix, result)
-	case []interface{}:
+	case []any:
 		flattenArrayObject(value, prefix, result)
 	default:
 		flattenPrimitiveObject(value, prefix, result)
@@ -692,16 +695,16 @@ func flattenJSON(obj interface{}, prefix string) map[string]interface{} {
 	return result
 }
 
-// flattenMapObject handles flattening of map[string]interface{} objects.
-func flattenMapObject(m map[string]interface{}, prefix string, result map[string]interface{}) {
+// flattenMapObject handles flattening of map[string]any objects.
+func flattenMapObject(m map[string]any, prefix string, result map[string]any) {
 	for key, value := range m {
 		fullKey := buildFullKey(key, prefix)
 		mergeNestedResults(value, fullKey, result)
 	}
 }
 
-// flattenArrayObject handles flattening of []interface{} objects.
-func flattenArrayObject(arr []interface{}, prefix string, result map[string]interface{}) {
+// flattenArrayObject handles flattening of []any objects.
+func flattenArrayObject(arr []any, prefix string, result map[string]any) {
 	for i, item := range arr {
 		fullKey := fmt.Sprintf("%s[%d]", prefix, i)
 		mergeNestedResults(item, fullKey, result)
@@ -709,7 +712,7 @@ func flattenArrayObject(arr []interface{}, prefix string, result map[string]inte
 }
 
 // flattenPrimitiveObject handles flattening of primitive values.
-func flattenPrimitiveObject(value interface{}, prefix string, result map[string]interface{}) {
+func flattenPrimitiveObject(value any, prefix string, result map[string]any) {
 	if prefix != "" {
 		result[prefix] = value
 	}
@@ -725,7 +728,7 @@ func buildFullKey(key, prefix string) string {
 }
 
 // mergeNestedResults recursively flattens and merges nested results.
-func mergeNestedResults(value interface{}, fullKey string, result map[string]interface{}) {
+func mergeNestedResults(value any, fullKey string, result map[string]any) {
 	if nested := flattenJSON(value, fullKey); len(nested) > 0 {
 		for k, v := range nested {
 			result[k] = v
@@ -748,16 +751,16 @@ func newAppsEnvCommand() *cobra.Command {
 }
 
 type envVar struct {
-	Name   string      `json:"name"   yaml:"name"`
-	Value  interface{} `json:"value"  yaml:"value"`
-	Source string      `json:"source" yaml:"source"`
+	Name   string `json:"name"   yaml:"name"`
+	Value  any    `json:"value"  yaml:"value"`
+	Source string `json:"source" yaml:"source"`
 }
 
 type appEnvData struct {
-	EnvVars         []envVar    `json:"environment_variables"`
-	VcapServices    interface{} `json:"vcap_services"`
-	VcapApplication interface{} `json:"vcap_application"`
-	AppName         string      `json:"-"`
+	EnvVars         []envVar `json:"environment_variables"`
+	VcapServices    any      `json:"vcap_services"`
+	VcapApplication any      `json:"vcap_application"`
+	AppName         string   `json:"-"`
 }
 
 func runAppsEnv(cmd *cobra.Command, nameOrGUID string) error {
@@ -805,8 +808,8 @@ func collectUserProvidedEnvVars(env *capi.AppEnv, envVars *[]envVar) {
 	}
 }
 
-func collectSystemEnvVars(env *capi.AppEnv, envVars *[]envVar) interface{} {
-	var vcapServices interface{}
+func collectSystemEnvVars(env *capi.AppEnv, envVars *[]envVar) any {
+	var vcapServices any
 
 	for key, value := range env.SystemEnvJSON {
 		if key == "VCAP_SERVICES" {
@@ -828,7 +831,7 @@ func collectStagingEnvVars(env *capi.AppEnv, envVars *[]envVar) {
 		*envVars = append(*envVars, envVar{
 			Name:   key,
 			Value:  value,
-			Source: "staging",
+			Source: LifecycleStaging,
 		})
 	}
 }
@@ -838,13 +841,13 @@ func collectRunningEnvVars(env *capi.AppEnv, envVars *[]envVar) {
 		*envVars = append(*envVars, envVar{
 			Name:   key,
 			Value:  value,
-			Source: "running",
+			Source: LifecycleRunning,
 		})
 	}
 }
 
-func collectApplicationEnvVars(env *capi.AppEnv, envVars *[]envVar) interface{} {
-	var vcapApplication interface{}
+func collectApplicationEnvVars(env *capi.AppEnv, envVars *[]envVar) any {
+	var vcapApplication any
 
 	for key, value := range env.ApplicationEnvJSON {
 		if key == "VCAP_APPLICATION" {
@@ -874,7 +877,7 @@ func outputAppEnv(data *appEnvData) error {
 }
 
 func outputAppEnvJSON(data *appEnvData) error {
-	result := map[string]interface{}{
+	result := map[string]any{
 		keyEnvironmentVariables: data.EnvVars,
 		"vcap_services":         data.VcapServices,
 		"vcap_application":      data.VcapApplication,
@@ -891,7 +894,7 @@ func outputAppEnvJSON(data *appEnvData) error {
 }
 
 func outputAppEnvYAML(data *appEnvData) error {
-	result := map[string]interface{}{
+	result := map[string]any{
 		keyEnvironmentVariables: data.EnvVars,
 		"vcap_services":         data.VcapServices,
 		"vcap_application":      data.VcapApplication,
@@ -938,7 +941,7 @@ func renderEnvVarsTable(envVars []envVar) {
 	_, _ = os.Stdout.WriteString("\n")
 }
 
-func renderVcapServicesTable(vcapServices interface{}) {
+func renderVcapServicesTable(vcapServices any) {
 	if vcapServices == nil {
 		return
 	}
@@ -964,7 +967,7 @@ func renderVcapServicesTable(vcapServices interface{}) {
 	_, _ = os.Stdout.WriteString("\n")
 }
 
-func renderVcapApplicationTable(vcapApplication interface{}) {
+func renderVcapApplicationTable(vcapApplication any) {
 	if vcapApplication == nil {
 		return
 	}
@@ -1054,7 +1057,7 @@ func setEnvironmentVariable(ctx context.Context, client capi.Client, appGUID, na
 	}
 
 	if currentEnvVars == nil {
-		currentEnvVars = make(map[string]interface{})
+		currentEnvVars = make(map[string]any)
 	}
 
 	currentEnvVars[name] = value
@@ -1449,8 +1452,8 @@ func outputEmptyProcesses(appName string) error {
 }
 
 // buildProcessData creates structured data for all processes.
-func buildProcessData(ctx context.Context, client capi.Client, processes []capi.Process, showStats bool) []map[string]interface{} {
-	processData := make([]map[string]interface{}, 0, len(processes))
+func buildProcessData(ctx context.Context, client capi.Client, processes []capi.Process, showStats bool) []map[string]any {
+	processData := make([]map[string]any, 0, len(processes))
 
 	for _, process := range processes {
 		processInfo := buildProcessInfo(process)
@@ -1469,8 +1472,8 @@ func buildProcessData(ctx context.Context, client capi.Client, processes []capi.
 }
 
 // buildProcessInfo creates the basic process information map.
-func buildProcessInfo(process capi.Process) map[string]interface{} {
-	processInfo := map[string]interface{}{
+func buildProcessInfo(process capi.Process) map[string]any {
+	processInfo := map[string]any{
 		"type":      process.Type,
 		"guid":      process.GUID,
 		"instances": process.Instances,
@@ -1486,7 +1489,7 @@ func buildProcessInfo(process capi.Process) map[string]interface{} {
 }
 
 // setLogRateLimit adds log rate limit information to the process info.
-func setLogRateLimit(processInfo map[string]interface{}, logRateLimit *int) {
+func setLogRateLimit(processInfo map[string]any, logRateLimit *int) {
 	if logRateLimit != nil {
 		processInfo["log_rate_limit_bytes_per_sec"] = *logRateLimit
 	} else {
@@ -1495,19 +1498,19 @@ func setLogRateLimit(processInfo map[string]interface{}, logRateLimit *int) {
 }
 
 // setCommand adds command information to the process info.
-func setCommand(processInfo map[string]interface{}, command *string) {
+func setCommand(processInfo map[string]any, command *string) {
 	if command != nil {
 		processInfo["command"] = *command
 	}
 }
 
 // setHealthCheck adds health check information to the process info.
-func setHealthCheck(processInfo map[string]interface{}, healthCheck *capi.HealthCheck) {
+func setHealthCheck(processInfo map[string]any, healthCheck *capi.HealthCheck) {
 	if healthCheck == nil {
 		return
 	}
 
-	healthCheckInfo := map[string]interface{}{
+	healthCheckInfo := map[string]any{
 		"type": healthCheck.Type,
 	}
 
@@ -1525,7 +1528,7 @@ func setHealthCheck(processInfo map[string]interface{}, healthCheck *capi.Health
 }
 
 // getProcessStats retrieves and formats process statistics.
-func getProcessStats(ctx context.Context, client capi.Client, processGUID string) ([]map[string]interface{}, error) {
+func getProcessStats(ctx context.Context, client capi.Client, processGUID string) ([]map[string]any, error) {
 	stats, err := client.Processes().GetStats(ctx, processGUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get process stats: %w", err)
@@ -1535,14 +1538,14 @@ func getProcessStats(ctx context.Context, client capi.Client, processGUID string
 		return nil, nil
 	}
 
-	instanceStats := make([]map[string]interface{}, 0, len(stats.Resources))
+	instanceStats := make([]map[string]any, 0, len(stats.Resources))
 	for _, stat := range stats.Resources {
-		statInfo := map[string]interface{}{
+		statInfo := map[string]any{
 			"index": stat.Index,
 			"state": stat.State,
 		}
 		if stat.Usage != nil {
-			statInfo["usage"] = map[string]interface{}{
+			statInfo["usage"] = map[string]any{
 				"cpu_percent":  stat.Usage.CPU * cpuPercentMultiplier,
 				"memory_bytes": stat.Usage.Mem,
 				"disk_bytes":   stat.Usage.Disk,
@@ -1556,7 +1559,7 @@ func getProcessStats(ctx context.Context, client capi.Client, processGUID string
 }
 
 // outputProcesses handles the output of process data in the requested format.
-func outputProcesses(processes []capi.Process, processData []map[string]interface{}, appName string, showStats bool) error {
+func outputProcesses(processes []capi.Process, processData []map[string]any, appName string, showStats bool) error {
 	output := viper.GetString("output")
 	switch output {
 	case OutputFormatJSON:
@@ -1569,7 +1572,7 @@ func outputProcesses(processes []capi.Process, processData []map[string]interfac
 }
 
 // outputProcessesJSON outputs processes in JSON format.
-func outputProcessesJSON(processData []map[string]interface{}) error {
+func outputProcessesJSON(processData []map[string]any) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 
@@ -1582,7 +1585,7 @@ func outputProcessesJSON(processData []map[string]interface{}) error {
 }
 
 // outputProcessesYAML outputs processes in YAML format.
-func outputProcessesYAML(processData []map[string]interface{}) error {
+func outputProcessesYAML(processData []map[string]any) error {
 	encoder := yaml.NewEncoder(os.Stdout)
 
 	err := encoder.Encode(processData)
@@ -1601,7 +1604,7 @@ func outputProcessesTable(processes []capi.Process, appName string, showStats bo
 	for _, process := range processes {
 		row := buildProcessTableRow(process, showStats)
 
-		interfaceRow := make([]interface{}, len(row))
+		interfaceRow := make([]any, len(row))
 		for i, v := range row {
 			interfaceRow[i] = v
 		}
@@ -1660,7 +1663,7 @@ func formatLogRateLimit(logRateLimit *int) string {
 // formatHealthCheck formats the health check information for display.
 func formatHealthCheck(healthCheck *capi.HealthCheck) string {
 	if healthCheck == nil {
-		return "none"
+		return healthCheckTypeNone
 	}
 
 	result := healthCheck.Type
@@ -2029,7 +2032,7 @@ func handleEmptyProcesses(appName string) error {
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 
-		err := encoder.Encode([]interface{}{})
+		err := encoder.Encode([]any{})
 		if err != nil {
 			return fmt.Errorf("failed to encode empty processes as JSON: %w", err)
 		}
@@ -2038,7 +2041,7 @@ func handleEmptyProcesses(appName string) error {
 	case OutputFormatYAML:
 		encoder := yaml.NewEncoder(os.Stdout)
 
-		err := encoder.Encode([]interface{}{})
+		err := encoder.Encode([]any{})
 		if err != nil {
 			return fmt.Errorf("failed to encode empty processes as YAML: %w", err)
 		}
@@ -2205,7 +2208,7 @@ func outputStatisticsTable(allStats []InstanceStat, appName string) error {
 	for _, stat := range allStats {
 		row := buildStatTableRow(stat)
 
-		interfaceRow := make([]interface{}, len(row))
+		interfaceRow := make([]any, len(row))
 		for i, v := range row {
 			interfaceRow[i] = v
 		}
@@ -2538,7 +2541,7 @@ func buildHealthCheckInfo(targetProcess *capi.Process) HealthCheckInfo {
 	healthCheckInfo := HealthCheckInfo{
 		ProcessType: targetProcess.Type,
 		ProcessGUID: targetProcess.GUID,
-		Type:        "none",
+		Type:        healthCheckTypeNone,
 	}
 
 	populateMainHealthCheck(&healthCheckInfo, targetProcess.HealthCheck)
@@ -2684,7 +2687,7 @@ func updateHealthCheck(ctx context.Context, client capi.Client, targetProcess *c
 
 // validateHealthCheckType validates the health check type.
 func validateHealthCheckType(healthCheckType string) error {
-	validTypes := []string{"port", "process", "http", "none"}
+	validTypes := []string{"port", "process", "http", healthCheckTypeNone}
 	for _, vt := range validTypes {
 		if healthCheckType == vt {
 			return nil
@@ -2696,7 +2699,7 @@ func validateHealthCheckType(healthCheckType string) error {
 
 // buildHealthCheckConfig builds the health check configuration.
 func buildHealthCheckConfig(healthCheckType string, timeout int, endpoint string) *capi.HealthCheck {
-	if healthCheckType == "none" {
+	if healthCheckType == healthCheckTypeNone {
 		return nil
 	}
 
@@ -2778,8 +2781,8 @@ type appResourceCommandConfig struct {
 	long            string
 	stateFilterDesc string
 	setupParams     func(context.Context, capi.Client, *appResourceConfig) (*capi.QueryParams, error)
-	fetchPages      func(context.Context, capi.Client, *capi.QueryParams, bool) (interface{}, *capi.Pagination, error)
-	outputResults   func(interface{}, *capi.Pagination, bool) error
+	fetchPages      func(context.Context, capi.Client, *capi.QueryParams, bool) (any, *capi.Pagination, error)
+	outputResults   func(any, *capi.Pagination, bool) error
 }
 
 // createAppResourceCommand creates a standardized command for listing app resources.
@@ -2829,19 +2832,19 @@ func createAppResourceCommand(config appResourceCommandConfig) *cobra.Command {
 
 // Wrapper functions to adapt the specific resource functions to the generic interface
 
-func fetchTaskPages(ctx context.Context, client capi.Client, params *capi.QueryParams, allPages bool) (interface{}, *capi.Pagination, error) {
+func fetchTaskPages(ctx context.Context, client capi.Client, params *capi.QueryParams, allPages bool) (any, *capi.Pagination, error) {
 	return fetchAllTaskPages(ctx, client, params, allPages)
 }
 
-func fetchDropletPages(ctx context.Context, client capi.Client, params *capi.QueryParams, allPages bool) (interface{}, *capi.Pagination, error) {
+func fetchDropletPages(ctx context.Context, client capi.Client, params *capi.QueryParams, allPages bool) (any, *capi.Pagination, error) {
 	return fetchAllDropletPages(ctx, client, params, allPages)
 }
 
-func fetchBuildPages(ctx context.Context, client capi.Client, params *capi.QueryParams, allPages bool) (interface{}, *capi.Pagination, error) {
+func fetchBuildPages(ctx context.Context, client capi.Client, params *capi.QueryParams, allPages bool) (any, *capi.Pagination, error) {
 	return fetchAllBuildPages(ctx, client, params, allPages)
 }
 
-func outputTasks(resources interface{}, pagination *capi.Pagination, allPages bool) error {
+func outputTasks(resources any, pagination *capi.Pagination, allPages bool) error {
 	tasks, ok := resources.([]capi.Task)
 	if !ok {
 		return constants.ErrInvalidResourceTypeForTasks
@@ -2850,7 +2853,7 @@ func outputTasks(resources interface{}, pagination *capi.Pagination, allPages bo
 	return outputTaskList(tasks)
 }
 
-func outputDroplets(resources interface{}, pagination *capi.Pagination, allPages bool) error {
+func outputDroplets(resources any, pagination *capi.Pagination, allPages bool) error {
 	droplets, ok := resources.([]capi.Droplet)
 	if !ok {
 		return constants.ErrInvalidResourceTypeForDroplets
@@ -2859,7 +2862,7 @@ func outputDroplets(resources interface{}, pagination *capi.Pagination, allPages
 	return outputDropletList(droplets)
 }
 
-func outputBuilds(resources interface{}, pagination *capi.Pagination, allPages bool) error {
+func outputBuilds(resources any, pagination *capi.Pagination, allPages bool) error {
 	builds, ok := resources.([]capi.Build)
 	if !ok {
 		return constants.ErrInvalidResourceTypeForBuilds

@@ -40,6 +40,9 @@ const (
 	keyAuthenticated        = "authenticated"
 	keyServerInfo           = "server_info"
 	keyEnvironmentVariables = "environment_variables"
+	keyStatus               = "status"
+	keyEndpoint             = "endpoint"
+	keyVersion              = "version"
 
 	// Common values.
 	Yes          = "yes"
@@ -54,6 +57,7 @@ const (
 	Incompatible = "incompatible"
 	Active       = "active"
 	Suspended    = "suspended"
+	Applied      = "applied"
 	List         = "list"
 	Create       = "create"
 	Update       = "update"
@@ -62,6 +66,35 @@ const (
 	Descending   = "descending"
 	OrgGUID      = "org_guid"
 	Masked       = "***"
+	Info         = "info"
+	Version      = "version"
+	Status       = "status"
+
+	// UserCommandName is the cobra Use/Alias string for the "user" command
+	// (UAA user command group Use, and the "get-user" subcommand's alias).
+	UserCommandName = "user"
+
+	// GroupCommandName is the cobra Use string for the UAA "group" command group.
+	GroupCommandName = "group"
+
+	// ClientCommandName is the cobra Use string for the UAA "client" command group.
+	ClientCommandName = "client"
+
+	// App lifecycle phases (staging vs running), used across app env vars,
+	// security group bindings, and their CLI subcommands/flags.
+	LifecycleRunning = "running"
+	LifecycleStaging = "staging"
+
+	// UseGetEventGUID is the shared cobra Use string for the "get" subcommand
+	// on the app/audit/service usage event commands.
+	UseGetEventGUID = "get EVENT_GUID"
+
+	// Token is the cobra Use string for the "token" command group (CF and UAA).
+	Token = "token"
+
+	// Refresh is the cobra Use/Name string for the "refresh" subcommand shared
+	// by the CF token and UAA token command groups.
+	Refresh = "refresh"
 
 	// Test constants.
 	CFLinuxFS4Stack       = "cflinuxfs4"
@@ -276,7 +309,7 @@ func BuildSpaceQuotaApps(cmd *cobra.Command, config AppLimitsConfig) *capi.Space
 type PurgeReseedConfig struct {
 	EntityType       string // e.g., "app usage events", "service usage events"
 	EntityTypePlural string // e.g., "applications", "service instances"
-	PurgeFunc        func(ctx context.Context, client interface{}) error
+	PurgeFunc        func(ctx context.Context, client any) error
 }
 
 // createPurgeAndReseedCommand creates a generic purge and reseed command.
@@ -336,9 +369,9 @@ type AppListConfig struct {
 	Short         string // e.g., "List application tasks"
 	Long          string // e.g., "List all tasks for an application"
 	StateFilter   string // e.g., "task state", "droplet state", "build state"
-	SetupParams   func(ctx context.Context, client interface{}, appNameOrGUID string, allPages bool, perPage int, state string) (interface{}, error)
-	FetchPages    func(ctx context.Context, client interface{}, params interface{}, allPages bool) (interface{}, interface{}, error)
-	OutputResults func(results interface{}, pagination interface{}, allPages bool) error
+	SetupParams   func(ctx context.Context, client any, appNameOrGUID string, allPages bool, perPage int, state string) (any, error)
+	FetchPages    func(ctx context.Context, client any, params any, allPages bool) (any, any, error)
+	OutputResults func(results any, pagination any, allPages bool) error
 }
 
 // DeleteConfig holds the configuration for delete commands.
@@ -347,16 +380,16 @@ type DeleteConfig struct {
 	Short       string // e.g., "Delete a buildpack"
 	Long        string // e.g., "Delete a buildpack"
 	EntityType  string // e.g., "buildpack", "domain", "security group"
-	GetResource func(ctx context.Context, client interface{}, nameOrGUID string) (guid string, name string, err error)
-	DeleteFunc  func(ctx context.Context, client interface{}, guid string) (jobGUID *string, err error)
+	GetResource func(ctx context.Context, client any, nameOrGUID string) (guid string, name string, err error)
+	DeleteFunc  func(ctx context.Context, client any, guid string) (jobGUID *string, err error)
 }
 
 // DeleteResourceFunc represents a function that gets a resource by name or GUID.
-type DeleteResourceFunc func(ctx context.Context, client interface{}, nameOrGUID string) (guid string, name string, err error)
+type DeleteResourceFunc func(ctx context.Context, client any, nameOrGUID string) (guid string, name string, err error)
 
 // CreateOrganizationDeleteResourceFunc creates a GetResource function for organizations.
 func CreateOrganizationDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -389,7 +422,7 @@ func CreateOrganizationDeleteResourceFunc() DeleteResourceFunc {
 
 // CreateSpaceDeleteResourceFunc creates a GetResource function for spaces.
 func CreateSpaceDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -422,7 +455,7 @@ func CreateSpaceDeleteResourceFunc() DeleteResourceFunc {
 
 // CreateDomainDeleteResourceFunc creates a GetResource function for domains.
 func CreateDomainDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -455,7 +488,7 @@ func CreateDomainDeleteResourceFunc() DeleteResourceFunc {
 
 // CreateSecurityGroupDeleteResourceFunc creates a GetResource function for security groups.
 func CreateSecurityGroupDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -492,8 +525,8 @@ type UpdateConfig struct {
 	Short       string // e.g., "Update an isolation segment"
 	Long        string // e.g., "Update an existing Cloud Foundry isolation segment"
 	EntityType  string // e.g., "isolation segment", "space"
-	GetResource func(ctx context.Context, client interface{}, nameOrGUID string) (guid string, name string, err error)
-	UpdateFunc  func(ctx context.Context, client interface{}, guid, newName string, labels map[string]string) (updatedName string, err error)
+	GetResource func(ctx context.Context, client any, nameOrGUID string) (guid string, name string, err error)
+	UpdateFunc  func(ctx context.Context, client any, guid, newName string, labels map[string]string) (updatedName string, err error)
 }
 
 // createUpdateCommand creates a generic update command.
@@ -544,7 +577,7 @@ func createUpdateCommand(config UpdateConfig) *cobra.Command {
 
 // CreateIsolationSegmentUpdateResourceFunc creates a GetResource function for isolation segments.
 func CreateIsolationSegmentUpdateResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -577,7 +610,7 @@ func CreateIsolationSegmentUpdateResourceFunc() DeleteResourceFunc {
 
 // CreateSpaceUpdateResourceFunc creates a GetResource function for spaces.
 func CreateSpaceUpdateResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -610,7 +643,7 @@ func CreateSpaceUpdateResourceFunc() DeleteResourceFunc {
 
 // CreateIsolationSegmentDeleteResourceFunc creates a GetResource function for isolation segments.
 func CreateIsolationSegmentDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -643,7 +676,7 @@ func CreateIsolationSegmentDeleteResourceFunc() DeleteResourceFunc {
 
 // CreateOrganizationQuotaDeleteResourceFunc creates a GetResource function for organization quotas.
 func CreateOrganizationQuotaDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -676,7 +709,7 @@ func CreateOrganizationQuotaDeleteResourceFunc() DeleteResourceFunc {
 
 // CreateSpaceQuotaDeleteResourceFunc creates a GetResource function for space quotas.
 func CreateSpaceQuotaDeleteResourceFunc() DeleteResourceFunc {
-	return func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+	return func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 		capiClient, ok := client.(capi.Client)
 		if !ok {
 			return "", "", constants.ErrClientNotCAPIClient
@@ -729,7 +762,7 @@ type CommandConfig struct {
 // SubCommandConfig holds configuration for individual subcommands.
 type SubCommandConfig struct {
 	Name        string
-	CommandFunc interface{}
+	CommandFunc any
 	Use         string
 }
 
@@ -756,8 +789,8 @@ func CreateUAASubCommandGroup(config CommandConfig) *cobra.Command {
 }
 
 // CreateGenericDeleteFunc creates a generic DeleteFunc for the DeleteConfig.
-func CreateGenericDeleteFunc(deleteMethod func(ctx context.Context, guid string) (*capi.Job, error)) func(ctx context.Context, client interface{}, guid string) (*string, error) {
-	return func(ctx context.Context, client interface{}, guid string) (*string, error) {
+func CreateGenericDeleteFunc(deleteMethod func(ctx context.Context, guid string) (*capi.Job, error)) func(ctx context.Context, client any, guid string) (*string, error) {
+	return func(ctx context.Context, client any, guid string) (*string, error) {
 		job, err := deleteMethod(ctx, guid)
 		if err != nil {
 			return nil, err
@@ -841,11 +874,11 @@ func createBuildpackDeleteCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return executeDeleteCommand("buildpack", args[0], force, cmd,
-				func(ctx context.Context, client interface{}, nameOrGUID string) (string, string, error) {
+				func(ctx context.Context, client any, nameOrGUID string) (string, string, error) {
 					// Find buildpack - this will need to be updated with proper types
 					return "", "", ErrNotImplemented
 				},
-				func(ctx context.Context, client interface{}, guid string) (*string, error) {
+				func(ctx context.Context, client any, guid string) (*string, error) {
 					// Delete buildpack - this will need to be updated with proper types
 					return nil, ErrNotImplemented
 				},
@@ -861,8 +894,8 @@ func createBuildpackDeleteCommand() *cobra.Command {
 // executeDeleteCommand handles the common delete command logic.
 func executeDeleteCommand(
 	entityType, nameOrGUID string, force bool, cmd *cobra.Command,
-	getResource func(context.Context, interface{}, string) (string, string, error),
-	deleteFunc func(context.Context, interface{}, string) (*string, error),
+	getResource func(context.Context, any, string) (string, string, error),
+	deleteFunc func(context.Context, any, string) (*string, error),
 ) error {
 	if !force {
 		_, _ = fmt.Fprintf(os.Stdout, "Really delete %s '%s'? (y/N): ", entityType, nameOrGUID)
@@ -1167,7 +1200,7 @@ type CreateConfig struct {
 	Long       string // e.g., "Create a new Cloud Foundry isolation segment"
 	EntityType string // e.g., "isolation segment", "organization"
 	NameError  error  // Error to return when name is empty
-	CreateFunc func(ctx context.Context, client interface{}, name string, labels map[string]string) (guid string, displayName string, err error)
+	CreateFunc func(ctx context.Context, client any, name string, labels map[string]string) (guid string, displayName string, err error)
 }
 
 // createGenericCreateCommand creates a generic create command.
@@ -1307,11 +1340,11 @@ func (o *OutputRenderer[T]) Render(data T, format string) error {
 
 // PageFetcher handles pagination for resources.
 type PageFetcher[T any] struct {
-	FetchPage func(ctx context.Context, params interface{}, page int) ([]T, *capi.Pagination, error)
+	FetchPage func(ctx context.Context, params any, page int) ([]T, *capi.Pagination, error)
 }
 
 // FetchAllPages retrieves all pages when allPages is true.
-func (p *PageFetcher[T]) FetchAllPages(ctx context.Context, params interface{}, allPages bool, initialResults []T, pagination *capi.Pagination) ([]T, error) {
+func (p *PageFetcher[T]) FetchAllPages(ctx context.Context, params any, allPages bool, initialResults []T, pagination *capi.Pagination) ([]T, error) {
 	if !allPages || pagination.TotalPages <= 1 {
 		return initialResults, nil
 	}
@@ -1440,7 +1473,7 @@ func (rm *RoleManager) RemoveUserRole(ctx context.Context, resourceNameOrGUID, u
 // resolveResourceGUID resolves a resource name or GUID to a GUID.
 func (rm *RoleManager) resolveResourceGUID(ctx context.Context, nameOrGUID, resourceType string) (string, error) {
 	switch resourceType {
-	case "organization":
+	case organizationKey:
 		orgsClient := rm.client.Organizations()
 
 		org, err := orgsClient.Get(ctx, nameOrGUID)
@@ -1462,7 +1495,7 @@ func (rm *RoleManager) resolveResourceGUID(ctx context.Context, nameOrGUID, reso
 
 		return orgs.Resources[0].GUID, nil
 
-	case "space":
+	case spaceKey:
 		spacesClient := rm.client.Spaces()
 
 		space, err := spacesClient.Get(ctx, nameOrGUID)
@@ -1521,7 +1554,7 @@ func (rm *RoleManager) buildRoleRelationships(resourceType, resourceGUID, userGU
 		},
 	}
 
-	if resourceType == "organization" {
+	if resourceType == organizationKey {
 		relationships.Organization = &capi.Relationship{
 			Data: &capi.RelationshipData{GUID: resourceGUID},
 		}
@@ -1533,6 +1566,18 @@ func (rm *RoleManager) buildRoleRelationships(resourceType, resourceGUID, userGU
 
 	return relationships
 }
+
+// Role management operation names accepted by CreateRoleCommand.
+const (
+	roleOperationAddUser = "add-user"
+	roleOperationSetRole = "set-role"
+)
+
+// UAA group mapping operation names accepted by CreateUAAGroupMappingCommand.
+const (
+	OperationMapGroup   = "map-group"
+	OperationUnmapGroup = "unmap-group"
+)
 
 // CreateRoleCommand creates a generic role management command.
 func CreateRoleCommand(operation, resourceType string, roleContext RoleContext) func() *cobra.Command {
@@ -1556,7 +1601,7 @@ func CreateRoleCommand(operation, resourceType string, roleContext RoleContext) 
 				ctx := context.Background()
 				roleManager := NewRoleManager(client)
 
-				if operation == "add-user" || operation == "set-role" {
+				if operation == roleOperationAddUser || operation == roleOperationSetRole {
 					return roleManager.AddUserRole(ctx, resourceNameOrGUID, userNameOrGUID, roleContext, role)
 				} else {
 					return roleManager.RemoveUserRole(ctx, resourceNameOrGUID, userNameOrGUID, roleContext, role)
@@ -1565,7 +1610,7 @@ func CreateRoleCommand(operation, resourceType string, roleContext RoleContext) 
 		}
 
 		// Add role flag with appropriate defaults and options
-		if operation == "add-user" || operation == "set-role" {
+		if operation == roleOperationAddUser || operation == roleOperationSetRole {
 			cmd.Flags().StringVarP(&role, "role", "r", roleContext.DefaultRole, fmt.Sprintf("role to assign (%s)", strings.Join(roleContext.ValidRoles, ", ")))
 		} else {
 			cmd.Flags().StringVarP(&role, "role", "r", "", "specific role to remove (if not specified, removes all roles)")
@@ -1578,9 +1623,12 @@ func CreateRoleCommand(operation, resourceType string, roleContext RoleContext) 
 // UAAGroupMapper handles UAA group mapping operations.
 type UAAGroupMapper struct{}
 
+// flagGroup is the shared "--group" flag name used by UAA group mapping commands.
+const flagGroup = "group"
+
 // GroupMappingConfig defines the configuration for group mapping operations.
 type GroupMappingConfig struct {
-	Operation      string // "map-group" or "unmap-group"
+	Operation      string // OperationMapGroup or OperationUnmapGroup
 	SuccessMessage string
 	RequiredFlags  []string
 }
@@ -1593,21 +1641,21 @@ func CreateUAAGroupMappingCommand(config GroupMappingConfig) func() *cobra.Comma
 		cmd := &cobra.Command{
 			Use: config.Operation,
 			Short: fmt.Sprintf("%s external group %s UAA group",
-				map[string]string{"map-group": "Map", "unmap-group": "Unmap"}[config.Operation],
-				map[string]string{"map-group": "to", "unmap-group": "from"}[config.Operation]),
+				map[string]string{OperationMapGroup: "Map", OperationUnmapGroup: "Unmap"}[config.Operation],
+				map[string]string{OperationMapGroup: "to", OperationUnmapGroup: "from"}[config.Operation]),
 			Long: fmt.Sprintf(`%s an external group from an identity provider %s a UAA group/scope.
 
 This %s users from external identity providers to automatically
 inherit UAA group memberships based on their external group memberships.`,
-				map[string]string{"map-group": "Map", "unmap-group": "Remove a mapping between"}[config.Operation],
-				map[string]string{"map-group": "to", "unmap-group": "and"}[config.Operation],
-				map[string]string{"map-group": "allows", "unmap-group": "removes the automatic group membership inheritance for"}[config.Operation]),
+				map[string]string{OperationMapGroup: "Map", OperationUnmapGroup: "Remove a mapping between"}[config.Operation],
+				map[string]string{OperationMapGroup: "to", OperationUnmapGroup: "and"}[config.Operation],
+				map[string]string{OperationMapGroup: "allows", OperationUnmapGroup: "removes the automatic group membership inheritance for"}[config.Operation]),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return runUAAGroupMapping(config, group, externalGroup, origin)
 			},
 		}
 
-		cmd.Flags().StringVar(&group, "group", "", "UAA group name or ID (required)")
+		cmd.Flags().StringVar(&group, flagGroup, "", "UAA group name or ID (required)")
 		cmd.Flags().StringVar(&externalGroup, "external-group", "", "External group name (required)")
 		cmd.Flags().StringVar(&origin, "origin", "", "Identity provider origin (required)")
 
@@ -1682,7 +1730,7 @@ func resolveGroupID(uaaClient *UAAClientWrapper, group string) (string, error) {
 
 func performGroupMappingOperation(uaaClient *UAAClientWrapper, operation, groupID, externalGroup, origin string) error {
 	var err error
-	if operation == "map-group" {
+	if operation == OperationMapGroup {
 		err = uaaClient.Client().MapGroup(groupID, externalGroup, origin)
 	} else {
 		err = uaaClient.Client().UnmapGroup(groupID, externalGroup, origin)
@@ -1690,7 +1738,7 @@ func performGroupMappingOperation(uaaClient *UAAClientWrapper, operation, groupI
 
 	if err != nil {
 		return fmt.Errorf("failed to %s group: %w",
-			map[string]string{"map-group": "map", "unmap-group": "unmap"}[operation], err)
+			map[string]string{OperationMapGroup: "map", OperationUnmapGroup: "unmap"}[operation], err)
 	}
 
 	return nil
@@ -1716,9 +1764,9 @@ func NewPaginatedFetcher[T any](cache bool, maxPages, pageSize int) *PaginatedFe
 func (pf *PaginatedFetcher[T]) FetchAllResources(
 	cacheKeyPrefix string,
 	filter, sortBy, attributes string,
-	sortOrder interface{},
-	listFunc func(filter, sortBy, attributes string, sortOrder interface{}, startIndex, pageSize int) ([]T, interface{}, error),
-	cache interface{}, // Cache interface - should have Get and Set methods
+	sortOrder any,
+	listFunc func(filter, sortBy, attributes string, sortOrder any, startIndex, pageSize int) ([]T, any, error),
+	cache any, // Cache interface - should have Get and Set methods
 ) ([]T, error) {
 	cacheKey := fmt.Sprintf("%s:%s:%s:%s:%v", cacheKeyPrefix, filter, sortBy, attributes, sortOrder)
 
@@ -1763,7 +1811,7 @@ func (pf *PaginatedFetcher[T]) FetchAllResources(
 }
 
 // getCachedResources attempts to retrieve cached resources from the cache.
-func (pf *PaginatedFetcher[T]) getCachedResources(cache interface{}, cacheKey string) ([]T, bool) {
+func (pf *PaginatedFetcher[T]) getCachedResources(cache any, cacheKey string) ([]T, bool) {
 	if !pf.cache || cache == nil {
 		return nil, false
 	}
@@ -1787,7 +1835,7 @@ func (pf *PaginatedFetcher[T]) getCachedResources(cache interface{}, cacheKey st
 }
 
 // setCachedResources stores resources in the cache.
-func (pf *PaginatedFetcher[T]) setCachedResources(cache interface{}, cacheKey string, resources []T) {
+func (pf *PaginatedFetcher[T]) setCachedResources(cache any, cacheKey string, resources []T) {
 	if !pf.cache || cache == nil {
 		return
 	}

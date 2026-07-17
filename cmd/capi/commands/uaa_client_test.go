@@ -8,6 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test fixture token values used to assert UAA-token-over-CF-token precedence.
+const (
+	testUAATokenValue = "uaa-token"
+	testCFTokenValue  = "cf-token"
+)
+
 func TestUAAClientWrapper_IsAuthenticated(t *testing.T) {
 	t.Parallel()
 
@@ -33,8 +39,8 @@ func TestUAAClientWrapper_IsAuthenticated(t *testing.T) {
 		{
 			name: "with both tokens",
 			config: &Config{
-				UAAToken: "uaa-token",
-				Token:    "cf-token",
+				UAAToken: testUAATokenValue,
+				Token:    testCFTokenValue,
 			},
 			want: true,
 		},
@@ -68,17 +74,17 @@ func TestUAAClientWrapper_GetToken(t *testing.T) {
 		{
 			name: "UAA token takes precedence",
 			config: &Config{
-				UAAToken: "uaa-token",
-				Token:    "cf-token",
+				UAAToken: testUAATokenValue,
+				Token:    testCFTokenValue,
 			},
-			expected: "uaa-token",
+			expected: testUAATokenValue,
 		},
 		{
 			name: "fallback to CF token",
 			config: &Config{
-				Token: "cf-token",
+				Token: testCFTokenValue,
 			},
-			expected: "cf-token",
+			expected: testCFTokenValue,
 		},
 		{
 			name:     "no tokens",

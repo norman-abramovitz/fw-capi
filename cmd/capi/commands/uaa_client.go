@@ -17,6 +17,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// uaaInfoKeyApp is the "app" key in the map returned by GetServerInfo,
+// holding the UAA server's nested application info block.
+const uaaInfoKeyApp = "app"
+
 // UAAClientWrapper provides a convenient wrapper around the go-uaa client
 // with configuration integration and token management.
 type UAAClientWrapper struct {
@@ -203,7 +207,7 @@ func (w *UAAClientWrapper) TestConnection(ctx context.Context) error {
 }
 
 // GetServerInfo retrieves UAA server information.
-func (w *UAAClientWrapper) GetServerInfo(ctx context.Context) (map[string]interface{}, error) {
+func (w *UAAClientWrapper) GetServerInfo(ctx context.Context) (map[string]any, error) {
 	if w.client == nil {
 		return nil, constants.ErrUAAClientNotInit
 	}
@@ -214,13 +218,13 @@ func (w *UAAClientWrapper) GetServerInfo(ctx context.Context) (map[string]interf
 	}
 
 	// Convert to map for easier handling
-	result := map[string]interface{}{
-		"app":       info.App,
-		"commit_id": info.CommitID,
-		"timestamp": info.Timestamp,
-		"links":     info.Links,
-		"zone_name": info.ZoneName,
-		"entity_id": info.EntityID,
+	result := map[string]any{
+		uaaInfoKeyApp: info.App,
+		"commit_id":   info.CommitID,
+		"timestamp":   info.Timestamp,
+		"links":       info.Links,
+		"zone_name":   info.ZoneName,
+		"entity_id":   info.EntityID,
 	}
 
 	return result, nil

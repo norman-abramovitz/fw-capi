@@ -379,12 +379,12 @@ func NewLogoutCommand() *cobra.Command {
 		Long:  "Clear authentication credentials and logout from Cloud Foundry",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Clear authentication data
-			viper.Set("token", "")
+			viper.Set(tokenKey, "")
 			viper.Set("refresh_token", "")
 			viper.Set("username", "")
 			viper.Set("password", "")
-			viper.Set("organization", "")
-			viper.Set("space", "")
+			viper.Set(organizationKey, "")
+			viper.Set(spaceKey, "")
 
 			err := saveConfig()
 			if err != nil {

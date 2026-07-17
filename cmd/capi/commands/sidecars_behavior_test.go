@@ -15,6 +15,9 @@ import (
 // unchanged from the injected client.
 var errClientBoom = errors.New("boom from client")
 
+// sidecarOriginUser is the CF API sidecar origin value for user-created sidecars.
+const sidecarOriginUser = "user"
+
 func TestSidecarsGet_JSONOutput(t *testing.T) { //nolint:paralleltest // serial: swaps process-global os.Stdout, viper, and newClientFunc
 	withOutputFormat(t, OutputFormatJSON)
 
@@ -23,7 +26,7 @@ func TestSidecarsGet_JSONOutput(t *testing.T) { //nolint:paralleltest // serial:
 		Name:         "my-sidecar",
 		Command:      "bundle exec rackup",
 		ProcessTypes: []string{"web", "worker"},
-		Origin:       "user",
+		Origin:       sidecarOriginUser,
 	}
 	recorder := &recordingSidecarsClient{getResult: sidecar}
 	withStubClient(t, &fakeClient{sidecars: recorder})

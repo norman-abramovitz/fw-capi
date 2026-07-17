@@ -43,7 +43,7 @@ func newRoutesListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List routes",
 		Long:  "List all routes the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,7 +51,7 @@ func newRoutesListCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&spaceName, "space", "s", "", "filter by space name")
+	cmd.Flags().StringVarP(&spaceName, spaceKey, "s", "", "filter by space name")
 	cmd.Flags().StringVarP(&domainName, "domain", "d", "", "filter by domain name")
 
 	return cmd
@@ -254,7 +254,7 @@ func newRoutesCreateCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&spaceName, "space", "s", "", "space name (defaults to targeted space)")
+	cmd.Flags().StringVarP(&spaceName, spaceKey, "s", "", "space name (defaults to targeted space)")
 	cmd.Flags().StringVar(&hostname, "hostname", "", "hostname for the route")
 	cmd.Flags().StringVar(&path, "path", "", "path for the route")
 	cmd.Flags().IntVar(&port, "port", 0, "port for the route (for TCP routes)")

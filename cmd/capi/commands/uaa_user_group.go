@@ -7,7 +7,7 @@ import (
 // NewUAAUserCommand creates the user sub-command group.
 func NewUAAUserCommand() *cobra.Command {
 	config := CommandConfig{
-		Use:   "user",
+		Use:   UserCommandName,
 		Short: "Manage UAA users",
 		Long: `Manage UAA users with CRUD operations.
 
@@ -33,9 +33,9 @@ This command group provides comprehensive user management capabilities including
   # Deactivate a user
   capi uaa user deactivate john.doe`,
 		SubCommands: []SubCommandConfig{
-			{Name: "create", CommandFunc: createUsersCreateUserCommand, Use: "create <username>"},
+			{Name: Create, CommandFunc: createUsersCreateUserCommand, Use: "create <username>"},
 			{Name: "get", CommandFunc: createUsersGetUserCommand, Use: "get <username>"},
-			{Name: "list", CommandFunc: createUsersListUsersCommand, Use: "list"},
+			{Name: List, CommandFunc: createUsersListUsersCommand, Use: List},
 			{Name: "update", CommandFunc: createUsersUpdateUserCommand, Use: "update <username>"},
 			{Name: "activate", CommandFunc: createUsersActivateUserCommand, Use: "activate <username>"},
 			{Name: "deactivate", CommandFunc: createUsersDeactivateUserCommand, Use: "deactivate <username>"},

@@ -100,7 +100,7 @@ func newAPIsAddCommand() *cobra.Command {
 
 func newAPIsListCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List all Cloud Foundry API endpoints",
 		Long:  "Display all configured Cloud Foundry API endpoints",
 		RunE:  runAPIsList,

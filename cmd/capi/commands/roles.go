@@ -14,6 +14,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// flagUser is the shared "--user" flag name used by role list/create commands.
+const flagUser = "user"
+
 // NewRolesCommand creates the roles command group.
 func NewRolesCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -42,7 +45,7 @@ func newRolesListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List roles",
 		Long:  "List all roles the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -70,9 +73,9 @@ func newRolesListCommand() *cobra.Command {
 
 	cmd.Flags().BoolVar(&allPages, "all-pages", false, "fetch all pages")
 	cmd.Flags().IntVar(&perPage, "per-page", constants.StandardPageSize, "number of results per page")
-	cmd.Flags().StringVar(&userGUID, "user", "", "filter by user GUID")
+	cmd.Flags().StringVar(&userGUID, flagUser, "", "filter by user GUID")
 	cmd.Flags().StringVar(&orgGUID, "org", "", "filter by organization GUID")
-	cmd.Flags().StringVar(&spaceGUID, "space", "", "filter by space GUID")
+	cmd.Flags().StringVar(&spaceGUID, spaceKey, "", "filter by space GUID")
 	cmd.Flags().StringVar(&roleType, "type", "", "filter by role type")
 
 	return cmd
@@ -280,10 +283,10 @@ func newRolesCreateCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&userGUID, "user", "", "user GUID (required)")
+	cmd.Flags().StringVar(&userGUID, flagUser, "", "user GUID (required)")
 	cmd.Flags().StringVar(&orgGUID, "org", "", "organization GUID")
-	cmd.Flags().StringVar(&spaceGUID, "space", "", "space GUID")
-	_ = cmd.MarkFlagRequired("user")
+	cmd.Flags().StringVar(&spaceGUID, spaceKey, "", "space GUID")
+	_ = cmd.MarkFlagRequired(flagUser)
 
 	return cmd
 }

@@ -45,7 +45,7 @@ func validateFilePathSpaces(filePath string) error {
 func NewSpacesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "spaces",
-		Aliases: []string{"space"},
+		Aliases: []string{spaceKey},
 		Short:   "Manage spaces",
 		Long:    "List and manage Cloud Foundry spaces",
 	}
@@ -173,7 +173,7 @@ func newSpacesListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List spaces",
 		Long:  "List all spaces the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -394,7 +394,7 @@ func newSpacesCreateCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   Create,
 		Short: "Create a new space",
 		Long:  "Create a new Cloud Foundry space",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -409,25 +409,13 @@ func newSpacesCreateCommand() *cobra.Command {
 
 			ctx := context.Background()
 
-			// Find organization
-			var orgGUID string
-
-			if orgName != "" {
-				params := capi.NewQueryParams()
-				params.WithFilter("names", orgName)
-
-				orgs, err := client.Organizations().List(ctx, params)
-				if err != nil {
-					return fmt.Errorf("failed to find organization: %w", err)
-				}
-
-				if len(orgs.Resources) == 0 {
-					return fmt.Errorf("organization '%s': %w", orgName, ErrOrganizationNotFound)
-				}
-
-				orgGUID = orgs.Resources[0].GUID
-			} else {
+			if orgName == "" {
 				return ErrOrganizationRequired
+			}
+
+			orgGUID, err := findOrganizationGUID(ctx, client, orgName)
+			if err != nil {
+				return err
 			}
 
 			createReq := &capi.SpaceCreateRequest{
@@ -475,9 +463,9 @@ func newSpacesUpdateCommand() *cobra.Command {
 		Use:         "update SPACE_NAME_OR_GUID",
 		Short:       "Update a space",
 		Long:        "Update an existing Cloud Foundry space",
-		EntityType:  "space",
+		EntityType:  spaceKey,
 		GetResource: CreateSpaceUpdateResourceFunc(),
-		UpdateFunc: func(ctx context.Context, client interface{}, guid, newName string, labels map[string]string) (string, error) {
+		UpdateFunc: func(ctx context.Context, client any, guid, newName string, labels map[string]string) (string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return "", constants.ErrInvalidClientType
@@ -514,9 +502,9 @@ func newSpacesDeleteCommand() *cobra.Command {
 		Use:         "delete SPACE_NAME_OR_GUID",
 		Short:       "Delete a space",
 		Long:        "Delete a Cloud Foundry space",
-		EntityType:  "space",
+		EntityType:  spaceKey,
 		GetResource: CreateSpaceDeleteResourceFunc(),
-		DeleteFunc: func(ctx context.Context, client interface{}, guid string) (*string, error) {
+		DeleteFunc: func(ctx context.Context, client any, guid string) (*string, error) {
 			capiClient, ok := client.(capi.Client)
 			if !ok {
 				return nil, constants.ErrInvalidClientType
@@ -793,26 +781,29 @@ func newSpacesListUsersCommand() *cobra.Command {
 	return cmd
 }
 
+// RoleSpaceDeveloper is the default space role assigned to a user added to a space.
+const RoleSpaceDeveloper = "space_developer"
+
 func newSpacesSetRoleCommand() *cobra.Command {
 	roleContext := RoleContext{
-		ResourceType:   "space",
-		DefaultRole:    "space_developer",
-		ValidRoles:     []string{"space_developer", "space_manager", "space_auditor", "space_supporter"},
+		ResourceType:   spaceKey,
+		DefaultRole:    RoleSpaceDeveloper,
+		ValidRoles:     []string{RoleSpaceDeveloper, "space_manager", "space_auditor", "space_supporter"},
 		SuccessMessage: "Successfully set user role '%s' in space\n",
 	}
 
-	return CreateRoleCommand("set-role", "space", roleContext)()
+	return CreateRoleCommand(roleOperationSetRole, spaceKey, roleContext)()
 }
 
 func newSpacesUnsetRoleCommand() *cobra.Command {
 	roleContext := RoleContext{
-		ResourceType:   "space",
+		ResourceType:   spaceKey,
 		DefaultRole:    "",
-		ValidRoles:     []string{"space_developer", "space_manager", "space_auditor", "space_supporter"},
+		ValidRoles:     []string{RoleSpaceDeveloper, "space_manager", "space_auditor", "space_supporter"},
 		SuccessMessage: "Successfully removed user role from space\n",
 	}
 
-	return CreateRoleCommand("unset-role", "space", roleContext)()
+	return CreateRoleCommand("unset-role", spaceKey, roleContext)()
 }
 
 // fetchAllAppPagesForSpace fetches all pages of apps from the API.

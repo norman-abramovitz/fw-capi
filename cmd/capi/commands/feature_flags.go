@@ -43,7 +43,7 @@ func newFeatureFlagsListCommand() *cobra.Command {
 	var opts FeatureFlagsListOptions
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List feature flags",
 		Long:  "List all Cloud Foundry feature flags",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -71,7 +71,7 @@ func runFeatureFlagsListCommand(cmd *cobra.Command, opts FeatureFlagsListOptions
 	return outputFeatureFlags(allFlags, nil, opts.AllPages)
 }
 
-func fetchAllFeatureFlags(client interface{}, opts FeatureFlagsListOptions) ([]interface{}, error) {
+func fetchAllFeatureFlags(client any, opts FeatureFlagsListOptions) ([]any, error) {
 	ctx := context.Background()
 
 	params := capi.NewQueryParams()
@@ -79,7 +79,7 @@ func fetchAllFeatureFlags(client interface{}, opts FeatureFlagsListOptions) ([]i
 		params.PerPage = opts.PerPage
 	}
 
-	featureFlagsClient, isValidClient := client.(interface{ FeatureFlags() interface{} })
+	featureFlagsClient, isValidClient := client.(interface{ FeatureFlags() any })
 	if !isValidClient {
 		return nil, constants.ErrClientNoFeatureFlagsSupport
 	}
@@ -87,7 +87,7 @@ func fetchAllFeatureFlags(client interface{}, opts FeatureFlagsListOptions) ([]i
 	featureFlags := featureFlagsClient.FeatureFlags()
 
 	lister, canList := featureFlags.(interface {
-		List(ctx context.Context, params interface{}) (interface{}, error)
+		List(ctx context.Context, params any) (any, error)
 	})
 	if !canList {
 		return nil, constants.ErrFeatureFlagsNoListSupport
@@ -99,8 +99,8 @@ func fetchAllFeatureFlags(client interface{}, opts FeatureFlagsListOptions) ([]i
 	}
 
 	// Note: Type assertions would be needed for proper implementation
-	// For now, maintaining the structure with interface{}
-	allFlags := []interface{}{} // flags.Resources
+	// For now, maintaining the structure with any
+	allFlags := []any{} // flags.Resources
 
 	if opts.AllPages {
 		_ = opts.AllPages // Pagination logic not yet implemented
@@ -109,7 +109,7 @@ func fetchAllFeatureFlags(client interface{}, opts FeatureFlagsListOptions) ([]i
 	return allFlags, nil // flags.Pagination
 }
 
-func outputFeatureFlags(allFlags []interface{}, pagination interface{}, allPages bool) error {
+func outputFeatureFlags(allFlags []any, pagination any, allPages bool) error {
 	output := viper.GetString("output")
 	switch output {
 	case OutputFormatJSON:
@@ -121,7 +121,7 @@ func outputFeatureFlags(allFlags []interface{}, pagination interface{}, allPages
 	}
 }
 
-func outputFeatureFlagsJSON(allFlags []interface{}) error {
+func outputFeatureFlagsJSON(allFlags []any) error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 
@@ -133,7 +133,7 @@ func outputFeatureFlagsJSON(allFlags []interface{}) error {
 	return nil
 }
 
-func outputFeatureFlagsYAML(allFlags []interface{}) error {
+func outputFeatureFlagsYAML(allFlags []any) error {
 	encoder := yaml.NewEncoder(os.Stdout)
 	encoder.SetIndent(constants.JSONIndentSize)
 
@@ -145,7 +145,7 @@ func outputFeatureFlagsYAML(allFlags []interface{}) error {
 	return nil
 }
 
-func outputFeatureFlagsTable(allFlags []interface{}, pagination interface{}, allPages bool) error {
+func outputFeatureFlagsTable(allFlags []any, pagination any, allPages bool) error {
 	if len(allFlags) == 0 {
 		_, _ = os.Stdout.WriteString("No feature flags found\n")
 
@@ -157,7 +157,7 @@ func outputFeatureFlagsTable(allFlags []interface{}, pagination interface{}, all
 
 	for range allFlags {
 		// Note: Type assertions would be needed for proper implementation
-		// For now, maintaining the structure with interface{}
+		// For now, maintaining the structure with any
 		appendFeatureFlagToTable(table)
 	}
 
@@ -302,10 +302,10 @@ func runFeatureFlagsUpdateCommand(cmd *cobra.Command, flagName string, opts Feat
 	return updateFeatureFlag(client, flagName, opts)
 }
 
-func showCurrentFeatureFlag(client interface{}, flagName string) error {
+func showCurrentFeatureFlag(client any, flagName string) error {
 	ctx := context.Background()
 
-	featureFlagsClient, isValidClient := client.(interface{ FeatureFlags() interface{} })
+	featureFlagsClient, isValidClient := client.(interface{ FeatureFlags() any })
 	if !isValidClient {
 		return constants.ErrClientNoFeatureFlagsSupport
 	}
@@ -313,7 +313,7 @@ func showCurrentFeatureFlag(client interface{}, flagName string) error {
 	featureFlags := featureFlagsClient.FeatureFlags()
 
 	getter, canGet := featureFlags.(interface {
-		Get(ctx context.Context, name string) (interface{}, error)
+		Get(ctx context.Context, name string) (any, error)
 	})
 	if !canGet {
 		return constants.ErrFeatureFlagsNoGetSupport
@@ -329,18 +329,18 @@ func showCurrentFeatureFlag(client interface{}, flagName string) error {
 	return nil
 }
 
-func printCurrentFeatureFlagState(flag interface{}) {
+func printCurrentFeatureFlagState(flag any) {
 	// Note: Type assertions would be needed for proper implementation
 	_, _ = fmt.Fprintf(os.Stdout, "Feature flag '%v' current state:\n", flag)
 	_, _ = fmt.Fprintf(os.Stdout, "  Enabled: %v\n", flag)
 	// Additional fields would be printed here with proper type assertions
 }
 
-func updateFeatureFlag(client interface{}, flagName string, opts FeatureFlagsUpdateOptions) error {
+func updateFeatureFlag(client any, flagName string, opts FeatureFlagsUpdateOptions) error {
 	ctx := context.Background()
 	updateReq := buildFeatureFlagUpdateRequest(opts)
 
-	featureFlagsClient, isValidClient := client.(interface{ FeatureFlags() interface{} })
+	featureFlagsClient, isValidClient := client.(interface{ FeatureFlags() any })
 	if !isValidClient {
 		return constants.ErrClientNoFeatureFlagsSupport
 	}
@@ -348,7 +348,7 @@ func updateFeatureFlag(client interface{}, flagName string, opts FeatureFlagsUpd
 	featureFlags := featureFlagsClient.FeatureFlags()
 
 	updater, canUpdate := featureFlags.(interface {
-		Update(ctx context.Context, name string, data interface{}) (interface{}, error)
+		Update(ctx context.Context, name string, data any) (any, error)
 	})
 	if !canUpdate {
 		return constants.ErrFeatureFlagsNoUpdateSupport
@@ -378,7 +378,7 @@ func buildFeatureFlagUpdateRequest(opts FeatureFlagsUpdateOptions) *capi.Feature
 	return updateReq
 }
 
-func printUpdatedFeatureFlagState(updatedFlag interface{}) {
+func printUpdatedFeatureFlagState(updatedFlag any) {
 	// Note: Type assertions would be needed for proper implementation
 	_, _ = fmt.Fprintf(os.Stdout, "Successfully updated feature flag '%v'\n", updatedFlag)
 	_, _ = fmt.Fprintf(os.Stdout, "  Enabled: %v\n", updatedFlag)

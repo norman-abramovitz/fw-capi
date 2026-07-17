@@ -34,8 +34,8 @@ func NewEnvVarGroupsCommand() *cobra.Command {
 
 // EnvVar represents an environment variable for output formatting.
 type EnvVar struct {
-	Name  string      `json:"name"  yaml:"name"`
-	Value interface{} `json:"value" yaml:"value"`
+	Name  string `json:"name"  yaml:"name"`
+	Value any    `json:"value" yaml:"value"`
 }
 
 func newEnvVarGroupsGetCommand() *cobra.Command {
@@ -44,7 +44,7 @@ func newEnvVarGroupsGetCommand() *cobra.Command {
 		Short:     "Get environment variable group",
 		Long:      "Display environment variables for a specific group (running or staging)",
 		Args:      cobra.ExactArgs(1),
-		ValidArgs: []string{"running", "staging"},
+		ValidArgs: []string{LifecycleRunning, LifecycleStaging},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runEnvVarGroupsGetCommand(cmd, args[0])
 		},
@@ -73,7 +73,7 @@ func runEnvVarGroupsGetCommand(cmd *cobra.Command, groupName string) error {
 }
 
 func validateGroupName(groupName string) error {
-	if groupName != "running" && groupName != "staging" {
+	if groupName != LifecycleRunning && groupName != LifecycleStaging {
 		return fmt.Errorf("invalid group name '%s': %w. Valid groups: running, staging", groupName, ErrInvalidGroupName)
 	}
 
@@ -91,7 +91,7 @@ func fetchEnvVarGroup(client capi.Client, groupName string) (*capi.EnvironmentVa
 	return envVarGroup, nil
 }
 
-func convertEnvVarsToList(envVars map[string]interface{}) []EnvVar {
+func convertEnvVarsToList(envVars map[string]any) []EnvVar {
 	envVarsList := make([]EnvVar, 0, len(envVars))
 	for key, value := range envVars {
 		envVarsList = append(envVarsList, EnvVar{
@@ -103,7 +103,7 @@ func convertEnvVarsToList(envVars map[string]interface{}) []EnvVar {
 	return envVarsList
 }
 
-func outputEnvVarGroup(envVarGroup interface{}, envVarsList []EnvVar, groupName string) error {
+func outputEnvVarGroup(envVarGroup any, envVarsList []EnvVar, groupName string) error {
 	output := viper.GetString("output")
 	switch output {
 	case constants.FormatJSON:
@@ -115,7 +115,7 @@ func outputEnvVarGroup(envVarGroup interface{}, envVarsList []EnvVar, groupName 
 	}
 }
 
-func outputEnvVarGroupJSON(envVarGroup interface{}, envVarsList []EnvVar) error {
+func outputEnvVarGroupJSON(envVarGroup any, envVarsList []EnvVar) error {
 	result := buildEnvVarGroupResult(envVarGroup, envVarsList)
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
@@ -128,7 +128,7 @@ func outputEnvVarGroupJSON(envVarGroup interface{}, envVarsList []EnvVar) error 
 	return nil
 }
 
-func outputEnvVarGroupYAML(envVarGroup interface{}, envVarsList []EnvVar) error {
+func outputEnvVarGroupYAML(envVarGroup any, envVarsList []EnvVar) error {
 	result := buildEnvVarGroupResult(envVarGroup, envVarsList)
 	encoder := yaml.NewEncoder(os.Stdout)
 
@@ -140,17 +140,17 @@ func outputEnvVarGroupYAML(envVarGroup interface{}, envVarsList []EnvVar) error 
 	return nil
 }
 
-func buildEnvVarGroupResult(envVarGroup interface{}, envVarsList []EnvVar) map[string]interface{} {
+func buildEnvVarGroupResult(envVarGroup any, envVarsList []EnvVar) map[string]any {
 	// Using reflection or type assertion would be needed here for proper implementation
-	// For now, maintaining the structure with interface{}
-	return map[string]interface{}{
+	// For now, maintaining the structure with any
+	return map[string]any{
 		"name":                  envVarGroup,
 		"updated_at":            nil,
 		keyEnvironmentVariables: envVarsList,
 	}
 }
 
-func outputEnvVarGroupTable(envVarGroup interface{}, envVarsList []EnvVar, groupName string) error {
+func outputEnvVarGroupTable(envVarGroup any, envVarsList []EnvVar, groupName string) error {
 	_, _ = fmt.Fprintf(os.Stdout, "Environment Variable Group: %v\n", envVarGroup)
 	// Note: Proper type assertion would be needed for UpdatedAt field
 	_, _ = os.Stdout.WriteString("\n")
@@ -174,7 +174,7 @@ func outputEnvVarGroupTable(envVarGroup interface{}, envVarsList []EnvVar, group
 	return nil
 }
 
-func formatEnvVarValue(value interface{}) string {
+func formatEnvVarValue(value any) string {
 	valueStr := fmt.Sprintf("%v", value)
 	if len(valueStr) > constants.StringTruncationLength {
 		return valueStr[:77] + "..."
@@ -198,7 +198,7 @@ func newEnvVarGroupsUpdateCommand() *cobra.Command {
 		Short:     "Update environment variable group",
 		Long:      "Update environment variables for a specific group (running or staging)",
 		Args:      cobra.ExactArgs(1),
-		ValidArgs: []string{"running", "staging"},
+		ValidArgs: []string{LifecycleRunning, LifecycleStaging},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runEnvVarGroupsUpdateCommand(cmd, args[0], opts)
 		},
@@ -242,10 +242,10 @@ func runEnvVarGroupsUpdateCommand(cmd *cobra.Command, groupName string, opts Env
 	return nil
 }
 
-func getCurrentEnvVarGroup(client interface{}, groupName string) (interface{}, error) {
+func getCurrentEnvVarGroup(client any, groupName string) (any, error) {
 	ctx := context.Background()
 
-	envVarClient, isValidClient := client.(interface{ EnvironmentVariableGroups() interface{} })
+	envVarClient, isValidClient := client.(interface{ EnvironmentVariableGroups() any })
 	if !isValidClient {
 		return nil, constants.ErrInvalidClientTypeForEnvVarGroups
 	}
@@ -253,7 +253,7 @@ func getCurrentEnvVarGroup(client interface{}, groupName string) (interface{}, e
 	envVarGroups := envVarClient.EnvironmentVariableGroups()
 
 	envVarGetter, ok := envVarGroups.(interface {
-		Get(ctx context.Context, name string) (interface{}, error)
+		Get(ctx context.Context, name string) (any, error)
 	})
 	if !ok {
 		return nil, constants.ErrInvalidEnvVarGroupsClientType
@@ -267,9 +267,9 @@ func getCurrentEnvVarGroup(client interface{}, groupName string) (interface{}, e
 	return currentGroup, nil
 }
 
-func buildUpdatedEnvVars(opts EnvVarUpdateOptions) (map[string]interface{}, error) {
+func buildUpdatedEnvVars(opts EnvVarUpdateOptions) (map[string]any, error) {
 	// Start with current environment variables
-	updatedEnvVars := make(map[string]interface{})
+	updatedEnvVars := make(map[string]any)
 	// Note: Type assertion would be needed here for proper implementation
 	// For now, maintaining the structure
 
@@ -288,7 +288,7 @@ func buildUpdatedEnvVars(opts EnvVarUpdateOptions) (map[string]interface{}, erro
 	return updatedEnvVars, nil
 }
 
-func loadEnvVarsFromFileIfSpecified(fromFile string, updatedEnvVars map[string]interface{}) error {
+func loadEnvVarsFromFileIfSpecified(fromFile string, updatedEnvVars map[string]any) error {
 	if fromFile == "" {
 		return nil
 	}
@@ -305,7 +305,7 @@ func loadEnvVarsFromFileIfSpecified(fromFile string, updatedEnvVars map[string]i
 	return nil
 }
 
-func applyEnvVarUpdates(envVars []string, updatedEnvVars map[string]interface{}) error {
+func applyEnvVarUpdates(envVars []string, updatedEnvVars map[string]any) error {
 	for _, envVar := range envVars {
 		key, value, err := parseEnvVarString(envVar)
 		if err != nil {
@@ -327,16 +327,16 @@ func parseEnvVarString(envVar string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func removeUnsetEnvVars(unset []string, updatedEnvVars map[string]interface{}) {
+func removeUnsetEnvVars(unset []string, updatedEnvVars map[string]any) {
 	for _, key := range unset {
 		delete(updatedEnvVars, key)
 	}
 }
 
-func updateEnvVarGroup(client interface{}, groupName string, updatedEnvVars map[string]interface{}) (interface{}, error) {
+func updateEnvVarGroup(client any, groupName string, updatedEnvVars map[string]any) (any, error) {
 	ctx := context.Background()
 
-	envVarClient, isValidClient := client.(interface{ EnvironmentVariableGroups() interface{} })
+	envVarClient, isValidClient := client.(interface{ EnvironmentVariableGroups() any })
 	if !isValidClient {
 		return nil, constants.ErrInvalidClientTypeForEnvVarGroups
 	}
@@ -344,7 +344,7 @@ func updateEnvVarGroup(client interface{}, groupName string, updatedEnvVars map[
 	envVarGroups := envVarClient.EnvironmentVariableGroups()
 
 	envVarUpdater, canUpdate := envVarGroups.(interface {
-		Update(ctx context.Context, name string, vars map[string]interface{}) (interface{}, error)
+		Update(ctx context.Context, name string, vars map[string]any) (any, error)
 	})
 	if !canUpdate {
 		return nil, constants.ErrInvalidEnvVarGroupsClientType
@@ -358,7 +358,7 @@ func updateEnvVarGroup(client interface{}, groupName string, updatedEnvVars map[
 	return updatedGroup, nil
 }
 
-func printUpdateSummary(updatedGroup interface{}, opts EnvVarUpdateOptions) {
+func printUpdateSummary(updatedGroup any, opts EnvVarUpdateOptions) {
 	_, _ = fmt.Fprintf(os.Stdout, "Successfully updated environment variable group '%v'\n", updatedGroup)
 
 	if len(opts.EnvVars) > 0 {
@@ -375,7 +375,7 @@ func printUpdateSummary(updatedGroup interface{}, opts EnvVarUpdateOptions) {
 }
 
 // parseValue attempts to parse a string value as the most appropriate type.
-func parseValue(value string) interface{} {
+func parseValue(value string) any {
 	// Try to parse as boolean
 	boolVal, err := strconv.ParseBool(value)
 	if err == nil {
@@ -400,7 +400,7 @@ func parseValue(value string) interface{} {
 
 // loadEnvVarsFromFile loads environment variables from a file
 // Supports .env format (KEY=VALUE per line) and JSON/YAML formats.
-func loadEnvVarsFromFile(filename string) (map[string]interface{}, error) {
+func loadEnvVarsFromFile(filename string) (map[string]any, error) {
 	cleanPath, err := validateAndCleanFilePath(filename)
 	if err != nil {
 		return nil, err
@@ -440,8 +440,8 @@ func validateAndCleanFilePath(filename string) (string, error) {
 	return absPath, nil
 }
 
-func parseEnvVarsFromData(data []byte) (map[string]interface{}, error) {
-	envVars := make(map[string]interface{})
+func parseEnvVarsFromData(data []byte) (map[string]any, error) {
+	envVars := make(map[string]any)
 
 	// Try to parse as JSON first
 	err := json.Unmarshal(data, &envVars)
@@ -459,8 +459,8 @@ func parseEnvVarsFromData(data []byte) (map[string]interface{}, error) {
 	return parseEnvFormat(string(data))
 }
 
-func parseEnvFormat(content string) (map[string]interface{}, error) {
-	envVars := make(map[string]interface{})
+func parseEnvFormat(content string) (map[string]any, error) {
+	envVars := make(map[string]any)
 	lines := strings.Split(content, "\n")
 
 	for lineIndex, line := range lines {

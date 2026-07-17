@@ -70,7 +70,7 @@ func readBatchInputData(inputFile string) ([]byte, error) {
 
 // validateBatchDryRun validates JSON input without creating users.
 func validateBatchDryRun(inputData []byte) error {
-	var users []interface{}
+	var users []any
 
 	err := json.Unmarshal(inputData, &users)
 	if err != nil {
@@ -284,8 +284,8 @@ and server info to reduce API calls and improve response times.`,
 			output := viper.GetString("output")
 			switch output {
 			case OutputFormatJSON:
-				cacheInfo := map[string]interface{}{
-					"status":       "active",
+				cacheInfo := map[string]any{
+					keyStatus:      Active,
 					"ttl":          "10 minutes",
 					"auto_cleanup": true,
 				}
@@ -294,8 +294,8 @@ and server info to reduce API calls and improve response times.`,
 
 				return encoder.Encode(cacheInfo)
 			case OutputFormatYAML:
-				cacheInfo := map[string]interface{}{
-					"status":       "active",
+				cacheInfo := map[string]any{
+					keyStatus:      Active,
 					"ttl":          "10 minutes",
 					"auto_cleanup": true,
 				}
@@ -315,7 +315,7 @@ and server info to reduce API calls and improve response times.`,
 }
 
 // Helper function to display performance metrics in table format.
-func displayPerformanceMetrics(metrics map[string]interface{}) error {
+func displayPerformanceMetrics(metrics map[string]any) error {
 	_, _ = os.Stdout.WriteString("UAA Performance Metrics:\n")
 	_, _ = os.Stdout.WriteString("\n")
 
@@ -336,7 +336,7 @@ func displayPerformanceMetrics(metrics map[string]interface{}) error {
 	_ = summaryTable.Render()
 
 	// Create operations statistics table if we have operations data
-	if operations, ok := metrics["operations"].(map[string]interface{}); ok && len(operations) > 0 {
+	if operations, ok := metrics["operations"].(map[string]any); ok && len(operations) > 0 {
 		_, _ = os.Stdout.WriteString("\nOperation Statistics:\n")
 		_, _ = os.Stdout.WriteString("\n")
 
@@ -344,7 +344,7 @@ func displayPerformanceMetrics(metrics map[string]interface{}) error {
 		operationsTable.Header("Operation", "Count", "Average", "Min", "Max")
 
 		for operation, stats := range operations {
-			if opStats, ok := stats.(map[string]interface{}); ok {
+			if opStats, ok := stats.(map[string]any); ok {
 				count := fmt.Sprintf("%v", opStats["count"])
 				average := fmt.Sprintf("%v", opStats["average"])
 				minVal := fmt.Sprintf("%v", opStats["min"])
@@ -381,7 +381,7 @@ func displayCacheStatus() error {
 }
 
 // displayCacheStatistics displays cache statistics in table format.
-func displayCacheStatistics(metrics map[string]interface{}) error {
+func displayCacheStatistics(metrics map[string]any) error {
 	_, _ = os.Stdout.WriteString("Cache Statistics:\n")
 	_, _ = os.Stdout.WriteString("\n")
 

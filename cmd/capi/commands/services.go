@@ -132,7 +132,7 @@ func enrichServiceDetails(ctx context.Context, client capi.Client, service *capi
 }
 
 // getServiceOfferingName retrieves the service offering name for a service plan.
-func getServiceOfferingName(ctx context.Context, client capi.Client, plan interface{}) string {
+func getServiceOfferingName(ctx context.Context, client capi.Client, plan any) string {
 	// Use reflection to access plan fields since we don't know the exact type
 	planValue := reflect.ValueOf(plan)
 	if planValue.Kind() == reflect.Pointer {
@@ -257,7 +257,7 @@ func newServicesListCommand() *cobra.Command {
 	config := &serviceListConfig{}
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List service instances",
 		Long:  "List all service instances the user has access to",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -285,7 +285,7 @@ func newServicesListCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&config.spaceName, "space", "s", "", "filter by space name")
+	cmd.Flags().StringVarP(&config.spaceName, spaceKey, "s", "", "filter by space name")
 	cmd.Flags().BoolVar(&config.allPages, "all", false, "fetch all pages")
 	cmd.Flags().IntVar(&config.perPage, "per-page", constants.StandardPageSize, "results per page")
 
@@ -351,7 +351,7 @@ func resolveServiceInstance(ctx context.Context, client capi.Client, nameOrGUID 
 }
 
 // handleServiceBindingResult processes and displays the result of service binding operations.
-func handleServiceBindingResult(result interface{}, serviceName, appName, operation string) {
+func handleServiceBindingResult(result any, serviceName, appName, operation string) {
 	if binding, ok := result.(*capi.ServiceCredentialBinding); ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Successfully %s service instance '%s' %s application '%s'\n", operation, serviceName, getBindingPreposition(operation), appName)
 		_, _ = fmt.Fprintf(os.Stdout, "  Binding GUID: %s\n", binding.GUID)
@@ -677,7 +677,7 @@ func buildUserProvidedServiceRequest(config *serviceCreateConfig, spaceGUID stri
 
 	// Convert credentials map
 	if len(config.credentials) > 0 {
-		credMap := make(map[string]interface{})
+		credMap := make(map[string]any)
 		for k, v := range config.credentials {
 			credMap[k] = v
 		}
@@ -714,7 +714,7 @@ func buildManagedServiceRequest(config *serviceCreateConfig, spaceGUID, planGUID
 
 	// Convert parameters
 	if len(config.parameters) > 0 {
-		paramMap := make(map[string]interface{})
+		paramMap := make(map[string]any)
 		for k, v := range config.parameters {
 			paramMap[k] = v
 		}
@@ -726,7 +726,7 @@ func buildManagedServiceRequest(config *serviceCreateConfig, spaceGUID, planGUID
 }
 
 // handleServiceCreationResult processes and displays the result of service creation.
-func handleServiceCreationResult(result interface{}, serviceName string, userProvided bool) {
+func handleServiceCreationResult(result any, serviceName string, userProvided bool) {
 	if userProvided {
 		if service, ok := result.(*capi.ServiceInstance); ok {
 			_, _ = fmt.Fprintf(os.Stdout, "Successfully created user-provided service instance '%s'\n", service.Name)
@@ -756,7 +756,7 @@ func newServicesCreateCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&config.serviceName, "name", "n", "", "service instance name (required)")
 	cmd.Flags().StringVarP(&config.planName, "plan", "p", "", "service plan name (required for managed services)")
-	cmd.Flags().StringVarP(&config.spaceName, "space", "s", "", "space name (defaults to targeted space)")
+	cmd.Flags().StringVarP(&config.spaceName, spaceKey, "s", "", "space name (defaults to targeted space)")
 	cmd.Flags().StringArrayVar(&config.tags, "tags", nil, "tags for the service instance")
 	cmd.Flags().StringToStringVar(&config.parameters, "parameters", nil, "parameters for managed service instances (key=value)")
 	cmd.Flags().StringVar(&config.syslogDrainURL, "syslog-drain-url", "", "syslog drain URL for user-provided services")
@@ -946,7 +946,7 @@ func buildServiceUpdateRequest(cmd *cobra.Command, newName string, tags []string
 func buildUserProvidedUpdateRequest(updateReq *capi.ServiceInstanceUpdateRequest, cmd *cobra.Command,
 	credentials map[string]string, syslogDrainURL, routeServiceURL string) *capi.ServiceInstanceUpdateRequest {
 	if len(credentials) > 0 {
-		credMap := make(map[string]interface{})
+		credMap := make(map[string]any)
 		for k, v := range credentials {
 			credMap[k] = v
 		}
@@ -969,7 +969,7 @@ func buildUserProvidedUpdateRequest(updateReq *capi.ServiceInstanceUpdateRequest
 func buildManagedServiceUpdateRequest(updateReq *capi.ServiceInstanceUpdateRequest,
 	parameters map[string]string, planName string, client capi.Client, ctx context.Context) (*capi.ServiceInstanceUpdateRequest, error) {
 	if len(parameters) > 0 {
-		paramMap := make(map[string]interface{})
+		paramMap := make(map[string]any)
 		for k, v := range parameters {
 			paramMap[k] = v
 		}
@@ -1001,7 +1001,7 @@ func buildManagedServiceUpdateRequest(updateReq *capi.ServiceInstanceUpdateReque
 }
 
 // handleServiceUpdateResult processes the update result based on service type.
-func handleServiceUpdateResult(result interface{}, serviceType, serviceName string) {
+func handleServiceUpdateResult(result any, serviceType, serviceName string) {
 	if serviceType == UserProvided {
 		if updatedService, ok := result.(*capi.ServiceInstance); ok {
 			_, _ = fmt.Fprintf(os.Stdout, "Successfully updated user-provided service instance '%s'\n", updatedService.Name)
@@ -1163,7 +1163,7 @@ func buildBindingRequest(serviceGUID, appGUID, bindingName string, parameters ma
 	}
 
 	if len(parameters) > 0 {
-		paramMap := make(map[string]interface{})
+		paramMap := make(map[string]any)
 		for k, v := range parameters {
 			paramMap[k] = v
 		}
@@ -1309,7 +1309,7 @@ func executeServiceRename(cmd *cobra.Command, nameOrGUID, newName string) error 
 }
 
 // handleRenameResult handles the rename operation result.
-func handleRenameResult(result interface{}, serviceType, newName string) {
+func handleRenameResult(result any, serviceType, newName string) {
 	if serviceType == UserProvided {
 		// User-provided services return the service instance directly
 		if updatedService, ok := result.(*capi.ServiceInstance); ok {
@@ -1486,8 +1486,8 @@ func newServicesUnshareCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&spaceName, "space", "s", "", "space to unshare from (required)")
-	_ = cmd.MarkFlagRequired("space")
+	cmd.Flags().StringVarP(&spaceName, spaceKey, "s", "", "space to unshare from (required)")
+	_ = cmd.MarkFlagRequired(spaceKey)
 
 	return cmd
 }
@@ -1613,7 +1613,7 @@ func newServicesBrokersListCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List service brokers",
 		Long:  "List all service brokers",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1833,7 +1833,7 @@ func renderServiceOfferingsTable(ctx context.Context, client capi.Client, offeri
 
 func newServicesOfferingsListCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List service offerings",
 		Long:  "List all service offerings",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2041,7 +2041,7 @@ func renderServicePlansTable(ctx context.Context, client capi.Client, plans *cap
 
 func newServicesPlansListCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   List,
 		Short: "List service plans",
 		Long:  "List all service plans",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2275,8 +2275,8 @@ type ServicePlanVisibilityOperation struct {
 	Short              string
 	Long               string
 	Action             string
-	RequestType        func(visibilityType string, organizations []string) interface{}
-	VisibilityFunction func(context.Context, capi.ServicePlansClient, string, interface{}) (interface{}, error)
+	RequestType        func(visibilityType string, organizations []string) any
+	VisibilityFunction func(context.Context, capi.ServicePlansClient, string, any) (any, error)
 }
 
 // createServicePlanVisibilityCommand creates a generic service plan visibility command.
@@ -2378,13 +2378,13 @@ func newServicesPlansVisibilityUpdateCommand() *cobra.Command {
 		Short:  "Update service plan visibility",
 		Long:   "Update the visibility settings for a service plan",
 		Action: "updated",
-		RequestType: func(visibilityType string, organizations []string) interface{} {
+		RequestType: func(visibilityType string, organizations []string) any {
 			return &capi.ServicePlanVisibilityUpdateRequest{
 				Type:          visibilityType,
 				Organizations: organizations,
 			}
 		},
-		VisibilityFunction: func(ctx context.Context, client capi.ServicePlansClient, guid string, request interface{}) (interface{}, error) {
+		VisibilityFunction: func(ctx context.Context, client capi.ServicePlansClient, guid string, request any) (any, error) {
 			updateRequest, ok := request.(*capi.ServicePlanVisibilityUpdateRequest)
 			if !ok {
 				return nil, constants.ErrInvalidRequestType
@@ -2400,14 +2400,14 @@ func newServicesPlansVisibilityApplyCommand() *cobra.Command {
 		Use:    "apply SERVICE_PLAN_NAME_OR_GUID",
 		Short:  "Apply service plan visibility",
 		Long:   "Apply visibility settings to a service plan",
-		Action: "applied",
-		RequestType: func(visibilityType string, organizations []string) interface{} {
+		Action: Applied,
+		RequestType: func(visibilityType string, organizations []string) any {
 			return &capi.ServicePlanVisibilityApplyRequest{
 				Type:          visibilityType,
 				Organizations: organizations,
 			}
 		},
-		VisibilityFunction: func(ctx context.Context, client capi.ServicePlansClient, guid string, request interface{}) (interface{}, error) {
+		VisibilityFunction: func(ctx context.Context, client capi.ServicePlansClient, guid string, request any) (any, error) {
 			applyRequest, ok := request.(*capi.ServicePlanVisibilityApplyRequest)
 			if !ok {
 				return nil, constants.ErrInvalidRequestTypeForApplyVisibility
