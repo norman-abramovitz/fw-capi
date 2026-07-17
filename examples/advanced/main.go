@@ -16,6 +16,9 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/cfclient"
 )
 
+// operationTypeOrg identifies a batch Operation that creates an organization.
+const operationTypeOrg = "org"
+
 func main() {
 	// Example 1: Advanced client configuration
 	_, _ = os.Stdout.WriteString("=== Advanced Client Configuration ===\n")
@@ -234,7 +237,7 @@ type Operation struct {
 func createBatchOperations(client capi.Client, ctx context.Context) []Operation {
 	return []Operation{
 		{
-			Type: "org",
+			Type: operationTypeOrg,
 			Name: "batch-org-1",
 			Func: func() error {
 				_, err := client.Organizations().Create(ctx, &capi.OrganizationCreateRequest{
@@ -248,7 +251,7 @@ func createBatchOperations(client capi.Client, ctx context.Context) []Operation 
 			},
 		},
 		{
-			Type: "org",
+			Type: operationTypeOrg,
 			Name: "batch-org-2",
 			Func: func() error {
 				_, err := client.Organizations().Create(ctx, &capi.OrganizationCreateRequest{
@@ -262,7 +265,7 @@ func createBatchOperations(client capi.Client, ctx context.Context) []Operation 
 			},
 		},
 		{
-			Type: "org",
+			Type: operationTypeOrg,
 			Name: "batch-org-3",
 			Func: func() error {
 				_, err := client.Organizations().Create(ctx, &capi.OrganizationCreateRequest{

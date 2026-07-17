@@ -53,19 +53,19 @@ func newUAAStub(t *testing.T) *httptest.Server {
 
 	var srv *httptest.Server
 
-	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/", "":
 			// CF root-info: advertise UAA at this same server.
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"links":{"uaa":{"href":%q},"login":{"href":%q}}}`,
+			writer.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(writer, `{"links":{"uaa":{"href":%q},"login":{"href":%q}}}`,
 				srv.URL, srv.URL)
 		case "/oauth/token":
 			// Minimal token response accepted by OAuth2TokenManager.
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"access_token":"stub-token","token_type":"bearer","expires_in":3600}`)
+			writer.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(writer, `{"access_token":"stub-token","token_type":"bearer","expires_in":3600}`)
 		default:
-			w.WriteHeader(http.StatusNotFound)
+			writer.WriteHeader(http.StatusNotFound)
 		}
 	}))
 

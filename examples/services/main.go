@@ -11,6 +11,17 @@ import (
 	"github.com/fivetwenty-io/capi/v3/pkg/cfclient"
 )
 
+const (
+	// serviceInstanceTypeManaged is the CF API discriminator for a brokered service instance.
+	serviceInstanceTypeManaged = "managed"
+	// tagManaged marks an example service instance's Tags as backed by a managed service.
+	tagManaged = "managed"
+	// tagUpdated marks an example service instance's Tags as having been updated.
+	tagUpdated = "updated"
+	// labelKeyUpdated is the metadata label key recording that a resource was updated.
+	labelKeyUpdated = "updated"
+)
+
 func main() {
 	// Create authenticated client
 	ctx := context.Background()
@@ -143,7 +154,7 @@ func findAvailableServicePlan(ctx context.Context, client capi.Client) (*capi.Se
 
 func buildManagedServiceInstanceRequest(spaceGUID, planGUID string) *capi.ServiceInstanceCreateRequest {
 	return &capi.ServiceInstanceCreateRequest{
-		Type: "managed",
+		Type: serviceInstanceTypeManaged,
 		Name: "example-managed-service",
 		Relationships: capi.ServiceInstanceRelationships{
 			Space: capi.Relationship{
@@ -153,7 +164,7 @@ func buildManagedServiceInstanceRequest(spaceGUID, planGUID string) *capi.Servic
 				Data: &capi.RelationshipData{GUID: planGUID},
 			},
 		},
-		Parameters: map[string]interface{}{
+		Parameters: map[string]any{
 			"example_param": "example_value",
 		},
 		Metadata: &capi.Metadata{
@@ -165,7 +176,7 @@ func buildManagedServiceInstanceRequest(spaceGUID, planGUID string) *capi.Servic
 				"created-by": "service-example",
 			},
 		},
-		Tags: []string{"database", "managed"},
+		Tags: []string{"database", tagManaged},
 	}
 }
 
@@ -232,7 +243,7 @@ func createUserProvidedServiceInstance(client capi.Client, ctx context.Context) 
 				Data: &capi.RelationshipData{GUID: spaceGUID},
 			},
 		},
-		Credentials: map[string]interface{}{
+		Credentials: map[string]any{
 			"uri":      "https://external-api.example.com",
 			"api_key":  "secret-api-key",
 			"username": "service-user",
@@ -293,11 +304,11 @@ func manageServiceInstance(client capi.Client, ctx context.Context, instance *ca
 		Name: &newName,
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"version": "2.0",
-				"updated": "true",
+				"version":       "2.0",
+				labelKeyUpdated: "true",
 			},
 		},
-		Tags: []string{"database", "managed", "updated"},
+		Tags: []string{"database", tagManaged, tagUpdated},
 	}
 
 	updatedInstanceInterface, err := client.ServiceInstances().Update(ctx, instance.GUID, updateReq)
@@ -338,7 +349,7 @@ func createServiceBinding(ctx context.Context, client capi.Client, serviceInstan
 				Data: &capi.RelationshipData{GUID: appGUID},
 			},
 		},
-		Parameters: map[string]interface{}{
+		Parameters: map[string]any{
 			"permission": "read-write",
 			"pool_size":  constants.DefaultPageSize,
 		},
@@ -391,7 +402,7 @@ func updateServiceBinding(ctx context.Context, client capi.Client, bindingGUID s
 	updateBindingReq := &capi.ServiceCredentialBindingUpdateRequest{
 		Metadata: &capi.Metadata{
 			Labels: map[string]string{
-				"updated": "true",
+				labelKeyUpdated: "true",
 			},
 		},
 	}
@@ -475,7 +486,7 @@ func createServiceKey(ctx context.Context, client capi.Client, serviceInstanceGU
 				Data: &capi.RelationshipData{GUID: serviceInstanceGUID},
 			},
 		},
-		Parameters: map[string]interface{}{
+		Parameters: map[string]any{
 			"permissions": []string{"read", "write"},
 		},
 	}
