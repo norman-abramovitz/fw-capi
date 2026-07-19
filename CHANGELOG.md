@@ -13,7 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   UAA discovery (still gated by `CAPI_DEV_MODE`). Previously any client
   call against a self-signed foundation failed at the token fetch with an
   x509 error even though the operator had opted in to skipping
-  verification.
+  verification. Requesting `SkipTLSVerify` without the `CAPI_DEV_MODE`
+  gate now fails fast at client construction with `ErrSkipTLSOnlyInDev`
+  (matching the discovery path) instead of silently verifying.
+- Custom-TLS clients (CA cert or gated skip) clone `http.DefaultTransport`
+  instead of using a zero-value transport, preserving `HTTPS_PROXY`
+  support, HTTP/2, and dial/handshake timeouts, and no longer impose a
+  30-second whole-request timeout on API calls.
+- `capi isolation-segments get` rendered metadata label/annotation values
+  as pointer addresses after the pointer-map change; now prints the
+  values.
 
 ### Changed
 

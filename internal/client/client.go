@@ -25,16 +25,29 @@ var (
 	ErrStaticTokenCannotRefresh = errors.New("static token cannot be refreshed")
 )
 
-// validateCACertPEM rejects a CACertPEM that parses to zero certificates,
-// so a bad file surfaces as a clear error instead of an x509 failure on
-// the first request.
-func validateCACertPEM(config *capi.Config) error {
-	if config.CACertPEM == "" {
+// devModeEnabled reports whether the CAPI_DEV_MODE gate allows
+// development-only behavior such as skipping TLS verification.
+func devModeEnabled() bool {
+	devMode := os.Getenv("CAPI_DEV_MODE")
+
+	return devMode == "true" || devMode == "1"
+}
+
+// validateTLSSettings fails fast on TLS misconfiguration: a CACertPEM
+// that parses to zero certificates, or SkipTLSVerify requested without
+// the CAPI_DEV_MODE gate (which would otherwise silently degrade into
+// an opaque x509 error on the first request).
+func validateTLSSettings(config *capi.Config) error {
+	if config.CACertPEM != "" {
+		if !x509.NewCertPool().AppendCertsFromPEM([]byte(config.CACertPEM)) {
+			return capi.ErrInvalidCACertPEM
+		}
+
 		return nil
 	}
 
-	if !x509.NewCertPool().AppendCertsFromPEM([]byte(config.CACertPEM)) {
-		return capi.ErrInvalidCACertPEM
+	if config.SkipTLSVerify && !devModeEnabled() {
+		return fmt.Errorf("%w (set CAPI_DEV_MODE=true)", capi.ErrSkipTLSOnlyInDev)
 	}
 
 	return nil
@@ -109,8 +122,7 @@ func customTLSConfig(config *capi.Config) *tls.Config {
 		return nil
 	}
 
-	devMode := os.Getenv("CAPI_DEV_MODE")
-	if devMode != "true" && devMode != "1" {
+	if !devModeEnabled() {
 		return nil
 	}
 
@@ -118,19 +130,38 @@ func customTLSConfig(config *capi.Config) *tls.Config {
 }
 
 // customTLSHTTPClient wraps customTLSConfig in an HTTP client; nil when
-// no TLS adjustment was requested.
+// no TLS adjustment was requested. The transport is cloned from
+// http.DefaultTransport so proxy support, HTTP/2, and dial/handshake
+// timeouts match the default client path; no overall Client.Timeout is
+// set, matching retryablehttp's default (token-manager callers add
+// their own).
 func customTLSHTTPClient(config *capi.Config) *nethttp.Client {
 	tlsConfig := customTLSConfig(config)
 	if tlsConfig == nil {
 		return nil
 	}
 
-	return &nethttp.Client{
-		Timeout: constants.DefaultHTTPTimeout,
-		Transport: &nethttp.Transport{
-			TLSClientConfig: tlsConfig,
-		},
+	transport, ok := nethttp.DefaultTransport.(*nethttp.Transport)
+	if !ok {
+		transport = &nethttp.Transport{}
+	} else {
+		transport = transport.Clone()
 	}
+
+	transport.TLSClientConfig = tlsConfig
+
+	return &nethttp.Client{Transport: transport}
+}
+
+// tokenHTTPClient is customTLSHTTPClient plus the bounded timeout the
+// OAuth manager's default client uses for token requests.
+func tokenHTTPClient(config *capi.Config) *nethttp.Client {
+	client := customTLSHTTPClient(config)
+	if client != nil {
+		client.Timeout = constants.DefaultHTTPTimeout
+	}
+
+	return client
 }
 
 // createTokenManager creates appropriate token manager based on config.
@@ -164,7 +195,7 @@ func createFallbackTokenManager(config *capi.Config) auth.TokenManager {
 		ClientSecret: "",
 		Username:     config.Username,
 		Password:     config.Password,
-		HTTPClient:   customTLSHTTPClient(config),
+		HTTPClient:   tokenHTTPClient(config),
 	}
 
 	oauthManager := auth.NewOAuth2TokenManager(oauthConfig)
@@ -186,7 +217,7 @@ func createOAuth2TokenManager(config *capi.Config) auth.TokenManager {
 		Username:     config.Username,
 		Password:     config.Password,
 		RefreshToken: config.RefreshToken,
-		HTTPClient:   customTLSHTTPClient(config),
+		HTTPClient:   tokenHTTPClient(config),
 	}
 
 	return auth.NewOAuth2TokenManager(oauthConfig)
@@ -202,7 +233,7 @@ func createPasswordTokenManager(config *capi.Config) auth.TokenManager {
 		ClientSecret: "",
 		Username:     config.Username,
 		Password:     config.Password,
-		HTTPClient:   customTLSHTTPClient(config),
+		HTTPClient:   tokenHTTPClient(config),
 	}
 
 	return auth.NewOAuth2TokenManager(oauthConfig)
@@ -260,7 +291,7 @@ func New(ctx context.Context, config *capi.Config) (*Client, error) {
 		return nil, ErrAPIEndpointRequired
 	}
 
-	err := validateCACertPEM(config)
+	err := validateTLSSettings(config)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +329,7 @@ func NewWithTokenManager(config *capi.Config, tokenManager auth.TokenManager) (*
 		return nil, ErrAPIEndpointRequired
 	}
 
-	err := validateCACertPEM(config)
+	err := validateTLSSettings(config)
 	if err != nil {
 		return nil, err
 	}

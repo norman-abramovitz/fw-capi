@@ -151,16 +151,13 @@ func TestSkipTLSVerify_DevMode_SkipsVerification(t *testing.T) {
 	assert.Empty(t, orgs.Resources)
 }
 
-func TestSkipTLSVerify_WithoutDevMode_StillVerifies(t *testing.T) {
+func TestSkipTLSVerify_WithoutDevMode_FailsFast(t *testing.T) {
 	server := newSelfSignedCF(t)
 	t.Setenv("CAPI_DEV_MODE", "")
 
-	c, err := client.New(context.Background(), selfSignedConfig(server.URL, true))
-	require.NoError(t, err)
-
-	_, err = c.Organizations().List(context.Background(), nil)
+	_, err := client.New(context.Background(), selfSignedConfig(server.URL, true))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "certificate")
+	require.ErrorIs(t, err, capi.ErrSkipTLSOnlyInDev)
 }
 
 func TestSkipTLSVerify_False_Verifies(t *testing.T) {

@@ -90,9 +90,7 @@ func createDiscoveryHTTPClient(skipTLS bool, caCertPEM string) (*http.Client, er
 			return nil, capi.ErrInvalidCACertPEM
 		}
 
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12},
-		}
+		httpClient.Transport = discoveryTransport(&tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12})
 
 		return httpClient, nil
 	}
@@ -100,15 +98,29 @@ func createDiscoveryHTTPClient(skipTLS bool, caCertPEM string) (*http.Client, er
 	if skipTLS {
 		// Only allow insecure TLS in explicit development environments
 		if isDevelopmentEnvironment() {
-			httpClient.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec G402 -- Protected by development environment check above
-			}
+			httpClient.Transport = discoveryTransport(
+				&tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}) // #nosec G402 -- Protected by development environment check above
 		} else {
 			return nil, fmt.Errorf("%w (set CAPI_DEV_MODE=true)", capi.ErrSkipTLSOnlyInDev)
 		}
 	}
 
 	return httpClient, nil
+}
+
+// discoveryTransport clones http.DefaultTransport (keeping proxy support
+// and sane dial/handshake timeouts) with the given TLS config.
+func discoveryTransport(tlsConfig *tls.Config) *http.Transport {
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		transport = &http.Transport{}
+	} else {
+		transport = transport.Clone()
+	}
+
+	transport.TLSClientConfig = tlsConfig
+
+	return transport
 }
 
 // fetchRootInfo fetches and parses the root info from the API endpoint.

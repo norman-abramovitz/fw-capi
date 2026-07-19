@@ -248,7 +248,7 @@ func renderIsolationSegmentTable(segment *capi.IsolationSegment) error {
 		labelTable.Header("Key", "Value")
 
 		for k, v := range segment.Metadata.Labels {
-			_ = labelTable.Append(k, v)
+			_ = labelTable.Append(k, metadataValue(v))
 		}
 
 		_ = labelTable.Render()
@@ -261,7 +261,7 @@ func renderIsolationSegmentTable(segment *capi.IsolationSegment) error {
 		annotationTable.Header("Key", "Value")
 
 		for k, v := range segment.Metadata.Annotations {
-			_ = annotationTable.Append(k, v)
+			_ = annotationTable.Append(k, metadataValue(v))
 		}
 
 		_ = annotationTable.Render()
