@@ -52,7 +52,7 @@ func TestRoutePoliciesClient_Create(t *testing.T) {
 					Route: capi.Relationship{Data: &capi.RelationshipData{GUID: testRoutePolicyRoute}},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{testTeamLabel: "frontend"},
+					Labels: capi.StringMap(map[string]string{testTeamLabel: "frontend"}),
 				},
 			},
 			response: capi.RoutePolicy{
@@ -67,7 +67,7 @@ func TestRoutePoliciesClient_Create(t *testing.T) {
 					App:   &capi.Relationship{Data: &capi.RelationshipData{GUID: "d76446a1-f429-4444-8797-be2f78b75b08"}},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{testTeamLabel: "frontend"},
+					Labels: capi.StringMap(map[string]string{testTeamLabel: "frontend"}),
 				},
 			},
 			wantErr: false,
@@ -467,14 +467,14 @@ func TestRoutePoliciesClient_Update(t *testing.T) {
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
-		assert.Equal(t, "backend", requestBody.Metadata.Labels[testTeamLabel])
+		assert.Equal(t, "backend", capi.StringValue(requestBody.Metadata.Labels[testTeamLabel]))
 
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(writer).Encode(capi.RoutePolicy{
 			Resource: capi.Resource{GUID: testRoutePolicyGUID, CreatedAt: time.Now(), UpdatedAt: time.Now()},
 			Source:   capi.RoutePolicySourceAny,
-			Metadata: &capi.Metadata{Labels: map[string]string{testTeamLabel: "backend"}},
+			Metadata: &capi.Metadata{Labels: capi.StringMap(map[string]string{testTeamLabel: "backend"})},
 			Relationships: capi.RoutePolicyRelationships{
 				Route: capi.Relationship{Data: &capi.RelationshipData{GUID: testRoutePolicyRoute}},
 			},
@@ -486,11 +486,11 @@ func TestRoutePoliciesClient_Update(t *testing.T) {
 	require.NoError(t, err)
 
 	policy, err := client.RoutePolicies().Update(context.Background(), testRoutePolicyGUID, &capi.RoutePolicyUpdateRequest{
-		Metadata: &capi.Metadata{Labels: map[string]string{testTeamLabel: "backend"}},
+		Metadata: &capi.Metadata{Labels: capi.StringMap(map[string]string{testTeamLabel: "backend"})},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, policy)
-	assert.Equal(t, "backend", policy.Metadata.Labels[testTeamLabel])
+	assert.Equal(t, "backend", capi.StringValue(policy.Metadata.Labels[testTeamLabel]))
 }
 
 func TestRoutePoliciesClient_Delete(t *testing.T) {

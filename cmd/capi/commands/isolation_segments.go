@@ -294,7 +294,7 @@ func newIsolationSegmentsCreateCommand() *cobra.Command {
 
 			if labels != nil {
 				createReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 
@@ -336,7 +336,7 @@ func newIsolationSegmentsUpdateCommand() *cobra.Command {
 
 			if labels != nil {
 				updateReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 

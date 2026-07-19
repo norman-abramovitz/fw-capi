@@ -197,7 +197,7 @@ func newRevisionsUpdateCommand() *cobra.Command {
 
 			if len(metadata) > 0 {
 				updateReq.Metadata = &capi.Metadata{
-					Labels: metadata,
+					Labels: capi.StringMap(metadata),
 				}
 			}
 

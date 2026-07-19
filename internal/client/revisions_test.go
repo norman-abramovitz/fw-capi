@@ -74,7 +74,7 @@ func TestRevisionsClient_Update(t *testing.T) {
 
 		_ = json.NewDecoder(request.Body).Decode(&req)
 		assert.NotNil(t, req.Metadata)
-		assert.Equal(t, testValue1, req.Metadata.Labels["key1"])
+		assert.Equal(t, testValue1, capi.StringValue(req.Metadata.Labels["key1"]))
 
 		revision := capi.Revision{
 			Resource: capi.Resource{GUID: testRevisionGUID},
@@ -91,15 +91,15 @@ func TestRevisionsClient_Update(t *testing.T) {
 
 	revision, err := client.Revisions().Update(context.Background(), testRevisionGUID, &capi.RevisionUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"key1": testValue1,
-			},
+			}),
 		},
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, testRevisionGUID, revision.GUID)
-	assert.Equal(t, testValue1, revision.Metadata.Labels["key1"])
+	assert.Equal(t, testValue1, capi.StringValue(revision.Metadata.Labels["key1"]))
 }
 
 func TestRevisionsClient_GetEnvironmentVariables(t *testing.T) {

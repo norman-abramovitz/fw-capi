@@ -77,13 +77,13 @@ func buildAppCreateRequest(spaceGUID string) *capi.AppCreateRequest {
 			},
 		},
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"team":        "platform",
 				"environment": "demo",
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				"created-by": "capi-client-example",
-			},
+			}),
 		},
 	}
 }
@@ -120,7 +120,7 @@ func printAppMetadata(metadata *capi.Metadata) {
 		log.Println("  Labels:")
 
 		for key, value := range metadata.Labels {
-			log.Printf("    %s: %s\n", key, value)
+			log.Printf("    %s: %s\n", key, capi.StringValue(value))
 		}
 	}
 
@@ -128,7 +128,7 @@ func printAppMetadata(metadata *capi.Metadata) {
 		log.Println("  Annotations:")
 
 		for key, value := range metadata.Annotations {
-			log.Printf("    %s: %s\n", key, value)
+			log.Printf("    %s: %s\n", key, capi.StringValue(value))
 		}
 	}
 }
@@ -155,13 +155,13 @@ func buildAppUpdateRequest() *capi.AppUpdateRequest {
 	return &capi.AppUpdateRequest{
 		Name: &newName,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"version": "1.0.0",
 				"updated": "true",
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				"updated-by": "capi-client-example",
-			},
+			}),
 		},
 	}
 }

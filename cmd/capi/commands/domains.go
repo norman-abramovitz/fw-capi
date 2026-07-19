@@ -533,7 +533,7 @@ func buildDomainCreateRequest(ctx context.Context, client capi.Client, cmd *cobr
 
 	if labels != nil {
 		createReq.Metadata = &capi.Metadata{
-			Labels: labels,
+			Labels: capi.StringMap(labels),
 		}
 	}
 
@@ -616,7 +616,7 @@ func newDomainsUpdateCommand() *cobra.Command {
 
 			if labels != nil {
 				updateReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 

@@ -48,14 +48,14 @@ func TestMetadata_JSONMarshaling(t *testing.T) {
 	t.Parallel()
 
 	metadata := capi.Metadata{
-		Labels: map[string]string{
+		Labels: capi.StringMap(map[string]string{
 			"environment": "production",
 			"team":        "platform",
-		},
-		Annotations: map[string]string{
+		}),
+		Annotations: capi.StringMap(map[string]string{
 			"version": "1.0.0",
 			"owner":   "team@example.com",
-		},
+		}),
 	}
 
 	data, err := json.Marshal(metadata)

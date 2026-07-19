@@ -86,9 +86,9 @@ func TestBuildpacksClient_Create(t *testing.T) {
 		Stack:    &stack,
 		Position: &position,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
+			}),
 		},
 	}
 
@@ -284,9 +284,9 @@ func TestBuildpacksClient_Update(t *testing.T) {
 		Position: &position,
 		Enabled:  &enabled,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testUpdatedValue: testTrueString,
-			},
+			}),
 		},
 	}
 

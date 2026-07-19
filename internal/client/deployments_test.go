@@ -52,9 +52,9 @@ func TestDeploymentsClient_Create(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testVersionAnnotationKey: "v1.0.0",
-					},
+					}),
 				},
 			},
 			response: &capi.Deployment{
@@ -101,9 +101,9 @@ func TestDeploymentsClient_Create(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testVersionAnnotationKey: "v1.0.0",
-					},
+					}),
 				},
 			},
 			wantErr: false,
@@ -343,12 +343,12 @@ func TestDeploymentsClient_Update(t *testing.T) {
 
 	request := &capi.DeploymentUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: "v1.0.1",
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "Updated deployment",
-			},
+			}),
 		},
 	}
 
@@ -360,12 +360,12 @@ func TestDeploymentsClient_Update(t *testing.T) {
 		},
 		State: testStateDeploying,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: "v1.0.1",
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "Updated deployment",
-			},
+			}),
 		},
 	}
 

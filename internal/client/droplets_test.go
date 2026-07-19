@@ -86,8 +86,8 @@ func TestDropletsClient_Create(t *testing.T) {
 					"rake":             "bundle exec rake",
 				},
 				Metadata: &capi.Metadata{
-					Labels:      map[string]string{},
-					Annotations: map[string]string{},
+					Labels:      capi.StringMap(map[string]string{}),
+					Annotations: capi.StringMap(map[string]string{}),
 				},
 				Relationships: &capi.DropletRelationships{
 					App: &capi.Relationship{
@@ -364,12 +364,12 @@ func TestDropletsClient_Update(t *testing.T) {
 
 	request := &capi.DropletUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: testVersion100,
-			},
+			}),
 		},
 	}
 
@@ -381,12 +381,12 @@ func TestDropletsClient_Update(t *testing.T) {
 		},
 		State: testStateStaged,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: testVersion100,
-			},
+			}),
 		},
 	}
 

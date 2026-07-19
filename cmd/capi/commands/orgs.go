@@ -234,7 +234,7 @@ func renderOrganizationDetailsTable(org *capi.Organization) error {
 	return nil
 }
 
-func renderMetadataTables(labels, annotations map[string]string) {
+func renderMetadataTables(labels, annotations map[string]*string) {
 	if len(labels) > 0 {
 		_, _ = os.Stdout.WriteString("\nLabels:\n")
 
@@ -242,7 +242,7 @@ func renderMetadataTables(labels, annotations map[string]string) {
 		labelTable.Header("Key", "Value")
 
 		for k, v := range labels {
-			_ = labelTable.Append(k, v)
+			_ = labelTable.Append(k, metadataValue(v))
 		}
 
 		_ = labelTable.Render()
@@ -255,11 +255,19 @@ func renderMetadataTables(labels, annotations map[string]string) {
 		annotationTable.Header("Key", "Value")
 
 		for k, v := range annotations {
-			_ = annotationTable.Append(k, v)
+			_ = annotationTable.Append(k, metadataValue(v))
 		}
 
 		_ = annotationTable.Render()
 	}
+}
+
+func metadataValue(v *string) string {
+	if v == nil {
+		return ""
+	}
+
+	return *v
 }
 
 func newOrgsCreateCommand() *cobra.Command {
@@ -276,7 +284,7 @@ func newOrgsCreateCommand() *cobra.Command {
 
 			if labels != nil {
 				createReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 
@@ -356,7 +364,7 @@ func buildOrgUpdateRequest(newName string, labels map[string]string) *capi.Organ
 
 	if len(labels) > 0 {
 		updateRequest.Metadata = &capi.Metadata{
-			Labels: labels,
+			Labels: capi.StringMap(labels),
 		}
 		hasUpdate = true
 	}

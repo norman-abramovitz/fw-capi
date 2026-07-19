@@ -38,9 +38,13 @@ type Link struct {
 }
 
 // Metadata represents labels and annotations.
+//
+// Values are pointers so update requests can distinguish setting a key
+// (non-nil), leaving it untouched (key absent), and deleting it (nil,
+// which marshals to JSON null per the CF v3 metadata contract).
 type Metadata struct {
-	Labels      map[string]string `json:"labels,omitempty"      yaml:"labels,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	Labels      map[string]*string `json:"labels,omitempty"      yaml:"labels,omitempty"`
+	Annotations map[string]*string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 // Relationship represents a to-one relationship.

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `Metadata.Labels` and `Metadata.Annotations` are now
+  `map[string]*string` (previously `map[string]string`). A nil value
+  marshals to JSON `null`, which is how the CF v3 API deletes a metadata
+  key on PATCH — the old string-valued maps could not express removal at
+  all. Migrate literals with the new `StringMap` helper and reads with
+  `StringValue`.
+
+### Added
+
+- `Metadata` helper methods `SetLabel`, `RemoveLabel`, `SetAnnotation`,
+  and `RemoveAnnotation` (prefix-aware, matching the CF metadata key
+  convention `prefix/name`); `Remove*` marks the key with a nil value so
+  the next update deletes it server-side.
+- `StringMap` (plain → pointer-valued map) and `StringValue`
+  (nil-safe dereference) conversion helpers.
+
 ## [3.229.0] - 2026-09-03
 
 Adds support for the CF API 3.226.0–3.229.0 delta (upstream capi-release

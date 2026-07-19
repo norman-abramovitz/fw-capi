@@ -109,9 +109,9 @@ func TestServicePlansClient_Get(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testTypeKey: testDatabaseFixture,
-					},
+					}),
 				},
 			},
 			wantErr: false,
@@ -350,12 +350,12 @@ func TestServicePlansClient_Update(t *testing.T) {
 			statusCode:   http.StatusOK,
 			request: &capi.ServicePlanUpdateRequest{
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
-					Annotations: map[string]string{
+					}),
+					Annotations: capi.StringMap(map[string]string{
 						testNoteAnnotationKey: "Updated plan",
-					},
+					}),
 				},
 			},
 			response: capi.ServicePlan{
@@ -398,12 +398,12 @@ func TestServicePlansClient_Update(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
-					Annotations: map[string]string{
+					}),
+					Annotations: capi.StringMap(map[string]string{
 						testNoteAnnotationKey: "Updated plan",
-					},
+					}),
 				},
 			},
 			wantErr: false,
@@ -415,9 +415,9 @@ func TestServicePlansClient_Update(t *testing.T) {
 			statusCode:   http.StatusNotFound,
 			request: &capi.ServicePlanUpdateRequest{
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						"test": "value",
-					},
+					}),
 				},
 			},
 			response: map[string]any{

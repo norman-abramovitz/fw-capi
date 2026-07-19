@@ -99,7 +99,7 @@ func listServiceOfferingsAndPlans(client capi.Client, ctx context.Context) {
 			log.Println("     Labels:")
 
 			for key, value := range offering.Metadata.Labels {
-				log.Printf("       %s: %s\n", key, value)
+				log.Printf("       %s: %s\n", key, capi.StringValue(value))
 			}
 		}
 
@@ -168,13 +168,13 @@ func buildManagedServiceInstanceRequest(spaceGUID, planGUID string) *capi.Servic
 			"example_param": "example_value",
 		},
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"team":        "platform",
 				"environment": "demo",
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				"created-by": "service-example",
-			},
+			}),
 		},
 		Tags: []string{"database", tagManaged},
 	}
@@ -303,10 +303,10 @@ func manageServiceInstance(client capi.Client, ctx context.Context, instance *ca
 	updateReq := &capi.ServiceInstanceUpdateRequest{
 		Name: &newName,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"version":       "2.0",
 				labelKeyUpdated: "true",
-			},
+			}),
 		},
 		Tags: []string{"database", tagManaged, tagUpdated},
 	}
@@ -401,9 +401,9 @@ func showBindingDetails(ctx context.Context, client capi.Client, bindingGUID str
 func updateServiceBinding(ctx context.Context, client capi.Client, bindingGUID string) error {
 	updateBindingReq := &capi.ServiceCredentialBindingUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				labelKeyUpdated: "true",
-			},
+			}),
 		},
 	}
 

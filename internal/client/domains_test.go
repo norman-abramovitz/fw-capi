@@ -51,9 +51,9 @@ func TestDomainsClient_Create(t *testing.T) {
 				Name:     testExampleComDomain,
 				Internal: boolPtr(false),
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
+					}),
 				},
 			},
 			response: capi.Domain{
@@ -78,9 +78,9 @@ func TestDomainsClient_Create(t *testing.T) {
 				SupportedProtocols: []string{testHTTPProtocol, testTCPProtocol},
 				Relationships:      capi.DomainRelationships{},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
+					}),
 				},
 			},
 			wantErr: false,
@@ -336,12 +336,12 @@ func TestDomainsClient_Update(t *testing.T) {
 
 	request := &capi.DomainUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvironmentLabelKey: testStagingLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "Updated domain",
-			},
+			}),
 		},
 	}
 
@@ -353,12 +353,12 @@ func TestDomainsClient_Update(t *testing.T) {
 		},
 		Name: testExampleComDomain,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvironmentLabelKey: testStagingLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "Updated domain",
-			},
+			}),
 		},
 	}
 

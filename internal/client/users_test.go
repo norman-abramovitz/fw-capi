@@ -97,8 +97,8 @@ func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
 			PresentationName: testUserNameFixture,
 			Origin:           "ldap",
 			Metadata: &capi.Metadata{
-				Labels:      map[string]string{},
-				Annotations: map[string]string{},
+				Labels:      capi.StringMap(map[string]string{}),
+				Annotations: capi.StringMap(map[string]string{}),
 			},
 		}
 
@@ -115,8 +115,8 @@ func TestUsersClient_Create_WithUsernameAndOrigin(t *testing.T) {
 		Username: testUserNameFixture,
 		Origin:   "ldap",
 		Metadata: &capi.Metadata{
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
+			Labels:      capi.StringMap(map[string]string{}),
+			Annotations: capi.StringMap(map[string]string{}),
 		},
 	}
 
@@ -150,12 +150,12 @@ func TestUsersClient_Get(t *testing.T) {
 			PresentationName: testUserNameFixture,
 			Origin:           testUAAOrigin,
 			Metadata: &capi.Metadata{
-				Labels: map[string]string{
+				Labels: capi.StringMap(map[string]string{
 					testEnvironmentLabelKey: testProductionLabel,
-				},
-				Annotations: map[string]string{
+				}),
+				Annotations: capi.StringMap(map[string]string{
 					testNoteAnnotationKey: "admin user",
-				},
+				}),
 			},
 		}
 
@@ -173,7 +173,7 @@ func TestUsersClient_Get(t *testing.T) {
 	assert.Equal(t, testUserGUID, user.GUID)
 	assert.Equal(t, testUserNameFixture, user.Username)
 	assert.Equal(t, testUAAOrigin, user.Origin)
-	assert.Equal(t, testProductionLabel, user.Metadata.Labels[testEnvironmentLabelKey])
+	assert.Equal(t, testProductionLabel, capi.StringValue(user.Metadata.Labels[testEnvironmentLabelKey]))
 }
 
 func TestUsersClient_List(t *testing.T) {
@@ -266,8 +266,8 @@ func TestUsersClient_Update(t *testing.T) {
 
 		err := json.NewDecoder(request.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.Equal(t, testStagingLabel, req.Metadata.Labels[testEnvironmentLabelKey])
-		assert.Equal(t, "updated note", req.Metadata.Annotations[testNoteAnnotationKey])
+		assert.Equal(t, testStagingLabel, capi.StringValue(req.Metadata.Labels[testEnvironmentLabelKey]))
+		assert.Equal(t, "updated note", capi.StringValue(req.Metadata.Annotations[testNoteAnnotationKey]))
 
 		user := capi.User{
 			Resource: capi.Resource{
@@ -284,12 +284,12 @@ func TestUsersClient_Update(t *testing.T) {
 			PresentationName: testUserNameFixture,
 			Origin:           testUAAOrigin,
 			Metadata: &capi.Metadata{
-				Labels: map[string]string{
+				Labels: capi.StringMap(map[string]string{
 					testEnvironmentLabelKey: testStagingLabel,
-				},
-				Annotations: map[string]string{
+				}),
+				Annotations: capi.StringMap(map[string]string{
 					testNoteAnnotationKey: "updated note",
-				},
+				}),
 			},
 		}
 
@@ -303,12 +303,12 @@ func TestUsersClient_Update(t *testing.T) {
 
 	req := &capi.UserUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvironmentLabelKey: testStagingLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "updated note",
-			},
+			}),
 		},
 	}
 
@@ -316,8 +316,8 @@ func TestUsersClient_Update(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, testUserGUID, user.GUID)
-	assert.Equal(t, testStagingLabel, user.Metadata.Labels[testEnvironmentLabelKey])
-	assert.Equal(t, "updated note", user.Metadata.Annotations[testNoteAnnotationKey])
+	assert.Equal(t, testStagingLabel, capi.StringValue(user.Metadata.Labels[testEnvironmentLabelKey]))
+	assert.Equal(t, "updated note", capi.StringValue(user.Metadata.Annotations[testNoteAnnotationKey]))
 }
 
 func TestUsersClient_Delete(t *testing.T) {
