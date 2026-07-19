@@ -2,9 +2,13 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	nethttp "net/http"
+	"os"
 	"time"
 
 	"github.com/fivetwenty-io/capi/v3/internal/auth"
@@ -20,6 +24,21 @@ var (
 	ErrNoTokenManagerConfigured = errors.New("no token manager configured")
 	ErrStaticTokenCannotRefresh = errors.New("static token cannot be refreshed")
 )
+
+// validateCACertPEM rejects a CACertPEM that parses to zero certificates,
+// so a bad file surfaces as a clear error instead of an x509 failure on
+// the first request.
+func validateCACertPEM(config *capi.Config) error {
+	if config.CACertPEM == "" {
+		return nil
+	}
+
+	if !x509.NewCertPool().AppendCertsFromPEM([]byte(config.CACertPEM)) {
+		return capi.ErrInvalidCACertPEM
+	}
+
+	return nil
+}
 
 type Client struct {
 	httpClient   *http.Client
@@ -68,7 +87,52 @@ type Client struct {
 	routing                   capi.RoutingClient
 }
 
-// New creates a new CF API client.
+// customTLSConfig returns a TLS config honoring the Config's trust
+// settings, or nil when no adjustment was requested. CACertPEM — verify
+// against the provided CA in addition to system roots — takes precedence
+// over SkipTLSVerify, which disables verification entirely and is only
+// honored when the CAPI_DEV_MODE environment gate allows it (the same
+// gate UAA discovery uses).
+func customTLSConfig(config *capi.Config) *tls.Config {
+	if config.CACertPEM != "" {
+		pool, err := x509.SystemCertPool()
+		if pool == nil || err != nil {
+			pool = x509.NewCertPool()
+		}
+
+		pool.AppendCertsFromPEM([]byte(config.CACertPEM))
+
+		return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
+	}
+
+	if !config.SkipTLSVerify {
+		return nil
+	}
+
+	devMode := os.Getenv("CAPI_DEV_MODE")
+	if devMode != "true" && devMode != "1" {
+		return nil
+	}
+
+	return &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12} // #nosec G402 -- gated by CAPI_DEV_MODE
+}
+
+// customTLSHTTPClient wraps customTLSConfig in an HTTP client; nil when
+// no TLS adjustment was requested.
+func customTLSHTTPClient(config *capi.Config) *nethttp.Client {
+	tlsConfig := customTLSConfig(config)
+	if tlsConfig == nil {
+		return nil
+	}
+
+	return &nethttp.Client{
+		Timeout: constants.DefaultHTTPTimeout,
+		Transport: &nethttp.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+}
+
 // createTokenManager creates appropriate token manager based on config.
 func createTokenManager(config *capi.Config) auth.TokenManager {
 	if config.AccessToken != "" && config.Username != "" && config.Password != "" {
@@ -100,6 +164,7 @@ func createFallbackTokenManager(config *capi.Config) auth.TokenManager {
 		ClientSecret: "",
 		Username:     config.Username,
 		Password:     config.Password,
+		HTTPClient:   customTLSHTTPClient(config),
 	}
 
 	oauthManager := auth.NewOAuth2TokenManager(oauthConfig)
@@ -121,6 +186,7 @@ func createOAuth2TokenManager(config *capi.Config) auth.TokenManager {
 		Username:     config.Username,
 		Password:     config.Password,
 		RefreshToken: config.RefreshToken,
+		HTTPClient:   customTLSHTTPClient(config),
 	}
 
 	return auth.NewOAuth2TokenManager(oauthConfig)
@@ -136,6 +202,7 @@ func createPasswordTokenManager(config *capi.Config) auth.TokenManager {
 		ClientSecret: "",
 		Username:     config.Username,
 		Password:     config.Password,
+		HTTPClient:   customTLSHTTPClient(config),
 	}
 
 	return auth.NewOAuth2TokenManager(oauthConfig)
@@ -166,6 +233,10 @@ func createHTTPClientOptions(config *capi.Config) []http.Option {
 		httpOpts = append(httpOpts, http.WithUserAgent(config.UserAgent))
 	}
 
+	if tlsClient := customTLSHTTPClient(config); tlsClient != nil {
+		httpOpts = append(httpOpts, http.WithHTTPClient(tlsClient))
+	}
+
 	if config.RetryMax > 0 {
 		retryWaitMin := 1 * time.Second
 		retryWaitMax := constants.ExtendedRetryWaitMax
@@ -187,6 +258,11 @@ func createHTTPClientOptions(config *capi.Config) []http.Option {
 func New(ctx context.Context, config *capi.Config) (*Client, error) {
 	if config.APIEndpoint == "" {
 		return nil, ErrAPIEndpointRequired
+	}
+
+	err := validateCACertPEM(config)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create token manager based on available credentials
@@ -222,35 +298,13 @@ func NewWithTokenManager(config *capi.Config, tokenManager auth.TokenManager) (*
 		return nil, ErrAPIEndpointRequired
 	}
 
+	err := validateCACertPEM(config)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create HTTP client options
-	httpOpts := []http.Option{}
-
-	if config.Logger != nil {
-		httpOpts = append(httpOpts, http.WithLogger(&loggerAdapter{logger: config.Logger}))
-	}
-
-	if config.Debug {
-		httpOpts = append(httpOpts, http.WithDebug(true))
-	}
-
-	if config.UserAgent != "" {
-		httpOpts = append(httpOpts, http.WithUserAgent(config.UserAgent))
-	}
-
-	if config.RetryMax > 0 {
-		retryWaitMin := 1 * time.Second
-		retryWaitMax := constants.ExtendedRetryWaitMax
-
-		if config.RetryWaitMin > 0 {
-			retryWaitMin = config.RetryWaitMin
-		}
-
-		if config.RetryWaitMax > 0 {
-			retryWaitMax = config.RetryWaitMax
-		}
-
-		httpOpts = append(httpOpts, http.WithRetryConfig(config.RetryMax, retryWaitMin, retryWaitMax))
-	}
+	httpOpts := createHTTPClientOptions(config)
 
 	// Create HTTP client with the provided token manager
 	httpClient := http.NewClient(config.APIEndpoint, tokenManager, httpOpts...)

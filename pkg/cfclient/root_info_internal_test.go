@@ -68,7 +68,7 @@ func TestFetchRootInfo_NullLinks(t *testing.T) {
 			}))
 			defer server.Close()
 
-			httpClient, err := createDiscoveryHTTPClient(false)
+			httpClient, err := createDiscoveryHTTPClient(false, "")
 			require.NoError(t, err)
 
 			uaaURL, err := fetchRootInfo(context.Background(), httpClient, server.URL)
@@ -98,7 +98,7 @@ func TestFetchRootInfo_NonOKStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	httpClient, err := createDiscoveryHTTPClient(false)
+	httpClient, err := createDiscoveryHTTPClient(false, "")
 	require.NoError(t, err)
 
 	uaaURL, err := fetchRootInfo(context.Background(), httpClient, server.URL)

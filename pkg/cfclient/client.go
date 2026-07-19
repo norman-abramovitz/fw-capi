@@ -4,6 +4,7 @@ package cfclient
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,7 +37,7 @@ func New(ctx context.Context, config *capi.Config) (capi.Client, error) {
 
 	// If we need authentication and don't have a token URL, discover the UAA endpoint
 	if needsAuth(config) && config.TokenURL == "" {
-		uaaURL, err := discoverUAAEndpoint(ctx, apiEndpoint, config.SkipTLSVerify)
+		uaaURL, err := discoverUAAEndpoint(ctx, apiEndpoint, config.SkipTLSVerify, config.CACertPEM)
 		if err != nil {
 			return nil, fmt.Errorf("discovering UAA endpoint: %w", err)
 		}
@@ -72,9 +73,28 @@ func isDevelopmentEnvironment() bool {
 
 // discoverUAAEndpoint discovers the UAA endpoint from the CF API root.
 // createDiscoveryHTTPClient creates an HTTP client for UAA endpoint discovery.
-func createDiscoveryHTTPClient(skipTLS bool) (*http.Client, error) {
+// A CA certificate takes precedence over skipTLS: verification stays enabled
+// against the provided CA (plus system roots).
+func createDiscoveryHTTPClient(skipTLS bool, caCertPEM string) (*http.Client, error) {
 	httpClient := &http.Client{
 		Timeout: constants.ShortHTTPTimeout,
+	}
+
+	if caCertPEM != "" {
+		pool, err := x509.SystemCertPool()
+		if pool == nil || err != nil {
+			pool = x509.NewCertPool()
+		}
+
+		if !pool.AppendCertsFromPEM([]byte(caCertPEM)) {
+			return nil, capi.ErrInvalidCACertPEM
+		}
+
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12},
+		}
+
+		return httpClient, nil
 	}
 
 	if skipTLS {
@@ -143,8 +163,8 @@ func fetchRootInfo(ctx context.Context, httpClient *http.Client, apiEndpoint str
 	return uaaURL, nil
 }
 
-func discoverUAAEndpoint(ctx context.Context, apiEndpoint string, skipTLS bool) (string, error) {
-	httpClient, err := createDiscoveryHTTPClient(skipTLS)
+func discoverUAAEndpoint(ctx context.Context, apiEndpoint string, skipTLS bool, caCertPEM string) (string, error) {
+	httpClient, err := createDiscoveryHTTPClient(skipTLS, caCertPEM)
 	if err != nil {
 		return "", err
 	}

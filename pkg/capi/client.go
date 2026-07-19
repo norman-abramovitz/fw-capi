@@ -138,9 +138,10 @@ type Logger interface {
 //
 // Per-request timeouts should generally be controlled via context passed to
 // client methods. Retry behavior can be tuned via RetryMax/RetryWaitMin/
-// RetryWaitMax. SkipTLSVerify is only honored during UAA discovery and only
-// when the environment variable CAPI_DEV_MODE is set to "true" or "1"; do not
-// use it in production.
+// RetryWaitMax. For foundations with self-signed or private-CA certificates,
+// set CACertPEM (verification stays enabled). SkipTLSVerify disables
+// verification entirely and is only honored when the environment variable
+// CAPI_DEV_MODE is set to "true" or "1"; do not use it in production.
 type Config struct {
 	// Required fields
 	// APIEndpoint: base URL for the CF API (e.g., "https://api.example.com").
@@ -182,8 +183,16 @@ type Config struct {
 	Debug bool
 	// Logger: optional structured logger used by the HTTP layer and helpers.
 	Logger Logger
-	// SkipTLSVerify: if true, TLS verification is skipped during UAA discovery
-	// only, and only when CAPI_DEV_MODE is set. Intended for local development.
+	// CACertPEM: optional PEM-encoded CA certificate(s) appended to the
+	// system roots for verifying the API and UAA endpoints. The preferred
+	// way to talk to foundations with self-signed or private-CA
+	// certificates: verification stays enabled. Takes precedence over
+	// SkipTLSVerify.
+	CACertPEM string
+	// SkipTLSVerify: if true, TLS certificate verification is skipped for
+	// UAA discovery, token requests, and API requests — but only when the
+	// environment variable CAPI_DEV_MODE is set to "true" or "1". Intended
+	// for local development; prefer CACertPEM for real foundations.
 	SkipTLSVerify bool
 	// UserAgent: overrides the default User-Agent header sent by the client.
 	UserAgent string

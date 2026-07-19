@@ -117,6 +117,7 @@ var (
 	ErrConfigRequired              = errors.New("config is required")
 	ErrAPIEndpointRequired         = errors.New("API endpoint is required")
 	ErrSkipTLSOnlyInDev            = errors.New("skipTLS is only allowed in development environments")
+	ErrInvalidCACertPEM            = errors.New("CACertPEM contains no valid PEM certificates")
 	ErrRootInfoRequestFailed       = errors.New("root info request failed")
 	ErrNoUAAOrLoginURL             = errors.New("no UAA or login URL found in API root response")
 	ErrInvalidHealthCheckType      = errors.New("invalid health check type")

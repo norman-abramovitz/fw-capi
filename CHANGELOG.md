@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `SkipTLSVerify` now applies to token requests and API requests, not just
+  UAA discovery (still gated by `CAPI_DEV_MODE`). Previously any client
+  call against a self-signed foundation failed at the token fetch with an
+  x509 error even though the operator had opted in to skipping
+  verification.
+
 ### Changed
 
 - **Breaking:** `Metadata.Labels` and `Metadata.Annotations` are now
@@ -18,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Config.CACertPEM`: PEM-encoded CA certificate(s) appended to the system
+  roots for verifying the API and UAA endpoints — the preferred way to talk
+  to foundations with self-signed or private-CA certificates, keeping
+  verification enabled. Takes precedence over `SkipTLSVerify`. Invalid PEM
+  fails fast with `ErrInvalidCACertPEM`.
 - `Metadata` helper methods `SetLabel`, `RemoveLabel`, `SetAnnotation`,
   and `RemoveAnnotation` (prefix-aware, matching the CF metadata key
   convention `prefix/name`); `Remove*` marks the key with a nil value so
