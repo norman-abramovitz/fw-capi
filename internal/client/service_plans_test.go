@@ -608,12 +608,22 @@ func TestServicePlansClient_UpdateVisibility(t *testing.T) {
 		assert.Equal(t, "/v3/service_plans/test-plan-guid/visibility", request.URL.Path)
 		assert.Equal(t, "PATCH", request.Method)
 
-		var requestBody capi.ServicePlanVisibilityUpdateRequest
+		// Decode the actual wire shape (not capi.ServicePlanVisibilityUpdateRequest
+		// itself) — CF requires "organizations": [{"guid": "..."}], and decoding
+		// into the same struct that encoded it would mask a field-type mismatch,
+		// which is exactly how this shape shipped wrong the first time.
+		var requestBody struct {
+			Type          string `json:"type"`
+			Organizations []struct {
+				GUID string `json:"guid"`
+			} `json:"organizations"`
+		}
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 		assert.Equal(t, testOrganizationType, requestBody.Type)
-		assert.Contains(t, requestBody.Organizations, testOrgName1)
+		require.Len(t, requestBody.Organizations, 1)
+		assert.Equal(t, testOrgName1, requestBody.Organizations[0].GUID)
 
 		response := capi.ServicePlanVisibility{
 			Type: testOrganizationType,
@@ -636,13 +646,66 @@ func TestServicePlansClient_UpdateVisibility(t *testing.T) {
 
 	request := &capi.ServicePlanVisibilityUpdateRequest{
 		Type:          testOrganizationType,
-		Organizations: []string{testOrgName1},
+		Organizations: []capi.ServicePlanVisibilityOrg{{GUID: testOrgName1}},
 	}
 
 	visibility, err := client.ServicePlans().UpdateVisibility(context.Background(), testPlanGUIDFixture, request)
 	require.NoError(t, err)
 	require.NotNil(t, visibility)
 	assert.Equal(t, testOrganizationType, visibility.Type)
+	assert.Len(t, visibility.Organizations, 1)
+}
+
+func TestServicePlansClient_ApplyVisibility(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/service_plans/test-plan-guid/visibility", request.URL.Path)
+		assert.Equal(t, "POST", request.Method)
+
+		// Same wire-shape check as UpdateVisibility: CF requires
+		// "organizations": [{"guid": "..."}], not a bare GUID string.
+		var requestBody struct {
+			Type          string `json:"type"`
+			Organizations []struct {
+				GUID string `json:"guid"`
+			} `json:"organizations"`
+		}
+
+		err := json.NewDecoder(request.Body).Decode(&requestBody)
+		assert.NoError(t, err)
+		assert.Equal(t, "organization", requestBody.Type)
+		require.Len(t, requestBody.Organizations, 1)
+		assert.Equal(t, "org-1", requestBody.Organizations[0].GUID)
+
+		response := capi.ServicePlanVisibility{
+			Type: "organization",
+			Organizations: []capi.ServicePlanVisibilityOrg{
+				{
+					GUID: "org-1",
+					Name: "Organization One",
+				},
+			},
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(writer).Encode(response)
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	request := &capi.ServicePlanVisibilityApplyRequest{
+		Type:          "organization",
+		Organizations: []capi.ServicePlanVisibilityOrg{{GUID: "org-1"}},
+	}
+
+	visibility, err := client.ServicePlans().ApplyVisibility(context.Background(), "test-plan-guid", request)
+	require.NoError(t, err)
+	require.NotNil(t, visibility)
+	assert.Equal(t, "organization", visibility.Type)
 	assert.Len(t, visibility.Organizations, 1)
 }
 

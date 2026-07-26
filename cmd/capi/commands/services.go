@@ -2334,6 +2334,14 @@ func executeServicePlanVisibilityOperation(
 	return nil
 }
 
+func servicePlanVisibilityOrgs(guids []string) []capi.ServicePlanVisibilityOrg {
+	orgs := make([]capi.ServicePlanVisibilityOrg, len(guids))
+	for i, guid := range guids {
+		orgs[i] = capi.ServicePlanVisibilityOrg{GUID: guid}
+	}
+	return orgs
+}
+
 func createServicePlanVisibilityCommand(operation ServicePlanVisibilityOperation) *cobra.Command {
 	var (
 		visibilityType string
@@ -2381,7 +2389,7 @@ func newServicesPlansVisibilityUpdateCommand() *cobra.Command {
 		RequestType: func(visibilityType string, organizations []string) any {
 			return &capi.ServicePlanVisibilityUpdateRequest{
 				Type:          visibilityType,
-				Organizations: organizations,
+				Organizations: servicePlanVisibilityOrgs(organizations),
 			}
 		},
 		VisibilityFunction: func(ctx context.Context, client capi.ServicePlansClient, guid string, request any) (any, error) {
@@ -2404,7 +2412,7 @@ func newServicesPlansVisibilityApplyCommand() *cobra.Command {
 		RequestType: func(visibilityType string, organizations []string) any {
 			return &capi.ServicePlanVisibilityApplyRequest{
 				Type:          visibilityType,
-				Organizations: organizations,
+				Organizations: servicePlanVisibilityOrgs(organizations),
 			}
 		},
 		VisibilityFunction: func(ctx context.Context, client capi.ServicePlansClient, guid string, request any) (any, error) {

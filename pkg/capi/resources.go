@@ -1396,16 +1396,18 @@ type ServicePlanVisibilitySpace struct {
 type ServicePlanVisibilityUpdateRequest struct {
 	// Type sets visibility (e.g., "public", "organization").
 	Type string `json:"type" yaml:"type"`
-	// Organizations lists org GUIDs when type is organization-scoped.
-	Organizations []string `json:"organizations,omitempty" yaml:"organizations,omitempty"`
+	// Organizations lists orgs when type is organization-scoped. CF requires
+	// each entry as {"guid": "..."}, not a bare GUID string.
+	Organizations []ServicePlanVisibilityOrg `json:"organizations,omitempty" yaml:"organizations,omitempty"`
 }
 
 // ServicePlanVisibilityApplyRequest represents a request to apply service plan visibility.
 type ServicePlanVisibilityApplyRequest struct {
 	// Type sets visibility (e.g., "public", "organization").
 	Type string `json:"type" yaml:"type"`
-	// Organizations lists org GUIDs when type is organization-scoped.
-	Organizations []string `json:"organizations,omitempty" yaml:"organizations,omitempty"`
+	// Organizations lists orgs when type is organization-scoped. CF requires
+	// each entry as {"guid": "..."}, not a bare GUID string.
+	Organizations []ServicePlanVisibilityOrg `json:"organizations,omitempty" yaml:"organizations,omitempty"`
 }
 
 // ServiceInstance represents a service instance.
