@@ -104,7 +104,7 @@ capi manifests apply --help
 
 ## API Compatibility
 
-All implemented features are compatible with Cloud Foundry API v3.199.0 and follow the official CF API specification for:
+All implemented features are compatible with Cloud Foundry API v3.229.0 and follow the official CF API specification for:
 
 - `/v3/spaces/{guid}/actions/apply_manifest` - Manifest application
 - `/v3/apps/{guid}/manifest` - Manifest generation  

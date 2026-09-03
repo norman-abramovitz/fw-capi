@@ -100,7 +100,7 @@ capi services plans visibility update --help
 
 ## API Compatibility
 
-All implemented features are compatible with Cloud Foundry API v3.199.0 and follow the official CF API specification for:
+All implemented features are compatible with Cloud Foundry API v3.229.0 and follow the official CF API specification for:
 
 - `/v3/service_plans/{guid}/visibility` - Service plan visibility
 
