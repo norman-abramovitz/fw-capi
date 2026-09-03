@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.229.0] - 2026-09-03
+
+Adds support for the CF API 3.226.0–3.229.0 delta (upstream capi-release
+1.241.0–1.244.0) and refreshes every Go module dependency.
+
+### Added
+
+- `WithDropletCurrent()` typed list option for `Droplets().List`, sending
+  `current=true` so `GET /v3/droplets` returns only each app's current
+  droplet across all apps. Combinable with the other droplet filters, for
+  example `WithDropletAppGUIDs(...)` to fetch current droplets for many
+  apps in one request instead of one call per app. Exposed on the CLI as
+  `capi apps droplets --current`. (CF API v3.229.0)
+
+### Changed
+
+- Route policy doc comments now match the 3.226.0 wording: the read-only
+  `relationships.app`, `relationships.space`, and
+  `relationships.organization` are always present with `data: null`
+  unless the source references that resource type; `links` always
+  carries `self` and `route` plus `app`, `space`, or `organization` when
+  the source references one; the source GUID is not existence-checked at
+  creation. No struct or JSON tag changes; decode tests lock in the
+  documented shapes. (CF API v3.226.0)
+- `Domain.EnforceRoutePolicies` and `Domain.RoutePoliciesScope` doc
+  comments say "set at creation only; cannot be changed on update"
+  instead of "immutable after creation", matching upstream. (CF API
+  v3.226.0)
+- Root `/` discovery tolerates `null` `logging`, `log_cache`, and
+  `log_stream` links, which Cloud Controller returns since capi-release
+  1.241.0 (cloud_controller_ng PR 5117) when those endpoints are
+  unconfigured, instead of an empty `href`. This is a server behavior
+  change, not a documented API change. UAA/login discovery still returns
+  `ErrNoUAAOrLoginURL` when both `uaa` and `login` are null or absent.
+  Covered by new tests; no behavior change.
+- Dependencies: go-uaa 0.3.5 → 0.5.0, tablewriter 1.0.9 → 1.1.4, cobra
+  1.9.1 → 1.10.2, viper 1.20.1 → 1.21.0, testify 1.10.0 → 1.12.1,
+  golang.org/x/oauth2 0.28.0 → 0.36.0, golang.org/x/term 0.34.0 → 0.45.0,
+  golang.org/x/text 0.24.0 → 0.41.0, plus the transitive graph via
+  `go get -u` and `go mod tidy`. `govulncheck` reports no known
+  vulnerabilities.
+
+### Fixed
+
+- `docs/app-features.md` listed two misspelled app feature names and a
+  nonexistent `log-cache` feature. The supported features are `ssh`,
+  `revisions`, `service-binding-k8s`, and `file-based-vcap-services`; the
+  doc now also summarizes the upstream "Service binding files" section
+  (single `vcap_services` file versus servicebinding.io directory
+  projection, mutual exclusivity, size cap, and file-name rules) added
+  in CF API v3.226.0.
+- README and docs install snippets pointed at `v3.199.0`.
+
+### Notes
+
+- CF API 3.227.0 (capi-release 1.242.0) introduced asynchronous
+  recursive delete for apps and service instances behind a Cloud
+  Controller config flag (`temporary_enable_async_recursive_delete`).
+  The v3 delete endpoints already return `202` with a job `Location`
+  header, which this client follows, so no client change is required.
+- CF API 3.228.0 (capi-release 1.243.0) carried no API surface changes.
+
 ## [3.225.0] - 2026-07-16
 
 Adds support for the CF API 3.223.0–3.225.0 delta (upstream capi-release
