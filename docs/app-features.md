@@ -37,10 +37,34 @@ capi apps features get my-app ssh
 ## Common App Features
 
 - `ssh` - SSH access to application containers
+
 - `revisions` - Application revision tracking
-- `log-cache` - Enhanced logging capabilities
-- `k8s-service-bindings` - Enable Kubernetes service bindings for the app
-- `file-based-service-bindings` - Enable file-based VCAP service bindings for the app
+
+- `service-binding-k8s` - Enable k8s service bindings for the app
+
+- `file-based-vcap-services` - Enable file-based VCAP service bindings for the app
+
+`service-binding-k8s` and `file-based-vcap-services` are mutually exclusive: only one may be enabled per app at a time.
+
+### Service binding files
+
+When `file-based-vcap-services` is enabled, the platform writes the app's `VCAP_SERVICES` value verbatim to a single file named `vcap_services`.
+
+When `service-binding-k8s` is enabled, the platform translates each service binding into a directory of files per the [servicebinding.io workload-projection spec](https://servicebinding.io/spec/core/1.0.0/#workload-projection):
+
+- each binding name becomes a directory
+
+- each property in the binding becomes a file, and each credentials key becomes a file
+
+- nested objects and lists are serialized as JSON
+
+- null or empty values are omitted
+
+- a `type` file and a `provider` file are always written, containing the service label
+
+- the total size of all binding files is capped at 1,000,000 bytes
+
+- file names must match `[a-z0-9\-._]{1,253}`
 
 ## Output Formats
 
@@ -112,7 +136,7 @@ capi apps features enable --help
 
 ## API Compatibility
 
-All implemented features are compatible with Cloud Foundry API v3.199.0 and follow the official CF API specification for:
+All implemented features are compatible with Cloud Foundry API v3.229.0 and follow the official CF API specification for:
 
 - `/v3/apps/{guid}/features` - App feature management
 
