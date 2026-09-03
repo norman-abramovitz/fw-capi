@@ -233,6 +233,79 @@ func TestRoutePoliciesClient_Get(t *testing.T) {
 	}
 }
 
+// TestRoutePoliciesClient_Get_ReadOnlyRelationshipsAndLinks proves a
+// route-policy response with all three read-only relationships present
+// (CF v3 3.226.0: app/space/organization are always present, data null
+// unless the source references that resource) decodes without error, that
+// the non-null relationship yields its GUID while the null ones decode to
+// a present relationship object with nil Data, and that links (self,
+// route, and the source-specific link) are reachable via Links["..."].Href.
+func TestRoutePoliciesClient_Get_ReadOnlyRelationshipsAndLinks(t *testing.T) {
+	t.Parallel()
+
+	const appGUID = "d76446a1-f429-4444-8797-be2f78b75b08"
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, testRoutePoliciesPath+"/"+testRoutePolicyGUID, request.URL.Path)
+		assert.Equal(t, http.MethodGet, request.Method)
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte(`{
+			"guid": "` + testRoutePolicyGUID + `",
+			"created_at": "2026-04-21T10:15:30Z",
+			"updated_at": "2026-04-21T10:15:30Z",
+			"source": "cf:app:` + appGUID + `",
+			"relationships": {
+				"route": {"data": {"guid": "` + testRoutePolicyRoute + `"}},
+				"app": {"data": {"guid": "` + appGUID + `"}},
+				"space": {"data": null},
+				"organization": {"data": null}
+			},
+			"links": {
+				"self": {"href": "https://api.example.org/v3/route_policies/` + testRoutePolicyGUID + `"},
+				"route": {"href": "https://api.example.org/v3/routes/` + testRoutePolicyRoute + `"},
+				"app": {"href": "https://api.example.org/v3/apps/` + appGUID + `"}
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	policy, err := client.RoutePolicies().Get(context.Background(), testRoutePolicyGUID)
+	require.NoError(t, err)
+	require.NotNil(t, policy)
+
+	// The non-null relationship (app, matching the source) yields the GUID.
+	require.NotNil(t, policy.Relationships.App)
+	require.NotNil(t, policy.Relationships.App.Data)
+	assert.Equal(t, appGUID, policy.Relationships.App.Data.GUID)
+
+	// The null relationships (space, organization) decode as present
+	// objects with nil Data, not as absent fields.
+	require.NotNil(t, policy.Relationships.Space)
+	assert.Nil(t, policy.Relationships.Space.Data)
+	require.NotNil(t, policy.Relationships.Organization)
+	assert.Nil(t, policy.Relationships.Organization.Data)
+
+	// Route is the only always-populated relationship.
+	require.NotNil(t, policy.Relationships.Route.Data)
+	assert.Equal(t, testRoutePolicyRoute, policy.Relationships.Route.Data.GUID)
+
+	// Links: self and route are always present; app is present because the
+	// source references an app.
+	require.Contains(t, policy.Links, "self")
+	require.Contains(t, policy.Links, "route")
+	require.Contains(t, policy.Links, "app")
+	assert.Equal(t, "https://api.example.org/v3/route_policies/"+testRoutePolicyGUID, policy.Links["self"].Href)
+	assert.Equal(t, "https://api.example.org/v3/routes/"+testRoutePolicyRoute, policy.Links["route"].Href)
+	assert.Equal(t, "https://api.example.org/v3/apps/"+appGUID, policy.Links["app"].Href)
+	assert.NotContains(t, policy.Links, "space")
+	assert.NotContains(t, policy.Links, "organization")
+}
+
 //nolint:funlen // Test functions can be longer for comprehensive testing
 func TestRoutePoliciesClient_List(t *testing.T) {
 	t.Parallel()
@@ -261,6 +334,15 @@ func TestRoutePoliciesClient_List(t *testing.T) {
 				capi.RoutePolicyIncludeSource,
 			},
 			expectedQuery: "include=source&source_guids=app-guid",
+		},
+		{
+			// CF v3 3.226.0 documents source_guids as a comma-separated
+			// list of strings; verify multiple GUIDs join correctly.
+			name: "list with multiple source guids",
+			opts: []capi.RoutePolicyListOption{
+				capi.WithRoutePolicySourceGUIDs("a", "b"),
+			},
+			expectedQuery: "source_guids=a,b",
 		},
 		{
 			name: "list with space guids and guids",

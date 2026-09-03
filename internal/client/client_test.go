@@ -198,6 +198,60 @@ func TestClient_GetRootInfo(t *testing.T) {
 	assert.NotNil(t, rootInfo.Links)
 }
 
+// TestClient_GetRoot_NullLoggregatorLinks proves a root (/) response with
+// null logging/log_cache/log_stream links (Cloud Controller since
+// capi-release 1.241.0, cloud_controller_ng PR 5117: unconfigured
+// loggregator endpoints are returned as null rather than an empty href)
+// decodes without error, and that reading a null entry from Links returns
+// a present-but-empty Link rather than panicking.
+func TestClient_GetRoot_NullLoggregatorLinks(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/", request.URL.Path)
+		assert.Equal(t, http.MethodGet, request.Method)
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{
+			"links": {
+				"self": {"href": "https://api.example.org"},
+				"cloud_controller_v3": {"href": "https://api.example.org/v3"},
+				"logging": null,
+				"log_cache": null,
+				"log_stream": null
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	config := &capi.Config{APIEndpoint: server.URL}
+
+	client, err := New(context.Background(), config)
+	require.NoError(t, err)
+
+	root, err := client.GetRoot(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, root)
+	require.NotNil(t, root.Links)
+
+	// Present, non-null links decode normally.
+	assert.Equal(t, "https://api.example.org", root.Links["self"].Href)
+
+	// Null loggregator links still yield a map entry (key present) whose
+	// Href is empty, not a decode error or a missing key.
+	loggingLink, exists := root.Links["logging"]
+	assert.True(t, exists)
+	assert.Empty(t, loggingLink.Href)
+
+	logCacheLink, exists := root.Links["log_cache"]
+	assert.True(t, exists)
+	assert.Empty(t, logCacheLink.Href)
+
+	logStreamLink, exists := root.Links["log_stream"]
+	assert.True(t, exists)
+	assert.Empty(t, logStreamLink.Href)
+}
+
 func TestClient_GetUsageSummary(t *testing.T) {
 	t.Parallel()
 

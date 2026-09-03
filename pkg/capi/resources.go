@@ -214,12 +214,12 @@ type Domain struct {
 	SupportedProtocols []string     `json:"supported_protocols"    yaml:"supported_protocols"`
 	// EnforceRoutePolicies marks an identity-aware domain: GoRouter enforces
 	// route policies for routes on this domain via mTLS (CF v3 3.225.0,
-	// experimental). CF omits the field from responses unless true.
-	// Immutable after creation.
+	// experimental). CF omits the field from responses unless true. Set at
+	// creation only; cannot be changed on update.
 	EnforceRoutePolicies bool `json:"enforce_route_policies,omitempty" yaml:"enforce_route_policies,omitempty"`
 	// RoutePoliciesScope is the operator-defined boundary for allowed
-	// callers; only present when EnforceRoutePolicies is true. Immutable
-	// after creation.
+	// callers; only present when EnforceRoutePolicies is true. Set at
+	// creation only; cannot be changed on update.
 	RoutePoliciesScope RoutePoliciesScope  `json:"route_policies_scope,omitempty" yaml:"route_policies_scope,omitempty"`
 	Metadata           *Metadata           `json:"metadata,omitempty"             yaml:"metadata,omitempty"`
 	Relationships      DomainRelationships `json:"relationships"                  yaml:"relationships"`
@@ -243,11 +243,12 @@ type DomainCreateRequest struct {
 	// Internal marks a private domain for internal routing.
 	Internal *bool `json:"internal,omitempty" yaml:"internal,omitempty"`
 	// EnforceRoutePolicies creates an identity-aware domain (CF v3 3.225.0,
-	// experimental). Cannot be used with internal domains. Immutable after
-	// creation.
+	// experimental). Cannot be used with internal domains. Set at creation
+	// only; cannot be changed on update.
 	EnforceRoutePolicies *bool `json:"enforce_route_policies,omitempty" yaml:"enforce_route_policies,omitempty"`
 	// RoutePoliciesScope bounds allowed callers (any, org, or space).
-	// Required when EnforceRoutePolicies is true. Immutable after creation.
+	// Required when EnforceRoutePolicies is true. Set at creation only;
+	// cannot be changed on update.
 	RoutePoliciesScope *RoutePoliciesScope `json:"route_policies_scope,omitempty" yaml:"route_policies_scope,omitempty"`
 	// RouterGroup associates a TCP router group when creating TCP domains.
 	RouterGroup *string `json:"router_group,omitempty" yaml:"router_group,omitempty"`
@@ -374,7 +375,9 @@ type RouteReservationRequest struct {
 // RoutePolicy represents a route policy on an identity-aware domain
 // (CF v3 3.225.0, experimental). Route policies control which apps,
 // spaces, or organizations may call routes on domains that have
-// enforce_route_policies enabled.
+// enforce_route_policies enabled. The embedded Resource.Links always
+// includes "self" and "route", plus "app", "space", or "organization"
+// when Source references that resource type (CF v3 3.226.0).
 type RoutePolicy struct {
 	Resource
 
@@ -389,9 +392,11 @@ type RoutePolicy struct {
 }
 
 // RoutePolicyRelationships represents route policy relationships. Route is
-// the only writable relationship; App, Space, and Organization are read-only
-// and derived from Source by CF (data is null except for the matching
-// source type).
+// the only writable relationship. App, Space, and Organization are
+// read-only and always present in CF responses (CF v3 3.226.0); each is
+// derived from Source, with Data null unless Source references that
+// resource type (e.g. App.Data is non-null only when Source is
+// "cf:app:<guid>").
 type RoutePolicyRelationships struct {
 	Route        Relationship  `json:"route"                  yaml:"route"`
 	App          *Relationship `json:"app,omitempty"          yaml:"app,omitempty"`
@@ -402,7 +407,12 @@ type RoutePolicyRelationships struct {
 // RoutePolicyCreateRequest represents a request to create a route policy.
 // The route's domain must have enforce_route_policies set to true and must
 // not be internal. Source is unique per route; "cf:any" cannot be combined
-// with other sources on the same route.
+// with other sources on the same route. CF does not check the source GUID
+// for existence at creation time, so stale references are tolerated;
+// sources referencing resources the caller cannot see are accepted but
+// will not appear under ?include=source. The App, Space, and Organization
+// relationships on the created RoutePolicy are derived from Source and
+// cannot be set directly.
 type RoutePolicyCreateRequest struct {
 	// Source is the policy selector: "cf:app:<guid>", "cf:space:<guid>",
 	// "cf:org:<guid>", or "cf:any". See the RoutePolicySource helpers.
