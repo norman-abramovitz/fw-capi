@@ -34,6 +34,7 @@ type fakeClient struct {
 
 	sidecars          capi.SidecarsClient
 	isolationSegments capi.IsolationSegmentsClient
+	droplets          capi.DropletsClient
 }
 
 func (f *fakeClient) Sidecars() capi.SidecarsClient {
@@ -50,6 +51,14 @@ func (f *fakeClient) IsolationSegments() capi.IsolationSegmentsClient {
 	}
 
 	return f.isolationSegments
+}
+
+func (f *fakeClient) Droplets() capi.DropletsClient {
+	if f.droplets == nil {
+		panic("fakeClient.Droplets() called but no stub was configured")
+	}
+
+	return f.droplets
 }
 
 // withStubClient installs client as the value returned by CreateClientWithAPI
@@ -197,6 +206,23 @@ func (s *recordingIsoSegmentsClient) Get(_ context.Context, guid string) (*capi.
 
 func (s *recordingIsoSegmentsClient) List(_ context.Context, _ *capi.QueryParams, _ ...capi.IsolationSegmentListOption) (*capi.ListResponse[capi.IsolationSegment], error) {
 	s.listCalled = true
+
+	return s.listResult, s.listErr
+}
+
+// recordingDropletsClient stubs capi.DropletsClient, recording the
+// QueryParams passed to List so tests can assert on the filters a command
+// builds (e.g. the --current flag on `capi apps droplets`).
+type recordingDropletsClient struct {
+	capi.DropletsClient
+
+	listResult *capi.ListResponse[capi.Droplet]
+	listErr    error
+	listParams *capi.QueryParams
+}
+
+func (s *recordingDropletsClient) List(_ context.Context, params *capi.QueryParams, _ ...capi.DropletListOption) (*capi.ListResponse[capi.Droplet], error) {
+	s.listParams = params
 
 	return s.listResult, s.listErr
 }

@@ -159,6 +159,13 @@ func WithDropletStates(states ...DropletState) DropletListOption { //nolint:iret
 	return dropletListScalar{scalarOption{filterKeyStates, joinKind(states)}}
 }
 
+// WithDropletCurrent restricts results to droplets that are the current
+// droplet of an app, combinable with the other droplet filters such as
+// WithDropletAppGUIDs (CF API 3.229.0).
+func WithDropletCurrent() DropletListOption { //nolint:ireturn // sealed-option pattern: typed option composed by callers
+	return dropletListScalar{scalarOption{"current", "true"}}
+}
+
 // ---- packages ----
 
 // PackageListOption configures GET /v3/packages.

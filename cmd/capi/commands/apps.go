@@ -2746,6 +2746,7 @@ type appResourceConfig struct {
 	allPages      bool
 	perPage       int
 	state         string
+	current       bool
 }
 
 // setupAppTasksParams configures query parameters for task listing.
@@ -2771,6 +2772,14 @@ func setupAppResourceParams(ctx context.Context, client capi.Client, config *app
 		params.WithFilter("states", config.state)
 	}
 
+	// Restrict to the current droplet of an app, if requested (droplets only;
+	// CF API 3.229.0). Equivalent to passing capi.WithDropletCurrent() to
+	// DropletsClient.List, expressed as a raw filter to match how the other
+	// options on this shared command (state, app_guids) are already wired.
+	if config.current {
+		params.WithFilter("current", "true")
+	}
+
 	return params, nil
 }
 
@@ -2780,6 +2789,7 @@ type appResourceCommandConfig struct {
 	short           string
 	long            string
 	stateFilterDesc string
+	supportsCurrent bool
 	setupParams     func(context.Context, capi.Client, *appResourceConfig) (*capi.QueryParams, error)
 	fetchPages      func(context.Context, capi.Client, *capi.QueryParams, bool) (any, *capi.Pagination, error)
 	outputResults   func(any, *capi.Pagination, bool) error
@@ -2826,6 +2836,10 @@ func createAppResourceCommand(config appResourceCommandConfig) *cobra.Command {
 	cmd.Flags().BoolVar(&resourceConfig.allPages, "all", false, "fetch all pages")
 	cmd.Flags().IntVar(&resourceConfig.perPage, "per-page", 0, "results per page")
 	cmd.Flags().StringVar(&resourceConfig.state, "state", "", config.stateFilterDesc)
+
+	if config.supportsCurrent {
+		cmd.Flags().BoolVar(&resourceConfig.current, "current", false, "only show the current droplet of the app")
+	}
 
 	return cmd
 }
@@ -3505,6 +3519,7 @@ func newAppsDropletsCommand() *cobra.Command {
 		short:           "List application droplets",
 		long:            "List all droplets for an application",
 		stateFilterDesc: "filter by droplet state",
+		supportsCurrent: true,
 		setupParams:     setupAppResourceParams,
 		fetchPages:      fetchDropletPages,
 		outputResults:   outputDroplets,

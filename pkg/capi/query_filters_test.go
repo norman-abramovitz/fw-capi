@@ -37,6 +37,7 @@ func TestListFilterOptions(t *testing.T) {
 		{"droplet space_guids", capi.WithDropletSpaceGUIDs("s1"), "space_guids", "s1"},
 		{"droplet org_guids", capi.WithDropletOrganizationGUIDs("o1"), "organization_guids", "o1"},
 		{"droplet states", capi.WithDropletStates(capi.DropletStateStaged), "states", "STAGED"},
+		{"droplet current", capi.WithDropletCurrent(), "current", "true"},
 
 		// packages
 		{"package guids", capi.WithPackageGUIDs("p1"), "guids", "p1"},

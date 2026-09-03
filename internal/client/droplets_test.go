@@ -280,6 +280,46 @@ func TestDropletsClient_List(t *testing.T) {
 	require.NotNil(t, result)
 }
 
+func TestDropletsClient_List_WithCurrentOption(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, testDropletsPath, request.URL.Path)
+		assert.Equal(t, http.MethodGet, request.Method)
+
+		query := request.URL.Query()
+		assert.Equal(t, "true", query.Get("current"))
+		assert.Equal(t, "app-1,app-2", query.Get(testAppGUIDsParam))
+
+		response := capi.ListResponse[capi.Droplet]{
+			Pagination: capi.Pagination{TotalResults: 1, TotalPages: 1},
+			Resources: []capi.Droplet{
+				{
+					Resource: capi.Resource{GUID: "current-droplet"},
+					State:    testStateStaged,
+				},
+			},
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(writer).Encode(response)
+	}))
+	defer server.Close()
+
+	client, err := New(context.Background(), &capi.Config{APIEndpoint: server.URL})
+	require.NoError(t, err)
+
+	result, err := client.Droplets().List(context.Background(), nil,
+		capi.WithDropletCurrent(),
+		capi.WithDropletAppGUIDs(testAppGUID1, testAppGUID2),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Len(t, result.Resources, 1)
+	assert.Equal(t, "current-droplet", result.Resources[0].GUID)
+}
+
 func TestDropletsClient_ListForApp(t *testing.T) {
 	t.Parallel()
 	RunSimpleListTest(t, "ListForApp", "/v3/apps/app-guid/droplets", 1,
