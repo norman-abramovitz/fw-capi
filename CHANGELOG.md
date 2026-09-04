@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.229.1] - 2026-09-03
+
+Two wire-format corrections found while driving the client against real and
+mock foundations. Both change exported Go types; the CF API version this
+release targets is unchanged at 3.229.0.
+
 ### Added
 
 - `Config.CACertPEM`: PEM-encoded CA certificate(s) appended to the system
