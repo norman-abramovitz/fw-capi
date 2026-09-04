@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Config.CACertPEM`: PEM-encoded CA certificate(s) appended to the system
+  roots for verifying the API and UAA endpoints — the preferred way to talk
+  to foundations with self-signed or private-CA certificates, keeping
+  verification enabled. Takes precedence over `SkipTLSVerify`. Invalid PEM
+  fails fast with `ErrInvalidCACertPEM`.
+- `Metadata` helper methods `SetLabel`, `RemoveLabel`, `SetAnnotation`,
+  and `RemoveAnnotation` (prefix-aware, matching the CF metadata key
+  convention `prefix/name`); `Remove*` marks the key with a nil value so
+  the next update deletes it server-side.
+- `StringMap` (plain → pointer-valued map) and `StringValue`
+  (nil-safe dereference) conversion helpers.
+
+### Changed
+
+- **Breaking:** `Metadata.Labels` and `Metadata.Annotations` are now
+  `map[string]*string` (previously `map[string]string`). A nil value
+  marshals to JSON `null`, which is how the CF v3 API deletes a metadata
+  key on PATCH — the old string-valued maps could not express removal at
+  all. Migrate literals with the new `StringMap` helper and reads with
+  `StringValue`.
+- **Breaking (interface)**: `ServicePlanVisibilityApplyRequest.Organizations`
+  and `ServicePlanVisibilityUpdateRequest.Organizations` are
+  `[]ServicePlanVisibilityOrg` instead of `[]string`. They marshaled to
+  `"organizations": ["guid"]`, which Cloud Controller rejects with
+  CF-BadRequest 1004; `POST` and `PATCH /v3/service_plans/{guid}/visibility`
+  require `"organizations": [{"guid": "..."}]`, the same shape the read-side
+  `ServicePlanVisibility` type already used. Callers that built the slice
+  from GUID strings wrap each one in `ServicePlanVisibilityOrg{GUID: g}`;
+  the CLI's `services plans visibility apply` and `update` are updated.
+  Found against a CF API 3.220.0 foundation.
+
 ### Fixed
 
 - `SkipTLSVerify` now applies to token requests and API requests, not just
@@ -23,29 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `capi isolation-segments get` rendered metadata label/annotation values
   as pointer addresses after the pointer-map change; now prints the
   values.
-
-### Changed
-
-- **Breaking:** `Metadata.Labels` and `Metadata.Annotations` are now
-  `map[string]*string` (previously `map[string]string`). A nil value
-  marshals to JSON `null`, which is how the CF v3 API deletes a metadata
-  key on PATCH — the old string-valued maps could not express removal at
-  all. Migrate literals with the new `StringMap` helper and reads with
-  `StringValue`.
-
-### Added
-
-- `Config.CACertPEM`: PEM-encoded CA certificate(s) appended to the system
-  roots for verifying the API and UAA endpoints — the preferred way to talk
-  to foundations with self-signed or private-CA certificates, keeping
-  verification enabled. Takes precedence over `SkipTLSVerify`. Invalid PEM
-  fails fast with `ErrInvalidCACertPEM`.
-- `Metadata` helper methods `SetLabel`, `RemoveLabel`, `SetAnnotation`,
-  and `RemoveAnnotation` (prefix-aware, matching the CF metadata key
-  convention `prefix/name`); `Remove*` marks the key with a nil value so
-  the next update deletes it server-side.
-- `StringMap` (plain → pointer-valued map) and `StringValue`
-  (nil-safe dereference) conversion helpers.
+- The `UpdateVisibility` test decoded the request body back into the struct
+  it was encoded from, so it could not see a wire-shape bug. It now decodes
+  into an independent mirror of the documented body, and `ApplyVisibility`
+  has the same test.
 
 ## [3.229.0] - 2026-09-03
 
