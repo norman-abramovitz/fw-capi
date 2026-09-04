@@ -45,9 +45,9 @@ func TestRoutesClient_Create(t *testing.T) {
 					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testTypeKey: testAPIHost,
-					},
+					}),
 				},
 			},
 			response: capi.Route{
@@ -79,9 +79,9 @@ func TestRoutesClient_Create(t *testing.T) {
 					Domain: capi.Relationship{Data: &capi.RelationshipData{GUID: testDomainGUID}},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testTypeKey: testAPIHost,
-					},
+					}),
 				},
 			},
 			wantErr: false,
@@ -371,12 +371,12 @@ func TestRoutesClient_Update(t *testing.T) {
 
 	request := &capi.RouteUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvironmentLabelKey: testStagingLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "Updated route",
-			},
+			}),
 		},
 	}
 
@@ -384,7 +384,7 @@ func TestRoutesClient_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, route)
 	assert.Equal(t, testRouteGUIDFixture, route.GUID)
-	assert.Equal(t, testStagingLabel, route.Metadata.Labels[testEnvironmentLabelKey])
+	assert.Equal(t, testStagingLabel, capi.StringValue(route.Metadata.Labels[testEnvironmentLabelKey]))
 }
 
 func TestRoutesClient_Delete(t *testing.T) {

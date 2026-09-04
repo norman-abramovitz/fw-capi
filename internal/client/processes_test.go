@@ -53,12 +53,12 @@ func TestProcessesClient_Get(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
-					Annotations: map[string]string{
+					}),
+					Annotations: capi.StringMap(map[string]string{
 						testNoteAnnotationKey: "web process",
-					},
+					}),
 				},
 				Type:                         testWebProcessType,
 				Command:                      StringPtr("bundle exec rackup"),
@@ -270,9 +270,9 @@ func TestProcessesClient_Update(t *testing.T) {
 	request := &capi.ProcessUpdateRequest{
 		Command: StringPtr("new command"),
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testStagingLabel,
-			},
+			}),
 		},
 	}
 
@@ -281,7 +281,7 @@ func TestProcessesClient_Update(t *testing.T) {
 	require.NotNil(t, process)
 	assert.Equal(t, testProcessGUIDFixture, process.GUID)
 	assert.Equal(t, "new command", *process.Command)
-	assert.Equal(t, testStagingLabel, process.Metadata.Labels[testEnvLabelKey])
+	assert.Equal(t, testStagingLabel, capi.StringValue(process.Metadata.Labels[testEnvLabelKey]))
 }
 
 //nolint:funlen // Test functions can be longer for comprehensive testing

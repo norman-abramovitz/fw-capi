@@ -86,7 +86,7 @@ func printOrgMetadata(metadata *capi.Metadata) {
 	log.Println("    Labels:")
 
 	for key, value := range metadata.Labels {
-		log.Printf("      %s: %s\n", key, value)
+		log.Printf("      %s: %s\n", key, capi.StringValue(value))
 	}
 }
 

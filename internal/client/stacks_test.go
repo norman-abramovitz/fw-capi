@@ -63,9 +63,9 @@ func TestStacksClient_Create(t *testing.T) {
 		Name:        testCFLinuxFS4Stack,
 		Description: testUbuntuJammyDescription,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
+			}),
 		},
 	}
 
@@ -198,7 +198,7 @@ func TestStacksClient_Update(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotNil(t, requestBody.Metadata)
-		assert.Equal(t, testTrueString, requestBody.Metadata.Labels[testUpdatedValue])
+		assert.Equal(t, testTrueString, capi.StringValue(requestBody.Metadata.Labels[testUpdatedValue]))
 
 		now := time.Now()
 		stack := capi.Stack{
@@ -225,12 +225,12 @@ func TestStacksClient_Update(t *testing.T) {
 
 	request := &capi.StackUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testUpdatedValue: testTrueString,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "Updated stack metadata",
-			},
+			}),
 		},
 	}
 
@@ -239,7 +239,7 @@ func TestStacksClient_Update(t *testing.T) {
 	assert.NotNil(t, stack)
 	assert.Equal(t, testStackGUID, stack.GUID)
 	assert.NotNil(t, stack.Metadata)
-	assert.Equal(t, testTrueString, stack.Metadata.Labels[testUpdatedValue])
+	assert.Equal(t, testTrueString, capi.StringValue(stack.Metadata.Labels[testUpdatedValue]))
 }
 
 func TestStacksClient_Delete(t *testing.T) {

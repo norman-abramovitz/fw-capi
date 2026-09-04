@@ -49,9 +49,9 @@ func TestServiceBrokersClient_Create(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testTypeKey: testDevelopmentLabel,
-					},
+					}),
 				},
 			},
 			response: capi.Job{
@@ -211,9 +211,9 @@ func TestServiceBrokersClient_Get(t *testing.T) {
 					Space: nil,
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testTypeKey: testDevelopmentLabel,
-					},
+					}),
 				},
 			},
 			wantErr: false,
@@ -403,9 +403,9 @@ func TestServiceBrokersClient_Update(t *testing.T) {
 			withJob:      false,
 			request: &capi.ServiceBrokerUpdateRequest{
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
+					}),
 				},
 			},
 			response: capi.ServiceBroker{
@@ -417,9 +417,9 @@ func TestServiceBrokersClient_Update(t *testing.T) {
 				Name: testServiceBrokerName,
 				URL:  testServiceBrokerURL,
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvironmentLabelKey: testProductionLabel,
-					},
+					}),
 				},
 			},
 			wantErr: false,

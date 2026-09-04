@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `SkipTLSVerify` now applies to token requests and API requests, not just
+  UAA discovery (still gated by `CAPI_DEV_MODE`). Previously any client
+  call against a self-signed foundation failed at the token fetch with an
+  x509 error even though the operator had opted in to skipping
+  verification. Requesting `SkipTLSVerify` without the `CAPI_DEV_MODE`
+  gate now fails fast at client construction with `ErrSkipTLSOnlyInDev`
+  (matching the discovery path) instead of silently verifying.
+- Custom-TLS clients (CA cert or gated skip) clone `http.DefaultTransport`
+  instead of using a zero-value transport, preserving `HTTPS_PROXY`
+  support, HTTP/2, and dial/handshake timeouts, and no longer impose a
+  30-second whole-request timeout on API calls.
+- `capi isolation-segments get` rendered metadata label/annotation values
+  as pointer addresses after the pointer-map change; now prints the
+  values.
+
+### Changed
+
+- **Breaking:** `Metadata.Labels` and `Metadata.Annotations` are now
+  `map[string]*string` (previously `map[string]string`). A nil value
+  marshals to JSON `null`, which is how the CF v3 API deletes a metadata
+  key on PATCH — the old string-valued maps could not express removal at
+  all. Migrate literals with the new `StringMap` helper and reads with
+  `StringValue`.
+
+### Added
+
+- `Config.CACertPEM`: PEM-encoded CA certificate(s) appended to the system
+  roots for verifying the API and UAA endpoints — the preferred way to talk
+  to foundations with self-signed or private-CA certificates, keeping
+  verification enabled. Takes precedence over `SkipTLSVerify`. Invalid PEM
+  fails fast with `ErrInvalidCACertPEM`.
+- `Metadata` helper methods `SetLabel`, `RemoveLabel`, `SetAnnotation`,
+  and `RemoveAnnotation` (prefix-aware, matching the CF metadata key
+  convention `prefix/name`); `Remove*` marks the key with a nil value so
+  the next update deletes it server-side.
+- `StringMap` (plain → pointer-valued map) and `StringValue`
+  (nil-safe dereference) conversion helpers.
+
 ## [3.229.0] - 2026-09-03
 
 Adds support for the CF API 3.226.0–3.229.0 delta (upstream capi-release

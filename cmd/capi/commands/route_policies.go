@@ -148,7 +148,7 @@ func newRoutePoliciesCreateCommand() *cobra.Command {
 
 			if labels != nil {
 				createReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 
@@ -212,7 +212,7 @@ func newRoutePoliciesUpdateCommand() *cobra.Command {
 
 			if labels != nil {
 				updateReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 

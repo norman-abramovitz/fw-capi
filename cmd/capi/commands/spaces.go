@@ -328,7 +328,7 @@ func outputSpaceAsDetailedTable(ctx context.Context, client capi.Client, space *
 }
 
 // outputMetadataTable outputs a metadata table for labels or annotations.
-func outputMetadataTable(title string, metadata map[string]string) error {
+func outputMetadataTable(title string, metadata map[string]*string) error {
 	if len(metadata) == 0 {
 		return nil
 	}
@@ -339,7 +339,7 @@ func outputMetadataTable(title string, metadata map[string]string) error {
 	table.Header("Key", "Value")
 
 	for k, v := range metadata {
-		_ = table.Append(k, v)
+		_ = table.Append(k, metadataValue(v))
 	}
 
 	err := table.Render()
@@ -433,7 +433,7 @@ func newSpacesCreateCommand() *cobra.Command {
 
 			if labels != nil {
 				createReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 
@@ -481,7 +481,7 @@ func newSpacesUpdateCommand() *cobra.Command {
 
 			if labels != nil {
 				updateReq.Metadata = &capi.Metadata{
-					Labels: labels,
+					Labels: capi.StringMap(labels),
 				}
 			}
 

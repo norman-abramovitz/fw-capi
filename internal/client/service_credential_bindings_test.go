@@ -368,12 +368,12 @@ func TestServiceCredentialBindingsClient_Update(t *testing.T) {
 
 	request := &capi.ServiceCredentialBindingUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				"owner": "team-a",
-			},
+			}),
 		},
 	}
 

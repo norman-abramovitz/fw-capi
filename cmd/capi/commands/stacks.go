@@ -416,8 +416,8 @@ func newStacksUpdateCommand() *cobra.Command {
 			// For now, stacks only support metadata updates
 			request := &capi.StackUpdateRequest{
 				Metadata: &capi.Metadata{
-					Labels:      make(map[string]string),
-					Annotations: make(map[string]string),
+					Labels:      make(map[string]*string),
+					Annotations: make(map[string]*string),
 				},
 			}
 

@@ -297,12 +297,12 @@ func TestServiceRouteBindingsClient_Update(t *testing.T) {
 
 	request := &capi.ServiceRouteBindingUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				"owner": "team-a",
-			},
+			}),
 		},
 	}
 

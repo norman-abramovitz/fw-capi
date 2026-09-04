@@ -35,9 +35,9 @@ func TestBuildsClient_Create(t *testing.T) {
 				StagingMemoryInMB: intPtr(1024),
 				StagingDiskInMB:   intPtr(1024),
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvLabelKey: testStagingLabel,
-					},
+					}),
 				},
 			},
 			Response: &capi.Build{
@@ -81,9 +81,9 @@ func TestBuildsClient_Create(t *testing.T) {
 					},
 				},
 				Metadata: &capi.Metadata{
-					Labels: map[string]string{
+					Labels: capi.StringMap(map[string]string{
 						testEnvLabelKey: testStagingLabel,
-					},
+					}),
 				},
 			},
 			WantErr: false,
@@ -320,12 +320,12 @@ func TestBuildsClient_Update(t *testing.T) {
 
 	request := &capi.BuildUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: testVersion100,
-			},
+			}),
 		},
 	}
 
@@ -337,12 +337,12 @@ func TestBuildsClient_Update(t *testing.T) {
 		},
 		State: testStateStaged,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: testVersion100,
-			},
+			}),
 		},
 	}
 

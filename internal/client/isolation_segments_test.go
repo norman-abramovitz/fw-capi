@@ -29,7 +29,7 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 
 		assert.Equal(t, "my-segment", req.Name)
 		assert.NotNil(t, req.Metadata)
-		assert.Equal(t, testValue1, req.Metadata.Labels["key1"])
+		assert.Equal(t, testValue1, capi.StringValue(req.Metadata.Labels["key1"]))
 
 		now := time.Now()
 		isolationSegment := capi.IsolationSegment{
@@ -62,10 +62,10 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 	request := &capi.IsolationSegmentCreateRequest{
 		Name: "my-segment",
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"key1": testValue1,
-			},
-			Annotations: map[string]string{},
+			}),
+			Annotations: capi.StringMap(map[string]string{}),
 		},
 	}
 
@@ -74,7 +74,7 @@ func TestIsolationSegmentsClient_Create(t *testing.T) {
 	assert.NotNil(t, isolationSegmentResult)
 	assert.Equal(t, testSegmentGUID, isolationSegmentResult.GUID)
 	assert.Equal(t, "my-segment", isolationSegmentResult.Name)
-	assert.Equal(t, testValue1, isolationSegmentResult.Metadata.Labels["key1"])
+	assert.Equal(t, testValue1, capi.StringValue(isolationSegmentResult.Metadata.Labels["key1"]))
 }
 
 func TestIsolationSegmentsClient_Get(t *testing.T) {
@@ -101,8 +101,8 @@ func TestIsolationSegmentsClient_Get(t *testing.T) {
 			},
 			Name: "my-segment",
 			Metadata: &capi.Metadata{
-				Labels:      map[string]string{},
-				Annotations: map[string]string{},
+				Labels:      capi.StringMap(map[string]string{}),
+				Annotations: capi.StringMap(map[string]string{}),
 			},
 		}
 
@@ -197,7 +197,7 @@ func TestIsolationSegmentsClient_Update(t *testing.T) {
 		assert.NotNil(t, requestBody.Name)
 		assert.Equal(t, "updated-segment", *requestBody.Name)
 		assert.NotNil(t, requestBody.Metadata)
-		assert.Equal(t, "value2", requestBody.Metadata.Labels["key2"])
+		assert.Equal(t, "value2", capi.StringValue(requestBody.Metadata.Labels["key2"]))
 
 		now := time.Now()
 		isolationSegment := capi.IsolationSegment{
@@ -222,10 +222,10 @@ func TestIsolationSegmentsClient_Update(t *testing.T) {
 	request := &capi.IsolationSegmentUpdateRequest{
 		Name: &name,
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				"key2": "value2",
-			},
-			Annotations: map[string]string{},
+			}),
+			Annotations: capi.StringMap(map[string]string{}),
 		},
 	}
 
@@ -234,7 +234,7 @@ func TestIsolationSegmentsClient_Update(t *testing.T) {
 	assert.NotNil(t, isolationSegmentResult)
 	assert.Equal(t, testSegmentGUID, isolationSegmentResult.GUID)
 	assert.Equal(t, "updated-segment", isolationSegmentResult.Name)
-	assert.Equal(t, "value2", isolationSegmentResult.Metadata.Labels["key2"])
+	assert.Equal(t, "value2", capi.StringValue(isolationSegmentResult.Metadata.Labels["key2"]))
 }
 
 func TestIsolationSegmentsClient_Delete(t *testing.T) {

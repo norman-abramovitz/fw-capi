@@ -73,8 +73,8 @@ func TestTasksClient_Create(t *testing.T) {
 					FailureReason: nil,
 				},
 				Metadata: &capi.Metadata{
-					Labels:      map[string]string{},
-					Annotations: map[string]string{},
+					Labels:      capi.StringMap(map[string]string{}),
+					Annotations: capi.StringMap(map[string]string{}),
 				},
 				Relationships: &capi.TaskRelationships{
 					App: &capi.Relationship{
@@ -354,12 +354,12 @@ func TestTasksClient_Update(t *testing.T) {
 
 	request := &capi.TaskUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testNoteAnnotationKey: "database migration",
-			},
+			}),
 		},
 	}
 
@@ -367,8 +367,8 @@ func TestTasksClient_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, task)
 	assert.Equal(t, testTaskGUIDFixture, task.GUID)
-	assert.Equal(t, testProductionLabel, task.Metadata.Labels[testEnvLabelKey])
-	assert.Equal(t, "database migration", task.Metadata.Annotations[testNoteAnnotationKey])
+	assert.Equal(t, testProductionLabel, capi.StringValue(task.Metadata.Labels[testEnvLabelKey]))
+	assert.Equal(t, "database migration", capi.StringValue(task.Metadata.Annotations[testNoteAnnotationKey]))
 }
 
 //nolint:funlen // Test functions can be longer for detailed testing

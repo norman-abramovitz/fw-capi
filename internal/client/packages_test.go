@@ -79,8 +79,8 @@ func TestPackagesClient_Create(t *testing.T) {
 					Error: nil,
 				},
 				Metadata: &capi.Metadata{
-					Labels:      map[string]string{},
-					Annotations: map[string]string{},
+					Labels:      capi.StringMap(map[string]string{}),
+					Annotations: capi.StringMap(map[string]string{}),
 				},
 				Relationships: &capi.PackageRelationships{
 					App: &capi.Relationship{
@@ -386,12 +386,12 @@ func TestPackagesClient_Update(t *testing.T) {
 
 	request := &capi.PackageUpdateRequest{
 		Metadata: &capi.Metadata{
-			Labels: map[string]string{
+			Labels: capi.StringMap(map[string]string{
 				testEnvLabelKey: testProductionLabel,
-			},
-			Annotations: map[string]string{
+			}),
+			Annotations: capi.StringMap(map[string]string{
 				testVersionAnnotationKey: testVersion100,
-			},
+			}),
 		},
 	}
 
@@ -399,8 +399,8 @@ func TestPackagesClient_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, pkg)
 	assert.Equal(t, testPackageGUIDFixture, pkg.GUID)
-	assert.Equal(t, testProductionLabel, pkg.Metadata.Labels[testEnvLabelKey])
-	assert.Equal(t, testVersion100, pkg.Metadata.Annotations[testVersionAnnotationKey])
+	assert.Equal(t, testProductionLabel, capi.StringValue(pkg.Metadata.Labels[testEnvLabelKey]))
+	assert.Equal(t, testVersion100, capi.StringValue(pkg.Metadata.Annotations[testVersionAnnotationKey]))
 }
 
 // TestPackagesClient_Delete verifies that DELETE /v3/packages/{guid} returns a
