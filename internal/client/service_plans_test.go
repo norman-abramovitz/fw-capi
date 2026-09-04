@@ -18,6 +18,7 @@ import (
 
 // Test constants for service plan tests.
 const (
+	testOrgDisplayName1            = "Organization One"
 	testServicePlanGUIDPath        = "/v3/service_plans/test-plan-guid"
 	testServicePlanNonExistentPath = "/v3/service_plans/non-existent-guid"
 )
@@ -575,7 +576,7 @@ func TestServicePlansClient_GetVisibility(t *testing.T) {
 			Organizations: []capi.ServicePlanVisibilityOrg{
 				{
 					GUID: testOrgName1,
-					Name: "Organization One",
+					Name: testOrgDisplayName1,
 				},
 				{
 					GUID: testOrgName2,
@@ -622,15 +623,17 @@ func TestServicePlansClient_UpdateVisibility(t *testing.T) {
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 		assert.Equal(t, testOrganizationType, requestBody.Type)
-		require.Len(t, requestBody.Organizations, 1)
-		assert.Equal(t, testOrgName1, requestBody.Organizations[0].GUID)
+
+		if assert.Len(t, requestBody.Organizations, 1) {
+			assert.Equal(t, testOrgName1, requestBody.Organizations[0].GUID)
+		}
 
 		response := capi.ServicePlanVisibility{
 			Type: testOrganizationType,
 			Organizations: []capi.ServicePlanVisibilityOrg{
 				{
 					GUID: testOrgName1,
-					Name: "Organization One",
+					Name: testOrgDisplayName1,
 				},
 			},
 		}
@@ -674,16 +677,18 @@ func TestServicePlansClient_ApplyVisibility(t *testing.T) {
 
 		err := json.NewDecoder(request.Body).Decode(&requestBody)
 		assert.NoError(t, err)
-		assert.Equal(t, "organization", requestBody.Type)
-		require.Len(t, requestBody.Organizations, 1)
-		assert.Equal(t, "org-1", requestBody.Organizations[0].GUID)
+		assert.Equal(t, testOrganizationType, requestBody.Type)
+
+		if assert.Len(t, requestBody.Organizations, 1) {
+			assert.Equal(t, testOrgName1, requestBody.Organizations[0].GUID)
+		}
 
 		response := capi.ServicePlanVisibility{
-			Type: "organization",
+			Type: testOrganizationType,
 			Organizations: []capi.ServicePlanVisibilityOrg{
 				{
-					GUID: "org-1",
-					Name: "Organization One",
+					GUID: testOrgName1,
+					Name: testOrgDisplayName1,
 				},
 			},
 		}
@@ -698,14 +703,14 @@ func TestServicePlansClient_ApplyVisibility(t *testing.T) {
 	require.NoError(t, err)
 
 	request := &capi.ServicePlanVisibilityApplyRequest{
-		Type:          "organization",
-		Organizations: []capi.ServicePlanVisibilityOrg{{GUID: "org-1"}},
+		Type:          testOrganizationType,
+		Organizations: []capi.ServicePlanVisibilityOrg{{GUID: testOrgName1}},
 	}
 
 	visibility, err := client.ServicePlans().ApplyVisibility(context.Background(), "test-plan-guid", request)
 	require.NoError(t, err)
 	require.NotNil(t, visibility)
-	assert.Equal(t, "organization", visibility.Type)
+	assert.Equal(t, testOrganizationType, visibility.Type)
 	assert.Len(t, visibility.Organizations, 1)
 }
 

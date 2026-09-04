@@ -2339,6 +2339,7 @@ func servicePlanVisibilityOrgs(guids []string) []capi.ServicePlanVisibilityOrg {
 	for i, guid := range guids {
 		orgs[i] = capi.ServicePlanVisibilityOrg{GUID: guid}
 	}
+
 	return orgs
 }
 
