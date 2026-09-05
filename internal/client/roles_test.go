@@ -15,6 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testOrgAuditorRoleType = "organization_auditor"
+	testLDAPOrigin         = "ldap"
+)
+
 func TestRolesClient_Create(t *testing.T) {
 	t.Parallel()
 	RunRoleCreateTest(t, "organization role create", "organization_auditor", testUserGUID, testOrgGUID, "", "organization_auditor",
@@ -41,6 +46,53 @@ func TestRolesClient_CreateSpaceRole(t *testing.T) {
 			},
 		},
 	)
+}
+
+// CF API "create a role by username and origin": org managers may assign org
+// roles to users they cannot list. The user relationship must carry username
+// and origin and no guid key at all; CF rejects an empty guid.
+func TestRolesClient_CreateByUsername(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/roles", request.URL.Path)
+		assert.Equal(t, "POST", request.Method)
+
+		var raw struct {
+			Relationships struct {
+				User struct {
+					Data map[string]any `json:"data"`
+				} `json:"user"`
+			} `json:"relationships"`
+		}
+		assert.NoError(t, json.NewDecoder(request.Body).Decode(&raw))
+		user := raw.Relationships.User.Data
+		assert.Equal(t, "jane", user["username"])
+		assert.Equal(t, testLDAPOrigin, user["origin"])
+		_, hasGUID := user["guid"]
+		assert.False(t, hasGUID, "guid must be omitted when the user is given by username")
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(writer).Encode(capi.Role{
+			Resource: capi.Resource{GUID: "role-guid", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+			Type:     testOrgAuditorRoleType,
+		})
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	rolesClient := NewRolesClient(httpClient)
+
+	role, err := rolesClient.Create(context.Background(), &capi.RoleCreateRequest{
+		Type: testOrgAuditorRoleType,
+		Relationships: capi.RoleRelationships{
+			User:         capi.Relationship{Data: &capi.RelationshipData{Username: "jane", Origin: testLDAPOrigin}},
+			Organization: &capi.Relationship{Data: &capi.RelationshipData{GUID: testOrgGUID}},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "role-guid", role.GUID)
 }
 
 func TestRolesClient_Get(t *testing.T) {

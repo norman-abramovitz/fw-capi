@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `RelationshipData` gains `Username` and `Origin` so a role's user
+  relationship can name the user instead of giving a GUID, as CF API
+  `POST /v3/roles` allows ("create a role by username and origin"). Org
+  managers may assign org roles this way to users they cannot list via
+  `GET /v3/users`. `GUID` is now `omitempty` on the wire so the two forms do
+  not collide; every existing caller that sets a GUID marshals unchanged.
+
 ## [3.229.1] - 2026-09-03
 
 Two wire-format corrections found while driving the client against real and
