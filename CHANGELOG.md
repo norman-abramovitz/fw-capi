@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `capi.StatusError` carries the HTTP status of a CF API error response.
+  Every error `MapHTTPError` returns, and so every 4xx or 5xx error from
+  the client, is now a `*StatusError`; read the status with
+  `errors.As(err, &statusErr)` and `statusErr.StatusCode`. It works
+  whatever the body was, including a CF v3 error envelope, whose message
+  has no "(status NNN)" text, and a 5xx that outlasted its retries. Its
+  `Error` and `Unwrap` pass through, so messages and `errors.Is` /
+  `errors.As` checks on the sentinels and `*capi.ResponseError` behave as
+  before.
+
 ### Fixed
 
 - A 5xx or 429 that is still failing when retries run out now returns the

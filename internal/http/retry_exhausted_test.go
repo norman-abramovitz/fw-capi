@@ -66,6 +66,10 @@ func TestClient_RetriesExhaustedOnServerError(t *testing.T) {
 		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 		assert.Contains(t, err.Error(), "status 503")
 		assert.Equal(t, int32(testRetryAttempt), attempts.Load())
+
+		var statusErr *capi.StatusError
+		require.ErrorAs(t, err, &statusErr)
+		assert.Equal(t, http.StatusServiceUnavailable, statusErr.StatusCode)
 	})
 
 	t.Run("503 with a v3 error envelope keeps the envelope", func(t *testing.T) {
@@ -86,6 +90,10 @@ func TestClient_RetriesExhaustedOnServerError(t *testing.T) {
 		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 		assert.JSONEq(t, testCFEnvelope, string(resp.Body))
 		assert.Equal(t, int32(testRetryAttempt), attempts.Load())
+
+		var statusErr *capi.StatusError
+		require.ErrorAs(t, err, &statusErr)
+		assert.Equal(t, http.StatusServiceUnavailable, statusErr.StatusCode)
 	})
 
 	t.Run("PostRaw 503 maps to ErrServerError", func(t *testing.T) {

@@ -68,6 +68,35 @@ var (
 	ErrUnexpectedStatus = errors.New("capi: unexpected HTTP status")
 )
 
+// StatusError carries the HTTP status code of a CF v3 API error response.
+// Every error MapHTTPError returns is a *StatusError, so callers can read
+// the status with errors.As whatever the response body was:
+//
+//	var statusErr *capi.StatusError
+//	if errors.As(err, &statusErr) {
+//		code := statusErr.StatusCode
+//	}
+//
+// Error and Unwrap pass through to Err, so the message is Err's message
+// and errors.Is / errors.As still reach the sentinel and, when the body
+// was a CF v3 error envelope, the *ResponseError.
+type StatusError struct {
+	// StatusCode is the HTTP status the CF v3 API responded with.
+	StatusCode int
+	// Err is the sentinel-wrapping error built from the status and body.
+	Err error
+}
+
+// Error returns the message of the wrapped error.
+func (e *StatusError) Error() string {
+	return e.Err.Error()
+}
+
+// Unwrap returns the wrapped error.
+func (e *StatusError) Unwrap() error {
+	return e.Err
+}
+
 // MapHTTPError constructs an error value from the HTTP status code and
 // response body returned by the CF v3 API.
 //
@@ -81,6 +110,9 @@ var (
 // body, or a well-formed envelope with no entries), the returned error still
 // wraps the correct sentinel and the raw body is included in the error
 // message for debugging.
+//
+// The returned error is a *StatusError carrying the status, so callers can
+// read it with errors.As whatever the body was.
 //
 // MapHTTPError returns nil for any status code less than 400.
 //
@@ -97,6 +129,12 @@ func MapHTTPError(status int, body []byte) error {
 		return nil
 	}
 
+	return &StatusError{StatusCode: status, Err: mapStatusAndBody(status, body)}
+}
+
+// mapStatusAndBody builds the sentinel-wrapping error MapHTTPError returns
+// inside its *StatusError. status is at least 400.
+func mapStatusAndBody(status int, body []byte) error {
 	sentinel := mapStatusToSentinel(status)
 
 	// Attempt to parse the body as a CF v3 error envelope. If successful,
