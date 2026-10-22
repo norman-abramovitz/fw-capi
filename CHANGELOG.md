@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A 5xx or 429 that is still failing when retries run out now returns the
+  same error shape as a 4xx: it satisfies `errors.Is(err,
+  capi.ErrServerError)` (or `capi.ErrRateLimited`), the returned
+  `*Response` keeps the status and body, and a CF v3 error envelope in the
+  body is reachable through `errors.As` as a `*capi.ResponseError`. Before,
+  the retrying HTTP client dropped the last response and returned a bare
+  "giving up after N attempt(s)" error, so callers could not tell a CF 5xx
+  from a network failure. Retry count and backoff are unchanged. A
+  transport failure with no response still returns a "giving up after N
+  attempt(s)" error wrapping the underlying cause.
+
 ## [3.229.2] - 2026-09-15
 
 One additive change to the role API, plus routine dependency updates. The

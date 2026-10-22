@@ -12,3 +12,9 @@ import (
 func NewAuthRetryTransportForTest(base http.RoundTripper, tm auth.TokenManager) http.RoundTripper {
 	return newAuthRetryTransport(base, tm)
 }
+
+// LastResponseErrorHandlerForTest exposes lastResponseErrorHandler so tests
+// can check how it treats the final response body.
+func LastResponseErrorHandlerForTest(resp *http.Response, err error, numTries int) (*http.Response, error) {
+	return lastResponseErrorHandler(resp, err, numTries)
+}

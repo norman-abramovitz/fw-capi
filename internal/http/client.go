@@ -39,6 +39,7 @@ type Client struct {
 // Static errors for err113 compliance.
 var (
 	ErrNoTokenManagerAvailable = errors.New("no token manager available")
+	ErrGivingUp                = errors.New("giving up")
 )
 
 type Option func(*Client)
@@ -114,6 +115,8 @@ func NewClient(baseURL string, tokenManager auth.TokenManager, opts ...Option) *
 		return false, nil
 	}
 
+	retryClient.ErrorHandler = lastResponseErrorHandler
+
 	client := &Client{
 		baseURL:      baseURL,
 		httpClient:   retryClient,
@@ -136,6 +139,34 @@ func NewClient(baseURL string, tokenManager auth.TokenManager, opts ...Option) *
 		retryClient.HTTPClient.Transport, tokenManager)
 
 	return client
+}
+
+// drainLimit bounds how much of an unused response body is read before it is
+// closed, so the connection can be reused (retryablehttp uses the same limit).
+const drainLimit = 4096
+
+// lastResponseErrorHandler runs when retryablehttp stops retrying. When the
+// last attempt got a response (a 5xx or 429 that CheckRetry kept retrying),
+// it hands that response back so the caller maps its status and body through
+// capi.MapHTTPError, exactly as for a 4xx. Without it, retryablehttp drops the
+// response and returns a bare "giving up" error with no status sentinel.
+// Failures with no usable response (transport errors, a cancelled context)
+// still return a "giving up" error wrapping the cause.
+func lastResponseErrorHandler(resp *http.Response, err error, numTries int) (*http.Response, error) {
+	if err == nil && resp != nil {
+		return resp, nil
+	}
+
+	if resp != nil {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, drainLimit))
+		_ = resp.Body.Close()
+	}
+
+	if err == nil {
+		return nil, fmt.Errorf("%w after %d attempt(s)", ErrGivingUp, numTries)
+	}
+
+	return nil, fmt.Errorf("%w after %d attempt(s): %w", ErrGivingUp, numTries, err)
 }
 
 // Request represents an HTTP request.
