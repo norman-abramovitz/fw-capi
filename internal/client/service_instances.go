@@ -144,11 +144,15 @@ func (c *ServiceInstancesClient) Delete(ctx context.Context, guid string, opts .
 	}
 
 	// CF V3 DELETE /v3/service_instances/{guid} returns 202 Accepted +
-	// Location: /v3/jobs/{jobGuid} for the normal async path. When
-	// purge=true, CF V3 responds 204 No Content with no Location header
-	// (sync delete bypassing the broker); callers get a nil job + nil
+	// Location: /v3/jobs/{jobGuid} for the normal async path. A user-provided
+	// instance, or any instance with purge=true, is deleted synchronously:
+	// 204 No Content with no Location header. Callers get a nil job + nil
 	// error and treat that as "delete completed synchronously, no polling
 	// needed."
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
 	if deleteOpts.Purge {
 		return jobFromOptionalLocation(resp, "deleting service instance")
 	}

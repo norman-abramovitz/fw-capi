@@ -627,6 +627,46 @@ func TestServiceInstancesClient_GetNotFound(t *testing.T) {
 	assert.Nil(t, instance)
 }
 
+func TestServiceInstancesClient_Delete_UserProvidedSync(t *testing.T) {
+	t.Parallel()
+
+	// User-provided service instances: CF deletes synchronously and returns
+	// 204 No Content with no Location header, without purge. The client
+	// returns (nil, nil), as for a sync delete of a user-provided binding.
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assert.Equal(t, "/v3/service_instances/instance-guid", request.URL.Path)
+		assert.Empty(t, request.URL.Query().Get("purge"), "purge param must be absent when WithPurge is not passed")
+
+		writer.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	serviceInstances := NewServiceInstancesClient(httpClient)
+
+	job, err := serviceInstances.Delete(context.Background(), testInstanceGUID)
+	require.NoError(t, err)
+	assert.Nil(t, job)
+}
+
+func TestServiceInstancesClient_Delete_MissingLocationOn202(t *testing.T) {
+	t.Parallel()
+
+	// 202 without Location is a protocol violation; we return an error
+	// rather than a Job with an empty GUID.
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	httpClient := internalhttp.NewClient(server.URL, nil)
+	serviceInstances := NewServiceInstancesClient(httpClient)
+
+	job, err := serviceInstances.Delete(context.Background(), testInstanceGUID)
+	require.Error(t, err)
+	assert.Nil(t, job)
+}
+
 func TestServiceInstancesClient_DeleteWithBindings(t *testing.T) {
 	t.Parallel()
 
